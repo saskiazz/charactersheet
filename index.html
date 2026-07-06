@@ -484,6 +484,7 @@
     </div>
   </div>
 
+  <!-- BROWSE OTHER CHARACTERS BAR -->
   <div class="cloud-box" id="other-chars-box" style="display:none; box-shadow:inset 3px 0 0 var(--gold);">
     <div class="cloud-row" style="justify-content: space-between; width: 100%;">
       <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
@@ -496,10 +497,12 @@
       <button id="btn-back-to-mine" style="display:none; background:var(--panel-2); border:1px solid var(--gold); color:var(--gold-bright); font-weight: bold; padding: 8px 16px; border-radius: 6px; cursor: pointer;">← Back to My Sheet</button>
     </div>
 
+    <!-- Directory Layout List -->
     <div id="other-chars-directory" style="display: none; margin-top: 14px; border-top: 1px solid var(--hairline); padding-top: 14px;">
       <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold); margin-bottom: 8px;">All Registered Player Sheets:</div>
       <div id="directory-list-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px;">
-        </div>
+        <!-- Generated dynamically via javascript -->
+      </div>
     </div>
   </div>
 
@@ -558,6 +561,22 @@
       <div class="charsheet-field wide">
         <label for="ci-weapons">Weapons / Weapon Skills</label>
         <textarea id="ci-weapons" data-ci="weapons" oninput="onCharInfoChange()"></textarea>
+      </div>
+      
+      <!-- PRECAST ACTIONS FIELDS BENEATH WEAPONS -->
+      <div class="charsheet-field wide">
+        <label for="ci-precast-actions">Precast Actions</label>
+        <textarea id="ci-precast-actions" data-ci="precast_actions" oninput="onCharInfoChange()" placeholder="List your active buff setups, rituals, or temporary transformations..."></textarea>
+      </div>
+      <div class="charsheet-field wide">
+        <label>Stats After Precast</label>
+        <div class="stat-row">
+          <div class="stat-mini"><label for="ci-body-precast">Body</label><input type="text" id="ci-body-precast" data-ci="body_precast" oninput="onCharInfoChange()"></div>
+          <div class="stat-mini"><label for="ci-mind-precast">Mind</label><input type="text" id="ci-mind-precast" data-ci="mind_precast" oninput="onCharInfoChange()"></div>
+          <div class="stat-mini"><label for="ci-spirit-precast">Spirit</label><input type="text" id="ci-spirit-precast" data-ci="spirit_precast" oninput="onCharInfoChange()"></div>
+          <div class="stat-mini"><label for="ci-armor-precast">Armor</label><input type="text" id="ci-armor-precast" data-ci="armor_precast" oninput="onCharInfoChange()"></div>
+          <div class="stat-mini"><label for="ci-rank-precast">Rank</label><input type="text" id="ci-rank-precast" data-ci="rank_stat_precast" oninput="onCharInfoChange()"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -1151,7 +1170,10 @@ const CHAR_INFO_FIELDS = [
   'name','race','rank','tradeskill','abilities','weakness','inventory','weapons',
   'body_base','mind_base','spirit_base','armor_base','rank_stat_base',
   'body_current','mind_current','spirit_current','armor_current','rank_stat_current',
-  'reset_time'
+  'reset_time',
+  /* NEW TRACKING KEYS */
+  'precast_actions',
+  'body_precast','mind_precast','spirit_precast','armor_precast','rank_stat_precast'
 ];
 
 let state = {
