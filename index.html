@@ -484,6 +484,25 @@
     </div>
   </div>
 
+  <div class="cloud-box" id="other-chars-box" style="display:none; box-shadow:inset 3px 0 0 var(--gold);">
+    <div class="cloud-row" style="justify-content: space-between; width: 100%;">
+      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+        <label for="other-char-select">Dropdown View:</label>
+        <select id="other-char-select" style="background:rgba(0,0,0,0.28); border:1px solid var(--hairline); color:var(--parchment); padding:8px 10px; border-radius:6px; font-family:inherit; min-width:200px;">
+          <option value="">-- Select a Character --</option>
+        </select>
+        <button id="btn-toggle-list-view" style="background: var(--panel-2); border:1px solid var(--hairline); color: var(--parchment-dim); padding: 8px 12px; border-radius: 6px; cursor: pointer;">🗂️ Toggle Directory List</button>
+      </div>
+      <button id="btn-back-to-mine" style="display:none; background:var(--panel-2); border:1px solid var(--gold); color:var(--gold-bright); font-weight: bold; padding: 8px 16px; border-radius: 6px; cursor: pointer;">← Back to My Sheet</button>
+    </div>
+
+    <div id="other-chars-directory" style="display: none; margin-top: 14px; border-top: 1px solid var(--hairline); padding-top: 14px;">
+      <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold); margin-bottom: 8px;">All Registered Player Sheets:</div>
+      <div id="directory-list-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px;">
+        </div>
+    </div>
+  </div>
+
   <div class="charsheet">
     <div class="charsheet-title">Character Sheet</div>
     <div class="charsheet-grid">
@@ -580,10 +599,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ---------- DATA ---------- */
-// type: 'neutral' | 'light' | 'dark'
-// groups: array of { label, key, spells:[{id,latin,en,learned}] }
-// tier: 'main' | 'savant' | 'oracle' | 'special'
-
 function S(id, latin, en, learned){ return {id, latin, en, learned: !!learned}; }
 
 const SCHOOLS = [
@@ -1107,7 +1122,7 @@ const SCHOOLS = [
         S('shd_mutatio','Mutatio Obscura','Dark Transformation'),
         S('shd_umbra_amb','Umbra Ambulate','Shadow Walk'),
         S('shd_umbra_did','Umbra Didimus','Shadow Twin'),
-        S('shd_umbra_ex','Umbra Exilium','Shadow Exile'),
+        S('shd_umbra_ex','Umbra Exile','Shadow Exile'),
         S('shd_umbra_ful','Umbra Fulmen','Shadow Lightning'),
         S('shd_umbra_int','Umbra Integumentum','Shadow Cover'),
         S('shd_umbra_vin','Umbra Vincla','Shadow Bind'),
@@ -1149,6 +1164,11 @@ let state = {
   charInfo: {}
 };
 
+/* ---------- BROWSING STATE VARIABLES ---------- */
+let myStoredState = null; 
+let isViewingOther = false;
+let globalOtherSheetsData = []; 
+
 function buildDefaults(){
   const defaults = {};
   SCHOOLS.forEach(sch => sch.groups.forEach(g => g.spells.forEach(sp => {
@@ -1167,6 +1187,8 @@ function setLearned(id, val){
 }
 
 function saveState(){
+  if (isViewingOther) return; 
+  
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   const note=document.getElementById('save-note');
   note.textContent='Saved ✓';
@@ -1187,6 +1209,7 @@ function setCloudStatus(msg, isError){
 }
 
 async function saveToCloud(showStatus){
+  if (isViewingOther) return;
   if(!currentUser){
     if(showStatus) setCloudStatus('Please log in first.', true);
     return;
@@ -1240,14 +1263,120 @@ async function loadFromCloud(){
 function updateAuthUI(){
   const formRow = document.getElementById('auth-form-row');
   const loggedInRow = document.getElementById('auth-logged-in-row');
+  const otherCharsBox = document.getElementById('other-chars-box');
+  
   if(currentUser){
     formRow.style.display = 'none';
     loggedInRow.style.display = 'flex';
     document.getElementById('auth-user-email').textContent = currentUser.email;
+    otherCharsBox.style.display = 'block';
+    fetchOtherCharacters(); 
   } else {
     formRow.style.display = 'flex';
     loggedInRow.style.display = 'none';
+    otherCharsBox.style.display = 'none';
+    isViewingOther = false;
+    toggleReadOnly(false);
   }
+}
+
+async function fetchOtherCharacters() {
+  const selectEl = document.getElementById('other-char-select');
+  const listContainer = document.getElementById('directory-list-container');
+  
+  selectEl.innerHTML = '<option value="">-- Select a Character --</option>';
+  listContainer.innerHTML = '';
+  
+  try {
+    const { data, error } = await supabaseClient
+      .from('characters')
+      .select('user_id, data')
+      .neq('user_id', currentUser.id);
+
+    if (error) {
+      console.error("Error fetching sheets layout:", error.message);
+      return;
+    }
+
+    if (data) {
+      globalOtherSheetsData = data; 
+      
+      data.forEach(row => {
+        const charData = row.data || {};
+        const charInfo = charData.charInfo || {};
+        const charName = charInfo.name ? charInfo.name.trim() : "Unnamed Character";
+        const charClassRace = (charInfo.race || charInfo.rank) ? ` (${charInfo.race || ''} ${charInfo.rank || ''})`.trim() : '';
+
+        const option = document.createElement('option');
+        option.value = row.user_id;
+        option.textContent = charName + charClassRace;
+        selectEl.appendChild(option);
+
+        const card = document.createElement('button');
+        card.style.cssText = "background: rgba(0,0,0,0.2); border: 1px solid var(--hairline); color: var(--parchment); padding: 10px; border-radius: 6px; text-align: left; cursor: pointer; font-family: inherit; transition: border-color 0.2s;";
+        card.innerHTML = `<strong style="color: var(--light-accent); display:block; margin-bottom:2px;">${charName}</strong><span style="font-size:12px; color:var(--parchment-dim);">${charInfo.race || 'No Race'} · ${charInfo.rank || 'No Rank'}</span>`;
+        
+        card.addEventListener('mouseenter', () => card.style.borderColor = "var(--gold)");
+        card.addEventListener('mouseleave', () => card.style.borderColor = "var(--hairline)");
+        card.addEventListener('click', () => switchToAlternativeSheet(row.user_id));
+        
+        listContainer.appendChild(card);
+      });
+
+      if(data.length === 0) {
+        listContainer.innerHTML = `<span style="color: var(--parchment-dim); font-style: italic; font-size: 13px;">No other character profiles found in database yet.</span>`;
+      }
+    }
+  } catch (e) {
+    console.error("Network connection error handling sheet lookup:", e);
+  }
+}
+
+function switchToAlternativeSheet(targetUserId) {
+  if (!targetUserId) {
+    if (isViewingOther) returnToOwnSheet();
+    return;
+  }
+
+  const foundRow = globalOtherSheetsData.find(r => r.user_id === targetUserId);
+  if (foundRow && foundRow.data) {
+    if (!isViewingOther) {
+      myStoredState = JSON.parse(JSON.stringify(state));
+    }
+    
+    isViewingOther = true;
+    document.getElementById('btn-back-to-mine').style.display = 'inline-block';
+    document.getElementById('other-char-select').value = targetUserId;
+    
+    state = JSON.parse(JSON.stringify(foundRow.data));
+    if(!state.charInfo) state.charInfo = {};
+    
+    document.getElementById('filter-light').checked = !!state.showLight;
+    document.getElementById('filter-dark').checked = !!state.showDark;
+    
+    populateCharInfoFields();
+    render();
+    toggleReadOnly(true); 
+  }
+}
+
+function returnToOwnSheet() {
+  isViewingOther = false;
+  document.getElementById('other-char-select').value = "";
+  document.getElementById('btn-back-to-mine').style.display = 'none';
+  
+  if (myStoredState) {
+    state = myStoredState;
+    myStoredState = null;
+  }
+  
+  document.getElementById('filter-light').checked = !!state.showLight;
+  document.getElementById('filter-dark').checked = !!state.showDark;
+  
+  populateCharInfoFields();
+  render();
+  toggleReadOnly(false); 
+  saveState(); 
 }
 
 async function signUp(){
@@ -1326,6 +1455,7 @@ function populateCharInfoFields(){
 }
 
 window.onCharInfoChange = function(){
+  if (isViewingOther) return;
   CHAR_INFO_FIELDS.forEach(key => {
     const el = document.querySelector(`[data-ci="${key}"]`);
     if(el) state.charInfo[key] = el.value;
@@ -1422,11 +1552,13 @@ function oracleUsed(){
 }
 
 window.onToggleSpell = function(id, val){
+  if (isViewingOther) return;
   setLearned(id, val);
   render();
 };
 
 window.toggleSavant = function(key){
+  if (isViewingOther) return;
   const currentlyOn = !!state.savant[key];
   if(!currentlyOn && savantUsed() >= MAX_SAVANT){
     return; 
@@ -1437,6 +1569,7 @@ window.toggleSavant = function(key){
 };
 
 window.toggleOracle = function(key){
+  if (isViewingOther) return;
   state.oracle[key] = !state.oracle[key];
   persist();
   render();
@@ -1480,6 +1613,7 @@ function exportCharacter() {
 }
 
 function importCharacter() {
+  if (isViewingOther) return;
   const code = prompt("Paste your character export string here:");
   if (!code) return;
   try {
@@ -1515,12 +1649,48 @@ function applySearch(){
   });
 }
 
+function toggleReadOnly(readOnly) {
+  const inputs = document.querySelectorAll('.charsheet input, .charsheet textarea, .alignment-box input, #grid input, #grid button');
+  const cloudSaveBtn = document.getElementById('cloud-save');
+  const resetBtn = document.getElementById('reset-all');
+  const importBtn = document.getElementById('import-char');
+  
+  if (cloudSaveBtn) cloudSaveBtn.disabled = readOnly;
+  if (resetBtn) resetBtn.disabled = readOnly;
+  if (importBtn) importBtn.disabled = readOnly;
+
+  inputs.forEach(el => {
+    if (el.tagName === 'BUTTON') {
+      if (readOnly) el.setAttribute('disabled', 'true');
+    } else {
+      if (readOnly) {
+        el.setAttribute('disabled', 'true');
+      } else {
+        el.removeAttribute('disabled');
+      }
+    }
+  });
+  
+  if (!readOnly) render(); 
+}
+
+document.getElementById('btn-toggle-list-view').addEventListener('click', () => {
+  const dir = document.getElementById('other-chars-directory');
+  dir.style.display = dir.style.display === 'none' ? 'block' : 'none';
+});
+
+document.getElementById('other-char-select').addEventListener('change', (e) => {
+  switchToAlternativeSheet(e.target.value);
+});
+
+document.getElementById('btn-back-to-mine').addEventListener('click', returnToOwnSheet);
+
 document.getElementById('search').addEventListener('input', applySearch);
 
 document.getElementById('reset-all').addEventListener('click', async () => {
+  if (isViewingOther) return;
   if(!confirm('Reset ALL checkmarks, savant/oracle marks AND the character sheet fields (name, race, stats, inventory, etc.) back to blank? This cannot be undone.')) return;
   
-  // Explicitly assign 'false' to every single spell ID to bypass hardcoded true defaults
   const resetLearned = {};
   SCHOOLS.forEach(sch => {
     sch.groups.forEach(g => {
