@@ -1762,8 +1762,14 @@ document.getElementById('reset-all').addEventListener('click', async () => {
 document.getElementById('auth-signup').addEventListener('click', signUp);
 document.getElementById('auth-signin').addEventListener('click', signIn);
 document.getElementById('auth-signout').addEventListener('click', signOut);
-document.getElementById('cloud-save').addEventListener('click', () => saveToCloud(true));
-document.getElementById('cloud-reload').addEventListener('click', loadFromCloud);
+document.getElementById('cloud-save').addEventListener('click', () => {
+  if(!confirm('This will overwrite your saved cloud data with your current sheet. Continue?')) return;
+  saveToCloud(true);
+});
+document.getElementById('cloud-reload').addEventListener('click', () => {
+  if(!confirm('This will overwrite your current sheet with whatever is saved in the cloud. Continue?')) return;
+  loadFromCloud();
+});
 
 load();
 initAuth();
