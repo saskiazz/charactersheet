@@ -370,7 +370,7 @@
     font-size:14px;
     resize:vertical;
   }
-  .charsheet-field textarea{min-height:56px;line-height:1.4;}
+  .charsheet-field textarea{min-height:56px;line-height:1.4;resize:none;overflow:hidden;}
   .charsheet-field input[type=text]:focus,
   .charsheet-field textarea:focus{outline:1px solid var(--gold);}
 
@@ -1485,7 +1485,27 @@ function populateCharInfoFields(){
     const el = document.querySelector(`[data-ci="${key}"]`);
     if(el) el.value = state.charInfo[key] || '';
   });
+  autosizeAllTextareas();
 }
+
+/* ---------- AUTOSIZE TEXTAREAS ---------- */
+function autosizeTextarea(el){
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+function autosizeAllTextareas(){
+  document.querySelectorAll('.charsheet-field textarea').forEach(autosizeTextarea);
+}
+
+function initAutosizeTextareas(){
+  document.querySelectorAll('.charsheet-field textarea').forEach(el => {
+    el.addEventListener('input', () => autosizeTextarea(el));
+    autosizeTextarea(el);
+  });
+}
+
+window.addEventListener('resize', autosizeAllTextareas);
 
 window.onCharInfoChange = function(){
   if (isViewingOther) return;
@@ -1747,6 +1767,7 @@ document.getElementById('cloud-reload').addEventListener('click', loadFromCloud)
 
 load();
 initAuth();
+initAutosizeTextareas();
 </script>
 </body>
 </html>
