@@ -295,7 +295,18 @@
   .school.type-neutral .spell-item input[type=checkbox]{accent-color:var(--neutral-accent);}
   .school.type-dark .spell-item input[type=checkbox]{accent-color:var(--dark-accent);}
   .spell-name{font-weight:600;color:var(--parchment);font-size:14.5px;}
-  .spell-item input:checked ~ label .spell-name{color:var(--parchment-dim);text-decoration:line-through;text-decoration-color:var(--hairline);}
+  
+  /* HIGHLIGHT EFFECT: Changes text color to high-contrast gold with text glow */
+  .spell-item input:checked ~ label .spell-name {
+    color: #ffebad !important;
+    font-weight: 700;
+    text-shadow: 0 0 8px rgba(255, 235, 173, 0.35);
+  }
+  /* Keeps the translated label legible and pairs elegantly with the highlighted gold */
+  .spell-item input:checked ~ label .spell-latin {
+    color: #d1c9b4 !important;
+  }
+  
   .spell-latin{font-size:12.5px;color:var(--parchment-dim);font-style:italic;margin-left:4px;}
   .spell-item label{cursor:pointer;}
   .spell-item.hidden{display:none;}
@@ -641,7 +652,7 @@ const SCHOOLS = [
         S('conj_vita','Vita Temporaria','Temporary Life'),
       ]},
       {label:'Savant Spells', tier:'savant', spells:[
-        S('conj_sv_conv','Convivia Victoriae','Victory Feast'),
+        S('conj_sv_conv','Convivia Victory','Victory Feast'),
         S('conj_sv_mirr','Magicae Speculum','Magic Mirror'),
         S('conj_sv_prov','Provectus Armis','Advanced Armor'),
       ]},
