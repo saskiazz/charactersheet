@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Spellbook Tracker</title>
+<style>
+  :root{
+    --ink:#0f1016;
+    --panel:#181a24;
+    --panel-2:#1f2230;
+    --hairline:#33384a;
+    --parchment:#e9e1cc;
+    --parchment-dim:#a9a28d;
+    --gold:#c9a054;
+    --gold-bright:#e6c583;
+    --light-accent:#f4e9c8;
+    --light-glow: rgba(244,233,200,0.15);
+    --neutral-accent:#7fb3a8;
+    --neutral-glow: rgba(127,179,168,0.13);
+    --dark-accent:#a85454;
+    --danger:#a85454;
+    --ok:#7f9f6f;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse at 20% -10%, rgba(201,160,84,0.08), transparent 45%),
+      radial-gradient(ellipse at 90% 0%, rgba(127,179,168,0.06), transparent 40%),
+      var(--ink);
+    color:var(--parchment);
+    font-family:Georgia, serif;
+    font-size:16px;
+    min-height:100vh;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 80px;}
+
+  /* HEADER */
+  header{
+    text-align:center;
+    padding:18px 0 26px;
+    border-bottom:1px solid var(--hairline);
+    margin-bottom:22px;
+    position:relative;
+  }
+  header .eyebrow{
+    font-family:Garamond, serif;
+    letter-spacing:0.35em;
+    font-size:11px;
+    color:var(--gold);
+    text-transform:uppercase;
+    margin-bottom:8px;
+  }
+  header h1{
+    font-family:Garamond, serif;
+    font-weight:700;
+    font-size:clamp(28px,4vw,42px);
+    margin:0 0 6px;
+    color:var(--light-accent);
+    text-shadow:0 0 24px var(--light-glow);
+    letter-spacing:0.03em;
+  }
+  header p.sub{color:var(--parchment-dim);margin:0;font-size:15px;font-style:italic;}
+
+  /* ALIGNMENT SELECTOR */
+  .alignment-box {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+    padding: 12px 24px;
+    border-radius: 8px;
+    margin: 10px auto 20px auto;
+    width: fit-content;
+  }
+  .alignment-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+  .alignment-label input {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--gold);
+  }
+
+  /* GLOBAL STATS BAR */
+  .statbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+    justify-content:center;
+    margin:22px 0 8px;
+  }
+  .stat-pill{
+    background:var(--panel);
+    border:1px solid var(--hairline);
+    border-radius:8px;
+    padding:10px 18px;
+    min-width:150px;
+    text-align:center;
+  }
+  .stat-pill .num{
+    font-family:Garamond, serif;
+    font-size:22px;
+    font-weight:700;
+    color:var(--gold-bright);
+    display:block;
+    line-height:1.1;
+  }
+  .stat-pill .lbl{
+    font-size:11.5px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--parchment-dim);
+  }
+  .stat-pill.savant .num{color:var(--neutral-accent);}
+  .stat-pill.warn .num{color:var(--danger);}
+  .stat-pill.mastered .num{color:var(--ok);}
+  .school.is-mastered{box-shadow:0 0 0 1px var(--gold), 0 0 22px rgba(201,160,84,0.18);}
+  .mastered-ribbon{
+    font-family:Garamond, serif;
+    font-size:10px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:#1a1408;
+    background:linear-gradient(90deg,var(--gold),var(--gold-bright));
+    padding:3px 9px;
+    border-radius:4px;
+    display:inline-block;
+    margin-top:8px;
+    font-weight:700;
+  }
+
+  .toolbar{
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    align-items:center;
+    margin:18px 0 30px;
+    flex-wrap:wrap;
+  }
+  .toolbar input[type=text]{
+    background:var(--panel);
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    padding:9px 14px;
+    border-radius:7px;
+    font-family:'Crimson Pro',serif;
+    font-size:14.5px;
+    width:240px;
+  }
+  .toolbar input[type=text]:focus{outline:1px solid var(--gold);}
+  .toolbar button{
+    background:var(--panel-2);
+    border:1px solid var(--hairline);
+    color:var(--parchment-dim);
+    padding:9px 14px;
+    border-radius:7px;
+    font-family:'Crimson Pro',serif;
+    font-size:13.5px;
+    cursor:pointer;
+  }
+  .toolbar button:hover{color:var(--light-accent);border-color:var(--gold);}
+  .toolbar-sep{
+    border-left:1px solid var(--hairline);
+    height:24px;
+    margin:0 4px;
+  }
+  #save-note{font-size:12px;color:var(--parchment-dim);font-style:italic;min-width:90px;text-align:left;}
+
+  /* SCHOOL GRID */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(360px,1fr));
+    gap:20px;
+  }
+  .school{
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--hairline);
+    border-radius:12px;
+    overflow:hidden;
+    position:relative;
+  }
+  .school.type-light{box-shadow:inset 3px 0 0 var(--light-accent);}
+  .school.type-neutral{box-shadow:inset 3px 0 0 var(--neutral-accent);}
+  .school.type-dark{box-shadow:inset 3px 0 0 var(--dark-accent);}
+
+  .school-head{
+    padding:16px 18px 12px;
+    border-bottom:1px solid var(--hairline);
+  }
+  .school-title-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+  }
+  .school-title{
+    font-family:Garamond, serif;
+    font-size:19px;
+    font-weight:700;
+    color:var(--light-accent);
+    letter-spacing:0.02em;
+  }
+  .school.type-neutral .school-title{color:var(--parchment);}
+  .school.type-dark .school-title{color:var(--light-accent);}
+  .type-tag{
+    font-size:10px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--parchment-dim);
+    display:block;
+    margin-top:2px;
+  }
+  .badges{display:flex;gap:6px;flex-shrink:0;}
+  .badge-btn{
+    font-family:Garamond, serif;
+    font-size:10.5px;
+    letter-spacing:0.05em;
+    padding:6px 10px;
+    border-radius:20px;
+    border:1px solid var(--hairline);
+    background:transparent;
+    color:var(--parchment-dim);
+    cursor:pointer;
+    white-space:nowrap;
+    transition:all .15s;
+  }
+  .badge-btn.savant.active{background:var(--gold);border-color:var(--gold);color:#1a1408;font-weight:700;}
+  .badge-btn.oracle.active{background:var(--neutral-accent);border-color:var(--neutral-accent);color:#0d1a17;font-weight:700;}
+  .badge-btn:disabled{opacity:0.35;cursor:not-allowed;}
+
+  .school-progress{
+    margin-top:12px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .bar{
+    flex:1;
+    height:6px;
+    background:#0000;
+    background:rgba(0,0,0,0.35);
+    border-radius:4px;
+    overflow:hidden;
+    border:1px solid var(--hairline);
+  }
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-bright));}
+  .school.type-neutral .bar-fill{background:linear-gradient(90deg,var(--neutral-accent),#a9d6cb);}
+  .school.type-dark .bar-fill{background:linear-gradient(90deg,var(--dark-accent),#c77373);}
+  .progress-text{font-size:12.5px;color:var(--parchment-dim);white-space:nowrap;}
+  .progress-text b{color:var(--parchment);}
+  .missing-count{color:var(--danger) !important;font-weight:600;}
+
+  /* GROUPS INSIDE SCHOOL */
+  .group{padding:10px 18px 6px;}
+  .group-label{
+    font-size:11.5px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--gold);
+    margin:10px 0 6px;
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+  }
+  .group.savant-group .group-label{color:var(--gold-bright);}
+  .group.oracle-group .group-label{color:var(--neutral-accent);}
+  .group-count{font-size:11px;color:var(--parchment-dim);font-weight:400;text-transform:none;letter-spacing:0;}
+
+  .spell-list{list-style:none;margin:0;padding:0;}
+  .spell-item{
+    display:flex;
+    align-items:flex-start;
+    gap:9px;
+    padding:5px 2px;
+    border-radius:5px;
+    cursor:pointer;
+  }
+  .spell-item:hover{background:rgba(255,255,255,0.03);}
+  .spell-item input[type=checkbox]{
+    margin-top:3px;
+    width:15px;height:15px;
+    accent-color:var(--gold);
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .school.type-neutral .spell-item input[type=checkbox]{accent-color:var(--neutral-accent);}
+  .school.type-dark .spell-item input[type=checkbox]{accent-color:var(--dark-accent);}
+  .spell-name{font-weight:600;color:var(--parchment);font-size:14.5px;}
+  .spell-item input:checked ~ label .spell-name{color:var(--parchment-dim);text-decoration:line-through;text-decoration-color:var(--hairline);}
+  .spell-latin{font-size:12.5px;color:var(--parchment-dim);font-style:italic;margin-left:4px;}
+  .spell-item label{cursor:pointer;}
+  .spell-item.hidden{display:none;}
+
+  .school-foot{height:14px;}
+
+  footer{
+    text-align:center;
+    margin-top:40px;
+    color:var(--parchment-dim);
+    font-size:12.5px;
+    font-style:italic;
+  }
+
+  ::-webkit-scrollbar{width:10px;}
+  ::-webkit-scrollbar-thumb{background:var(--hairline);border-radius:5px;}
+
+  /* CHARACTER SHEET */
+  .charsheet{
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--hairline);
+    border-radius:12px;
+    padding:18px 22px 22px;
+    margin-bottom:24px;
+    box-shadow:inset 3px 0 0 var(--gold);
+  }
+  .charsheet-title{
+    font-family:Garamond, serif;
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--gold-bright);
+    margin-bottom:14px;
+  }
+  .charsheet-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:14px 18px;
+  }
+  .charsheet-field{
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+  }
+  .charsheet-field.wide{grid-column:1 / -1;}
+  .charsheet-field label{
+    font-size:11px;
+    letter-spacing:0.09em;
+    text-transform:uppercase;
+    color:var(--parchment-dim);
+  }
+  .charsheet-field input[type=text],
+  .charsheet-field textarea{
+    background:rgba(0,0,0,0.28);
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    padding:8px 10px;
+    border-radius:6px;
+    font-family:'Crimson Pro',Georgia,serif;
+    font-size:14px;
+    resize:vertical;
+  }
+  .charsheet-field textarea{min-height:56px;line-height:1.4;}
+  .charsheet-field input[type=text]:focus,
+  .charsheet-field textarea:focus{outline:1px solid var(--gold);}
+
+  .stat-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+  .stat-mini{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    min-width:78px;
+    flex:1;
+  }
+  .stat-mini label{
+    font-size:10px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--parchment-dim);
+  }
+  .stat-mini input[type=text]{
+    background:rgba(0,0,0,0.28);
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    padding:7px 8px;
+    border-radius:6px;
+    font-family:'Crimson Pro',Georgia,serif;
+    font-size:14px;
+    width:100%;
+    text-align:center;
+  }
+  .stat-mini input[type=text]:focus{outline:1px solid var(--gold);}
+  .stat-mini.reset-time{min-width:190px;flex:1.6;}
+  .stat-mini input[type=datetime-local]{
+    background:rgba(0,0,0,0.28);
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    padding:6px 8px;
+    border-radius:6px;
+    font-family:'Crimson Pro',Georgia,serif;
+    font-size:13px;
+    width:100%;
+    color-scheme:dark;
+  }
+  .stat-mini input[type=datetime-local]:focus{outline:1px solid var(--gold);}
+
+  /* CLOUD SYNC */
+  .cloud-box{
+    background:var(--panel);
+    border:1px solid var(--hairline);
+    border-radius:10px;
+    padding:12px 18px;
+    margin-bottom:20px;
+    box-shadow:inset 3px 0 0 var(--neutral-accent);
+  }
+  .cloud-row{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:10px;
+  }
+  .cloud-row label{
+    font-size:11.5px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--parchment-dim);
+    white-space:nowrap;
+  }
+  .cloud-row input[type=text]{
+    background:rgba(0,0,0,0.28);
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    padding:8px 10px;
+    border-radius:6px;
+    font-family:'Crimson Pro',Georgia,serif;
+    font-size:14px;
+    min-width:200px;
+    flex:1;
+  }
+  .cloud-row input[type=text]:focus{outline:1px solid var(--gold);}
+  .cloud-row button{
+    background:var(--panel-2);
+    border:1px solid var(--hairline);
+    color:var(--parchment-dim);
+    padding:8px 14px;
+    border-radius:7px;
+    font-family:'Crimson Pro',serif;
+    font-size:13.5px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .cloud-row button:hover{color:var(--light-accent);border-color:var(--gold);}
+  #cloud-status{font-size:12px;color:var(--parchment-dim);font-style:italic;min-width:80px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Fallen Gate</div>
+    <h1>Spellbook Tracker</h1>
+    <p class="sub">Track what you know, what you're missing, and where you stand as Savant or Oracle</p>
+  </header>
+
+  <div class="cloud-box" id="auth-box">
+    <div class="cloud-row" id="auth-form-row">
+      <label for="auth-email">Email</label>
+      <input type="text" id="auth-email" placeholder="you@example.com">
+      <label for="auth-password">Password</label>
+      <input type="password" id="auth-password" placeholder="Password (min. 6 characters)">
+      <button id="auth-signup">Sign Up</button>
+      <button id="auth-signin">Login</button>
+      <span id="cloud-status"></span>
+    </div>
+    <div class="cloud-row" id="auth-logged-in-row" style="display:none;">
+      <label>Logged in as</label>
+      <span id="auth-user-email" style="color:var(--light-accent);font-weight:600;"></span>
+      <button id="cloud-save">Save to Cloud Now</button>
+      <button id="cloud-reload">Reload from Cloud</button>
+      <button id="auth-signout">Logout</button>
+      <span id="cloud-status-2"></span>
+    </div>
+  </div>
+
+  <div class="charsheet">
+    <div class="charsheet-title">Character Sheet</div>
+    <div class="charsheet-grid">
+      <div class="charsheet-field">
+        <label for="ci-name">Name</label>
+        <input type="text" id="ci-name" data-ci="name" oninput="onCharInfoChange()">
+      </div>
+      <div class="charsheet-field">
+        <label for="ci-race">Race</label>
+        <input type="text" id="ci-race" data-ci="race" oninput="onCharInfoChange()">
+      </div>
+      <div class="charsheet-field">
+        <label for="ci-rank">Rank</label>
+        <input type="text" id="ci-rank" data-ci="rank" oninput="onCharInfoChange()">
+      </div>
+      <div class="charsheet-field wide">
+        <label>Base Stats</label>
+        <div class="stat-row">
+          <div class="stat-mini"><label for="ci-body-base">Body</label><input type="text" id="ci-body-base" data-ci="body_base" oninput="onCharInfoChange()"></div>
+          <div class="stat-mini"><label for="ci-mind-base">Mind</label><input type="text" id="ci-mind-base" data-ci="mind_base" oninput="onCharInfoChange()"></div>
+          <div class="stat-mini"><label for="ci-spirit-base">Spirit</label><input type="text" id="ci-spirit-base" data-ci="spirit_base" oninput="onCharInfoChange()"></div>
+          <div class="stat-mini"><label for="ci-armor-base">Armor</label><input type="text" id="ci-armor-base" data-ci="armor_base" oninput="onCharInfoChange()"></div>
+          <div class="stat-mini"><label for="ci-rank-base">Rank</label><input type="text" id="ci-rank-base" data-ci="rank_stat_base" oninput="onCharInfoChange()"></div>
+        </div>
+      </div>
+      <div class="charsheet-field wide">
+        <label>Current Stats</label>
+        <div class="stat-row">
+          <div class="stat-mini"><label for="ci-body-cur">Body</label><input type="text" id="ci-body-cur" data-ci="body_current" oninput="onCharInfoChange()"></div>
+          <div class="stat-mini"><label for="ci-mind-cur">Mind</label><input type="text" id="ci-mind-cur" data-ci="mind_current" oninput="onCharInfoChange()"></div>
+          <div class="stat-mini"><label for="ci-spirit-cur">Spirit</label><input type="text" id="ci-spirit-cur" data-ci="spirit_current" oninput="onCharInfoChange()"></div>
+          <div class="stat-mini"><label for="ci-armor-cur">Armor</label><input type="text" id="ci-armor-cur" data-ci="armor_current" oninput="onCharInfoChange()"></div>
+          <div class="stat-mini"><label for="ci-rank-cur">Rank</label><input type="text" id="ci-rank-cur" data-ci="rank_stat_current" oninput="onCharInfoChange()"></div>
+          <div class="stat-mini reset-time"><label for="ci-reset-time">Reset Time</label><input type="datetime-local" id="ci-reset-time" data-ci="reset_time" oninput="onCharInfoChange()"></div>
+        </div>
+      </div>
+      <div class="charsheet-field">
+        <label for="ci-tradeskill">Tradeskill</label>
+        <input type="text" id="ci-tradeskill" data-ci="tradeskill" oninput="onCharInfoChange()">
+      </div>
+      <div class="charsheet-field wide">
+        <label for="ci-abilities">Special Abilities</label>
+        <textarea id="ci-abilities" data-ci="abilities" oninput="onCharInfoChange()"></textarea>
+      </div>
+      <div class="charsheet-field wide">
+        <label for="ci-weakness">Weakness</label>
+        <textarea id="ci-weakness" data-ci="weakness" oninput="onCharInfoChange()"></textarea>
+      </div>
+      <div class="charsheet-field wide">
+        <label for="ci-inventory">Inventory</label>
+        <textarea id="ci-inventory" data-ci="inventory" oninput="onCharInfoChange()"></textarea>
+      </div>
+      <div class="charsheet-field wide">
+        <label for="ci-weapons">Weapons / Weapon Skills</label>
+        <textarea id="ci-weapons" data-ci="weapons" oninput="onCharInfoChange()"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="alignment-box">
+    <label class="alignment-label" style="color: var(--light-accent)">
+      <input type="checkbox" id="filter-light" checked onchange="onFilterChange()"> Light Magic Allowed
+    </label>
+    <label class="alignment-label" style="color: var(--dark-accent)">
+      <input type="checkbox" id="filter-dark" onchange="onFilterChange()"> Dark Magic Allowed
+    </label>
+  </div>
+
+  <div class="statbar">
+    <div class="stat-pill"><span class="num" id="stat-learned">0</span><span class="lbl">Spells Learned</span></div>
+    <div class="stat-pill warn"><span class="num" id="stat-missing">0</span><span class="lbl">Spells Missing</span></div>
+    <div class="stat-pill savant"><span class="num" id="stat-savant">0 / 3</span><span class="lbl">Savant Orders</span></div>
+    <div class="stat-pill"><span class="num" id="stat-oracle">0</span><span class="lbl">Oracle Orders</span></div>
+    <div class="stat-pill mastered"><span class="num" id="stat-mastered">0 / 0</span><span class="lbl">Schools Mastered</span></div>
+  </div>
+
+  <div class="toolbar">
+    <input type="text" id="search" placeholder="Search a spell...">
+    <button id="reset-all">Reset all checks</button>
+    
+    <div class="toolbar-sep"></div>
+    
+    <button id="export-char" onclick="exportCharacter()">Copy Export Code</button>
+    <button id="import-char" onclick="importCharacter()">Import Character</button>
+    
+    <span id="save-note"></span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <footer>Progress saves automatically to your local storage. Cloud saving only happens when you click "Save to Cloud Now" while logged in.</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ---------- DATA ---------- */
+// type: 'neutral' | 'light' | 'dark'
+// groups: array of { label, key, spells:[{id,latin,en,learned}] }
+// tier: 'main' | 'savant' | 'oracle' | 'special'
+
+function S(id, latin, en, learned){ return {id, latin, en, learned: !!learned}; }
+
+const SCHOOLS = [
+  {
+    key:'conjuration', name:'Book of Conjuration', type:'neutral',
+    groups:[
+      {label:'All Ranks', tier:'main', spells:[
+        S('conj_aufer','Aufer Materia','Remove Item'),
+        S('conj_cibus','Cibus et Potio','Create Food and Drink'),
+        S('conj_diff','Difficilis Materia','Difficult Item'),
+        S('conj_excand','Excandescunt Volucres','Flare Birds'),
+        S('conj_gemin','Geminae Golems','Twin Golems'),
+        S('conj_magiam','Magiam Detegere','Detect Magic', true),
+        S('conj_manentia','Manentia','Permanency'),
+        S('conj_obarma','Obtestor Arma','Conjure Weapon', true),
+        S('conj_obarmis','Obtestor Armis','Conjure Armor', true),
+        S('conj_securus','Securus Materia','Simple Item'),
+        S('conj_scutum','Scutum Adamantinum','Adamantine Shield'),
+        S('conj_striges','Striges Iuniperorum',"Witches Broom"),
+        S('conj_telae','Telae Adhaerentes','Clinging Webs'),
+        S('conj_vita','Vita Temporaria','Temporary Life'),
+      ]},
+      {label:'Savant Spells', tier:'savant', spells:[
+        S('conj_sv_conv','Convivia Victoriae','Victory Feast'),
+        S('conj_sv_mirr','Magicae Speculum','Magic Mirror'),
+        S('conj_sv_prov','Provectus Armis','Advanced Armor'),
+      ]},
+      {label:'Oracle Spells', tier:'oracle', spells:[
+        S('conj_or_arm',"Armatura Inexpugnabilis Virium","Impregnable Armor of Might"),
+      ]},
+    ]
+  },
+  {
+    key:'ecomancy', name:'Book of Ecomancy', type:'neutral',
+    groups:[
+      {label:'All Ranks', tier:'main', spells:[
+        S('eco_ampelos','Ampelos Agria laqueum','Vine Trap'),
+        S('eco_camo','Camouflage Chamaeleonis','Chameleon Camouflage'),
+        S('eco_cortex','Cortex Manicae','Gauntlets of Bark', true),
+        S('eco_melodiam','Melodiam Sanitatem','Melody of Healing'),
+        S('eco_raff','Rafflesia','Parasitic Plant', true),
+        S('eco_urtica','Urtica dioica','Thorn Whip'),
+        S('eco_uniflora','Uniflora Caulis','One Flowered Stem'),
+        S('eco_venenum','Venenum Spinae','Poison Thorns', true),
+        S('eco_vulpes','Vulpes Vociferatio','Vixen Scream'),
+      ]},
+      {label:'Savant Spells', tier:'savant', spells:[
+        S('eco_sv_arbor','Arbor Cor','Arbor Heart'),
+        S('eco_sv_ignis','Ignis Fugit','Fyre Flies'),
+        S('eco_sv_venator','Venator Sensus','Hunter Sense'),
+      ]},
+      {label:'Oracle Spells', tier:'oracle', spells:[
+        S('eco_or_naturas','Naturas Iram',"Nature's Wrath"),
+      ]},
+    ]
+  },
+  {
+    key:'elemental', name:'Elemental Magic', type:'neutral',
+    groups:[
+      {label:'All Ranks', tier:'main', spells:[
+        S('ele_aqua_ice','Aqua est Glacies','Water to Ice'),
+        S('ele_aquae_crea','Aquae Crea','Create Water', true),
+        S('ele_aquae_prox','Aquae Proxima','Water Trap'),
+        S('ele_circulus','Circulus Ignis','Ring of Fire'),
+        S('ele_flatus','Flatus Ventus','Gust of Wind'),
+        S('ele_fulmen','Fulmen','Lightning'),
+        S('ele_fulmen_prox','Fulmen Proxima','Lightning Trap'),
+        S('ele_globus','Globus Ignis','Ball of Fire'),
+        S('ele_ignis_prox','Ignis Proxima','Flame Trap'),
+        S('ele_lapis','Lapis Carceris','Stone Prison'),
+        S('ele_parva','Parva Ignis','Small Flame', true),
+        S('ele_petra','Petra Malleus','Rock Hammer'),
+        S('ele_sphaera','Sphaera Aquae','Sphere of Water'),
+        S('ele_terra_crea','Terra Crea','Create Earth'),
+        S('ele_terra_prox','Terra Proxima','Earth Trap'),
+        S('ele_vortex','Vortex','Whirlwind'),
+        S('ele_ignus_flag','Ignus Flagellum','Flame Whip'),
+        S('ele_glacies','Glacies Hasta','Ice Spear'),
+        S('ele_zephyr','Zephyr Arcus','Wind Bow'),
+        S('ele_comminutio','Comminutio Petra','Shattering Rock'),
+      ]},
+      {label:'Savant Spells', tier:'savant', spells:[
+        S('ele_sv_furia','Natura Furia',"Nature's Fury"),
+        S('ele_sv_mantel','Natura Mantellum',"Nature's Mantle"),
+      ]},
+      {label:'Oracle Spells', tier:'oracle', spells:[
+        S('ele_or_malum','Natura Malum',"Nature's Catastrophe"),
+      ]},
+    ]
+  },
+  {
+    key:'illusion', name:'Book of Illusion', type:'neutral',
+    groups:[
+      {label:'All Ranks', tier:'main', spells:[
+        S('ill_caecus','Caecus','Invisibility', true),
+        S('ill_disguise','Disguise Te Ipsum','Disguise Self'),
+        S('ill_falsa_arma','Falsa Arma','Illusiory Weapon', true),
+        S('ill_falsus_con','Falsus Construe','False Construct'),
+        S('ill_falsa_imago','Falsa Imago','False Image'),
+        S('ill_lux_ref','Lux Refulgeo','Light Flash', true),
+        S('ill_pulsus','Pulsus Lucis','Pulse of Light', true),
+        S('ill_speculum','Speculum Imaginum','Mirror Image'),
+        S('ill_subtilis','Subtilis Speculator','Subtle Spy'),
+        S('ill_tacitum','Tacitum','Quiet'),
+        S('ill_verum','Verum Timor','True Fear', true),
+      ]},
+      {label:'Savant Spells', tier:'savant', spells:[
+        S('ill_sv_intell','Intellectus Commotus','Mind Quake'),
+        S('ill_sv_sensus','Sensus Obrue','Overwhelm Senses'),
+        S('ill_sv_sympath','Sympatheticus Damnum','Sympathetic Damage'),
+      ]},
+      {label:'Oracle Spells', tier:'oracle', spells:[
+        S('ill_or_mundus','Falsus Mundus','False World'),
+        S('ill_or_mens','Mens Florens','Mind Bloom'),
+      ]},
+    ]
+  },
+  {
+    key:'phantasm', name:'Book of Phantasm', type:'neutral',
+    groups:[
+      {label:'All Ranks', tier:'main', spells:[
+        S('pha_armatura','Armatura Ectoplasmatia','Ecto Plasma Armor'),
+        S('pha_fulmen','Fulmen Phantasmalis','Phantom Bolt'),
+        S('pha_iter','Iter Spiritus','Ghost Walk', true),
+        S('pha_manus_pha','Manus Phantasmalis','Phantasmal Hand'),
+        S('pha_medicina','Medicina Etherea','Ethereal Mend', true),
+        S('pha_explorator','Spiritus Explorator','Spectral Reconnaissance'),
+        S('pha_lamina','Spiritus Lamina','Spirit blade'),
+        S('pha_loquere','Spiritus Loquere','Spirit speak'),
+        S('pha_magistri','Manus Magistri','Hands of the Master', true),
+      ]},
+      {label:'Savant Spells', tier:'savant', spells:[
+        S('pha_sv_custos','Phantasma Custos','Spectral Guardian'),
+      ]},
+      {label:'Oracle Spells', tier:'oracle', spells:[
+        S('pha_or_nova','Nova Spectralis','Spectral Nova'),
+      ]},
+    ]
+  },
+  {
+    key:'spatial', name:'Book of Spatial', type:'neutral',
+    groups:[
+      {label:'All Ranks', tier:'main', spells:[
+        S('spa_contritio','Contritio Gravitas','Crushing Gravity', true),
+        S('spa_ianuae','Ianuae','Teleport', true),
+        S('spa_ostium_m','Magicae Ostium','Magic Door', true),
+        S('spa_oculi','Oculi Veritatis','Eyes of Truth', true),
+        S('spa_ostium','Ostium','Portal', true),
+        S('spa_planum','Planum Ambula','Planes Walk', true),
+        S('spa_resolvo','Resolvo','Dispell', true),
+        S('spa_scutum','Scutum','Shield', true),
+        S('spa_stella','Stella Mantellum','Star Mantle', true),
+        S('spa_trabs','Trabs Astra','A Beam of Stars', true),
+      ]},
+      {label:'Savant Spells', tier:'savant', spells:[
+        S('spa_sv_caeli','Caeli Portae',"Heaven's Gates"),
+        S('spa_sv_dimensio','Dimensio Vulnus','Dimension slash'),
+        S('spa_sv_eversio','Eversio Spatii','Spatial Collapse'),
+      ]},
+      {label:'Oracle Spells', tier:'oracle', spells:[
+        S('spa_or_pila','Pila Ex Spatio','Ball of Space'),
+      ]},
+    ]
+  },
+  {
+    key:'summoning', name:'Books of Summoning', type:'neutral',
+    groups:[
+      {label:'Lesser Summoning — All Ranks', tier:'main', spells:[
+        S('sum_angelus','Angelus Cadens','Fallen Angels'),
+        S('sum_ignis_ren','Ignis Renascens','Phoenix Rite'),
+        S('sum_aula','Aula Reginae',"The Queen's Court"),
+        S('sum_noctis','Noctis Volucris','Lord of the Night Swarm'),
+        S('sum_arbor_asc','Arbor Ascendens','Rising Wood'),
+        S('sum_mycelium','Mycelium Ascendens','Rising Fungus'),
+        S('sum_simia_sax','Simia Saxea','Stoneborne Apes'),
+        S('sum_torva_min','Torva Messor Minor','Aspect of the Reaper'),
+        S('sum_custos_min','Custos Magicae Minor','Aspect of the Guardian'),
+      ]},
+      {label:'Named Summoning — All Ranks', tier:'main', spells:[
+        S('sum_ortus','Ortus Phoenix','Rise of the Phoenix'),
+        S('sum_regina','Regina Fae','Queen of the Fae'),
+        S('sum_dominus','Dominus Lamia','Lord Dracula'),
+        S('sum_rex','Rex Simia','Mountain Kong'),
+        S('sum_torva','Torva Messor','The Grim Reaper'),
+        S('sum_custos','Custos Magicae','Guardian of Magic'),
+      ]},
+      {label:'Savants', tier:'savant', spells:[
+        S('sum_sv_lumen','Lumen Fractum','Lucifer, the Lightbearer'),
+        S('sum_sv_abyssus','Abyssus Kraken','Abyssal Kraken'),
+        S('sum_sv_vinculum','Vinculum Familiaris','Bound Familiar'),
+      ]},
+      {label:'Oracle-Savants', tier:'special', spells:[
+        S('sum_os_domina','Domina Draconum','Tiamat'),
+      ]},
+      {label:'Triumvirate', tier:'special', spells:[
+        S('sum_tri_nox','Nox Gargouille','Night of the Gargoyles'),
+      ]},
+    ]
+  },
+  {
+    key:'transmutation', name:'Book of Transmutation', type:'neutral',
+    groups:[
+      {label:'All Ranks', tier:'main', spells:[
+        S('tra_aetherius','Aetherius','Ethreal'),
+        S('tra_exscindo','Exscindo','Destroy'),
+        S('tra_festinatio','Festinatio','Haste'),
+        S('tra_figura_el','Figura Elementa','Shape Elements'),
+        S('tra_mutare_al','Mutare Alium','Change Another'),
+        S('tra_mutare_el','Mutare Elementa','Change The Elements'),
+        S('tra_muto_sese','Muto Sese','Change Self'),
+        S('tra_reformatio','Reformatio','Reform'),
+        S('tra_tardus','Tardus','Slow'),
+      ]},
+      {label:'Any Fae Race', tier:'main', spells:[
+        S('tra_faerie','Faerie Fire','Faerie Fire'),
+      ]},
+      {label:'Savant Spells', tier:'savant', spells:[
+        S('tra_sv_aleratio','Aleratio Concretio','Matter Manipulation'),
+        S('tra_sv_figura','Figura Mutatio','Shape Change'),
+      ]},
+      {label:'Oracle Spells', tier:'oracle', spells:[
+        S('tra_or_tempus','Tempus Sistere','Time Stop'),
+      ]},
+      {label:'Keeper of Knowledge / Custodians', tier:'special', spells:[
+        S('tra_kk_commutate','Commutate Alicia','Transmute Spell'),
+      ]},
+    ]
+  },
+  {
+    key:'abjuration', name:'Book of Abjuration', type:'light',
+    groups:[
+      {label:'All Ranks', tier:'main', spells:[
+        S('abj_benedicite','Benedicite','Bless'),
+        S('abj_corporis','Corporis Nexum','Body Link', true),
+        S('abj_custodiae','Custodiae','Protection'),
+        S('abj_dimensionem','Dimensionem Anchoram','Dimensional Anchor'),
+        S('abj_entropus','Entropus Scutum','Entropic Shield'),
+        S('abj_lituus','Lituus','Alarm'),
+        S('abj_murus','Murus Virium','Wall of Force'),
+        S('abj_non_vident','Non Vident','Non Detection'),
+        S('abj_rakaane','Rakaane Clostruum','Arcane Lock', true),
+        S('abj_resistere','Resistere Vis','Resist Energy'),
+      ]},
+      {label:'Mastered Above Spells', tier:'main', spells:[
+        S('abj_exilium','Exilium','Banishment'),
+      ]},
+      {label:'Savant Spells', tier:'savant', spells:[
+        S('abj_sv_libertas','Libertas','Freedom'),
+      ]},
+      {label:'Oracle Spells', tier:'oracle', spells:[
+        S('abj_or_disiunctio','Disiunctio','Disjunction'),
+      ]},
+    ]
+  },
+  {
+    key:'healing', name:'Book of Healing', type:'light',
+    groups:[
+      {label:'All Ranks', tier:'main', spells:[
+        S('heal_essentia','Essentia Restiture','Restoration of the Essence', true),
+        S('heal_exsercio','Exsercio','Exorcism', true),
+        S('heal_pharus','Pharus de Lux','Aura of Healing', true),
+        S('heal_purgo_anima','Purgo Anima','Purge Impurities of the Mind', true),
+        S('heal_purgo_caro','Purgo Caro','Purge Impurities of the Flesh', true),
+        S('heal_restiture_artus','Restiture Artus','Severe Restoration', true),
+        S('heal_restiture_min','Restiture Minutia','Minor Restoration', true),
+        S('heal_restituere_sui','Restituere Sui','Self Restoration', true),
+        S('heal_sanatio','Sanatio Cercis','Wingspan of Healing', true),
+        S('heal_vigilia','Vigilia Animae','Vigil over the Soul', true),
+      ]},
+      {label:'Savant Spells', tier:'savant', spells:[
+        S('heal_sv_anastasis','Anastasis','Resurrection'),
+      ]},
+    ]
+  },
+  {
+    key:'holyfire', name:'Book of Holyfire', type:'light',
+    groups:[
+      {label:'All Ranks', tier:'main', spells:[
+        S('holy_daemonium','Daemonium Finis','Spear of Holyfire'),
+        S('holy_ignis_sanctus','Ignis Sanctus Captus','Holy Shackles', true),
+        S('holy_sancta_flamma','Sancta Flamma','Holy Fireball', true),
+        S('holy_sancta_unda','Sancta Unda','Holy Wave'),
+        S('holy_sancti_sigilli','Sancti Sigilli',"Saint's Seal"),
+        S('holy_purgatorium','Sanctum Purgatorium','Holy Purgatory'),
+        S('holy_eryx','Sanctus Eryx',"Saint's Gauntlets"),
+        S('holy_murus','Sanctus Murus','Holy Wall'),
+        S('holy_pluviae','Sanctus Pluviae',"Saint's Rain"),
+        S('holy_eruptio','Sanctum Eruptio','Holy Eruption'),
+      ]},
+      {label:'Savant Spells', tier:'savant', spells:[
+        S('holy_sv_flagrans','Flagrans Orbis','Flaming Orbs'),
+        S('holy_sv_sanctis','Sanctis Inspirare','Empower'),
+      ]},
+      {label:'Oracle Spells', tier:'oracle', spells:[
+        S('holy_or_sonet','Sonet Primus','Sound the First Trumpet'),
+      ]},
+    ]
+  },
+  {
+    key:'judgement', name:'Book of Judgement', type:'light',
+    groups:[
+      {label:'Low Judgements — All Ranks', tier:'main', spells:[
+        S('jud_aura_gratiae','Aura Gratiae','Aura of Grace'),
+        S('jud_dubium','Dubium Justicii','Judgment of doubt'),
+        S('jud_increpa','Increpa turpes','Rebuke the Vile'),
+        S('jud_iudicium_pugnam','Iudicium per Pugnam','Trial by Combat'),
+        S('jud_ultionis','Judicii Ultionis','Judgment of Retribution'),
+        S('jud_iustus','Iustus Ultor','Righteous Avenger'),
+        S('jud_percute','Percute Rios','smite the guilty'),
+      ]},
+      {label:'Low Savants', tier:'savant', spells:[
+        S('jud_sv_fortunae','Aura Fortunae','Aura of Luck'),
+        S('jud_sv_malleus','Malleus Iustitiae','Hammer of Justice'),
+      ]},
+      {label:'High Judgements — All Ranks', tier:'main', spells:[
+        S('jud_fortuna_adversa','Fortuna Adversa Judicii','Judgment of Ill Fortune'),
+        S('jud_servitutis','Iudicium Servitutis','Judgment of Servitude'),
+      ]},
+      {label:'High Savants', tier:'savant', spells:[
+        S('jud_sv_paenitentia','Paenitentia Judicii','Judgment of Penance'),
+        S('jud_sv_pestilentia','Pestilentia Judicii','Judgment of Pestilence'),
+      ]},
+      {label:'Oracle', tier:'oracle', spells:[
+        S('jud_or_pestis','Pestis Locustarum Judicii','Plague of Locusts Judgment'),
+      ]},
+    ]
+  },
+  {
+    key:'light', name:'Book of Light', type:'light',
+    groups:[
+      {label:'All Ranks', tier:'main', spells:[
+        S('lig_custos','Custos Luminis','Keeper of Light'),
+        S('lig_lamina','Lamina Lucis','Blades of Light'),
+        S('lig_caelorum','Lux Caelorum','Light of Heavens'),
+        S('lig_geminae','Lux Geminae','Light Twin'),
+        S('lig_perforans','Perforans Sagitta','Piercing Arrow'),
+        S('lig_trabem','Trabem Caeca','Blinding Beam'),
+      ]},
+      {label:'Angelics — All Ranks', tier:'main', spells:[
+        S('lig_alis','Alis Lucis','Wings of Light'),
+      ]},
+      {label:'Savant Spells', tier:'savant', spells:[
+        S('lig_sv_columna','Columna Caeli','Column of Heaven'),
+      ]},
+      {label:'Oracle Spells', tier:'oracle', spells:[
+        S('lig_or_fulgur','Fulgur Percutiens','Lightning Strikes'),
+      ]},
+    ]
+  },
+  {
+    key:'martyrdom', name:'Book of Martyrdom', type:'light',
+    groups:[
+      {label:'All Ranks', tier:'main', spells:[
+        S('mar_connexum','Connexum','Bound Together'),
+        S('mar_immolare','Immolare','Immolate'),
+        S('mar_oblatio','Oblatio Doloris','Offering of Pain'),
+        S('mar_onus','Onus Culpae','Burden of Guilt'),
+        S('mar_sanguis_bene','Sanguis Benedictionis','Blood Blessing'),
+        S('mar_sanguis_dec','Sanguis Decimam','Blood Tithe'),
+        S('mar_scutum','Scutum Sanguinis','Blood Shield'),
+        S('mar_vexilliferum','Vexilliferum Doloris','Bearer of Pain'),
+      ]},
+      {label:'Savant Spells', tier:'savant', spells:[
+        S('mar_sv_agnus','Agnus Immolatus','Sacrificial Lamb'),
+        S('mar_sv_digrediens','Digrediens Donum','Parting Gift'),
+      ]},
+      {label:'Oracle Spells', tier:'oracle', spells:[
+        S('mar_or_sanguinis','Sanguinis Martyris','Blood of the Martyr'),
+      ]},
+    ]
+  },
+  {
+    key:'necromancy', name:'Book of Necromancy', type:'dark',
+    groups:[
+      {label:'All Ranks', tier:'main', spells:[
+        S('nec_animata','Animata Mortuus','Animate Dead'),
+        S('nec_imperium','Imperium Inmortuae','Control Undead'),
+        S('nec_infunde','Infunde Inmortuae','Infuse Undead'),
+        S('nec_macabe','Macabe Loquere','Death Speak'),
+        S('nec_manus','Manus Mortuorum','Hands of the Dead'),
+        S('nec_mors_lig','Mors Ligatus','Death Bound'),
+        S('nec_mors_tac','Mors Tactus','Death Touch'),
+        S('nec_mortuus','Mortuus Ambulatio','The Walking Dead'),
+        S('nec_pest_fulm','Pestilentia Fulmen','Plague Bolt'),
+        S('nec_pest_pluv','Pestilentia Pluviae','Plague Rain'),
+        S('nec_vita','Vita Furtum','Life Theft'),
+        S('nec_verutum','Verutum Osseum','Bone Javelin'),
+      ]},
+      {label:'Praetorians and Savants', tier:'savant', spells:[
+        S('nec_pr_equit','Equitum mortuorum','Cavalry of the Dead'),
+      ]},
+      {label:'Savant Spells', tier:'savant', spells:[
+        S('nec_sv_exerc','Exercitus Mortuorum','Army of the Dead'),
+      ]},
+      {label:'Oracle Spells', tier:'oracle', spells:[
+        S('nec_or_blight','Blightfire Dohereās','Summon Blightfire'),
+      ]},
+      {label:'Triumvirate Araton Only', tier:'special', spells:[
+        S('nec_tri_torm','Tormentis Immortuos','Undead Artillery'),
+      ]},
+    ]
+  },
+  {
+    key:'blood', name:'Book of Blood', type:'dark',
+    groups:[
+      {label:'All Ranks', tier:'main', spells:[
+        S('bld_acidum','Acidum Pro Sanguine','Acid for Blood'),
+        S('bld_corpus','Corpus Duplex','Blood Double'),
+        S('bld_gustus','Gustus Sanguinis','The Taste of Blood'),
+        S('bld_illimitata','Illimitata Infinita','Unlimited Power'),
+        S('bld_infusus','Infusus Sanguine','Infusion of Blood'),
+        S('bld_sang_ferv','Sanguis Fervo','Blood Boil'),
+        S('bld_sang_flag','Sanguis Flagellum','Blood Whip'),
+        S('bld_sang_furt','Sanguis Furtum','Blood Theft'),
+        S('bld_sang_iram','Sanguis Iram','Blood Rage'),
+        S('bld_sang_tel','Sanguis Telum','Blood Bolt'),
+        S('bld_venenum','Venenum Sanguinem','Venorous Blood'),
+      ]},
+      {label:'Savant Spells', tier:'savant', spells:[
+        S('bld_sv_vita','Sanguis vita Est','Blood is the Life'),
+        S('bld_sv_fervo','Sanginis Fervo','Blood Storm'),
+      ]},
+      {label:'Oracle Spells', tier:'oracle', spells:[
+        S('bld_or_dom','Sanguis Dominus','Blood Domination'),
+      ]},
+    ]
+  },
+  {
+    key:'hexes', name:'Hexes & True Curses', type:'dark',
+    groups:[
+      {label:'Hexes — All Ranks', tier:'main', spells:[
+        S('hex_ossium','Ossium Confractio','Bone Shatter'),
+        S('hex_ad_mortem','Ad Mortem Signatus','Marked for Death'),
+        S('hex_oculus','Oculus Malus','Evil Eye'),
+        S('hex_pestis','Pestis Murium','Plague of Rats'),
+        S('hex_lamentatio','Lamentatio Tristis','Baleful Keening'),
+        S('hex_miasma','Miasma Foetidum','Fetid Miasma'),
+        S('hex_ineptus','Ineptus Maledicta','Clumsy Curse'),
+      ]},
+      {label:'Hexes — Savants', tier:'savant', spells:[
+        S('hex_sv_dolor','Dolor Torquens','Writhing Pain'),
+      ]},
+      {label:'True Curses — All Ranks', tier:'main', spells:[
+        S('cur_duplicatum','Duplicatum Maleficum','Doppelganger'),
+        S('cur_incoherentiae','Incoherentiae Maledictio','curse of incoherence'),
+        S('cur_canis','Canis Mali Ominis','Hound of Ill Omen'),
+        S('cur_maledictio_corp','Maledictio Corporis Torti','Twisted Body'),
+      ]},
+      {label:'True Curses — Oracle', tier:'oracle', spells:[
+        S('cur_or_mortis','Maledictio Mortis Rubrae','Curse of the Red Death'),
+      ]},
+    ]
+  },
+  {
+    key:'fleshcrafting', name:'Book of Fleshcrafting', type:'dark',
+    groups:[
+      {label:'All Ranks', tier:'main', spells:[
+        S('fls_carnem','Carnem Calcaria','The Flesh of Spurs'),
+        S('fls_caro_put','Caro Putredo','Rotten Flesh'),
+        S('fls_dolor','Dolor ut Voluptas','Pain as Pleasure'),
+        S('fls_expurgate','Expurgate Carnem','Cleanse the Flesh'),
+        S('fls_forma','Forma Immanis','Monstrous Form'),
+        S('fls_interiorem','Interiorem Dominum','Inner Mastery'),
+        S('fls_mutare','Mutare Os','Alter Bone'),
+        S('fls_mutationem','Mutationem Sui','Change Self'),
+        S('fls_muto','Muto Corpus','Change Flesh'),
+        S('fls_caro_ad','Caro ad Os','Flesh to Bone'),
+        S('fls_lingua','Lingua Verberans','Lashing Tongue'),
+        S('fls_cutis','Cutis Lubrica','Slippery Skin'),
+        S('fls_membra','Membra Lacertae','Lizard Limbs'),
+      ]},
+      {label:'Savant Spells', tier:'savant', spells:[
+        S('fls_sv_corpus','Corpus Reformationis','The Body of Reformation'),
+        S('fls_sv_reditus','Reditus ad Formam','Return to Form'),
+        S('fls_sv_pupa','Pupa Carnis','Meat Puppet'),
+        S('fls_sv_nodus','Nodus Carcinis','Cancerous Knot'),
+      ]},
+      {label:'Savant Mutations', tier:'savant', spells:[
+        S('fls_sv_carnis','Carnis Alis','Fleshbound Wings'),
+        S('fls_sv_crurai','Crurai Abyssi','Abyssal Legs'),
+        S('fls_sv_proboskis','Proboskis Abyssi','Abyssal Proboscis'),
+        S('fls_sv_spina_car','Spina Carapace','Horned Carapace'),
+        S('fls_sv_stimulus','Stimulus Abyssi','Abyssal Stinger'),
+        S('fls_sv_ungues','Ungues Abyssi Cancri','Abyssal Crab Claws'),
+      ]},
+      {label:'Oracle Spells', tier:'oracle', spells:[
+        S('fls_or_spina','Spina Glomerorum','Spine Spores'),
+        S('fls_or_tolerare','Tolerare','Endure'),
+        S('fls_or_ars','Ars Contorta','Twisted Art'),
+      ]},
+    ]
+  },
+  {
+    key:'hellfire', name:'Book of Hellfire', type:'dark',
+    groups:[
+      {label:'All Ranks', tier:'main', spells:[
+        S('hel_aeternum','Aeternum Tormentum','Eternal Torment'),
+        S('hel_angelus','Angelus Finis','Spear of Hellfire'),
+        S('hel_gehennam_ir','Gehénnam Iracundia','Hellfire Pulse'),
+        S('hel_gehennam_mu','Gehénnam Murus','Wall of Hellfire'),
+        S('hel_ignis','Ignis Regnum','Hellfire Glyph'),
+        S('hel_imber','Imber Ignis','Hellfire Rain'),
+        S('hel_infurnum_ig','Infurnum Ignis','Ball of Hellfire'),
+        S('hel_infurnum_ma','Infurnum Manicae','Hellfire Gauntlets'),
+        S('hel_infurnum_vi','Infurnum Vinctum','Hellfire Shackles'),
+      ]},
+      {label:'Savant Spells', tier:'savant', spells:[
+        S('hel_sv_flagrans','Flagrans Calvaria','Screaming Hellfire Skulls'),
+      ]},
+      {label:'Oracle Spells', tier:'oracle', spells:[
+        S('hel_or_chorum','Chorum Damnatorum','Chorus of the Damned'),
+        S('hel_or_dominium','Ignis Dominum','Hellfire Domain'),
+      ]},
+    ]
+  },
+  {
+    key:'shadows', name:'Book of Shadows', type:'dark',
+    groups:[
+      {label:'All Ranks', tier:'main', spells:[
+        S('shd_imperium','Imperium Umbrae','Control Shadows'),
+        S('shd_mutatio','Mutatio Obscura','Dark Transformation'),
+        S('shd_umbra_amb','Umbra Ambulate','Shadow Walk'),
+        S('shd_umbra_did','Umbra Didimus','Shadow Twin'),
+        S('shd_umbra_ex','Umbra Exilium','Shadow Exile'),
+        S('shd_umbra_ful','Umbra Fulmen','Shadow Lightning'),
+        S('shd_umbra_int','Umbra Integumentum','Shadow Cover'),
+        S('shd_umbra_vin','Umbra Vincla','Shadow Bind'),
+        S('shd_vis','Visus Tenebrosus','Shadow Sight'),
+      ]},
+      {label:'Savant Spells', tier:'savant', spells:[
+        S('shd_sv_tenebrae','Tenebrae Aeternae','Darkness Eternal'),
+      ]},
+      {label:'Oracle Spells', tier:'oracle', spells:[
+        S('shd_or_hirudo','Umbra Hirudo','Shadow Leech'),
+      ]},
+    ]
+  }
+];
+
+const MAX_SAVANT = 3;
+const STORAGE_KEY = 'tracker-state-v2';
+
+/* ---------- CLOUD SYNC (Supabase Auth) ---------- */
+const SUPABASE_URL = 'https://jrtnlfqjwxdnlqcibciv.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpydG5sZnFqd3hkbmxxY2liY2l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMTczODYsImV4cCI6MjA5ODg5MzM4Nn0.S7tRQL4oV1OBQlzs72QbltTRiWyXPHjCNsA0HtcSnKE';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let currentUser = null;
+
+const CHAR_INFO_FIELDS = [
+  'name','race','rank','tradeskill','abilities','weakness','inventory','weapons',
+  'body_base','mind_base','spirit_base','armor_base','rank_stat_base',
+  'body_current','mind_current','spirit_current','armor_current','rank_stat_current',
+  'reset_time'
+];
+
+let state = {
+  learned: {},   
+  savant: {},    
+  oracle: {},    
+  collapsed: {}, 
+  showLight: true,
+  showDark: false,
+  charInfo: {}
+};
+
+function buildDefaults(){
+  const defaults = {};
+  SCHOOLS.forEach(sch => sch.groups.forEach(g => g.spells.forEach(sp => {
+    defaults[sp.id] = !!sp.learned;
+  })));
+  return defaults;
+}
+const DEFAULT_LEARNED = buildDefaults();
+
+function isLearned(id){
+  return state.learned.hasOwnProperty(id) ? state.learned[id] : DEFAULT_LEARNED[id];
+}
+function setLearned(id, val){
+  state.learned[id] = val;
+  persist();
+}
+
+function saveState(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  const note=document.getElementById('save-note');
+  note.textContent='Saved ✓';
+  clearTimeout(window._saveTimer);
+  window._saveTimer=setTimeout(()=>note.textContent='',1200);
+}
+function persist(){
+  saveState();
+}
+
+function setCloudStatus(msg, isError){
+  ['cloud-status','cloud-status-2'].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.textContent = msg;
+    el.style.color = isError ? 'var(--danger)' : '';
+  });
+}
+
+async function saveToCloud(showStatus){
+  if(!currentUser){
+    if(showStatus) setCloudStatus('Please log in first.', true);
+    return;
+  }
+  if(showStatus) setCloudStatus('Saving...');
+  try{
+    const { error } = await supabaseClient
+      .from('characters')
+      .upsert({ user_id: currentUser.id, data: state, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+    if(error){
+      setCloudStatus('Error: ' + error.message, true);
+      return;
+    }
+    if(showStatus) setCloudStatus('Saved to cloud ✓');
+    else { setCloudStatus('Cloud sync ✓'); clearTimeout(window._cloudNoteTimer); window._cloudNoteTimer=setTimeout(()=>setCloudStatus(''),1500); }
+  }catch(e){
+    setCloudStatus('Network error while saving to cloud.', true);
+  }
+}
+
+async function loadFromCloud(){
+  if(!currentUser) return;
+  setCloudStatus('Loading from cloud...');
+  try{
+    const { data, error } = await supabaseClient
+      .from('characters')
+      .select('data')
+      .eq('user_id', currentUser.id)
+      .maybeSingle();
+    if(error){
+      setCloudStatus('Error: ' + error.message, true);
+      return;
+    }
+    if(!data){
+      setCloudStatus('No sheet in the cloud yet – it will be created on next save.', false);
+      return;
+    }
+    state = data.data || state;
+    if(!state.charInfo) state.charInfo = {};
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    document.getElementById('filter-light').checked = !!state.showLight;
+    document.getElementById('filter-dark').checked = !!state.showDark;
+    populateCharInfoFields();
+    render();
+    setCloudStatus('Loaded from cloud ✓');
+  }catch(e){
+    setCloudStatus('Network error while loading.', true);
+  }
+}
+
+function updateAuthUI(){
+  const formRow = document.getElementById('auth-form-row');
+  const loggedInRow = document.getElementById('auth-logged-in-row');
+  if(currentUser){
+    formRow.style.display = 'none';
+    loggedInRow.style.display = 'flex';
+    document.getElementById('auth-user-email').textContent = currentUser.email;
+  } else {
+    formRow.style.display = 'flex';
+    loggedInRow.style.display = 'none';
+  }
+}
+
+async function signUp(){
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  if(!email || password.length < 6){
+    setCloudStatus('Please enter an email and a password (min. 6 characters).', true);
+    return;
+  }
+  setCloudStatus('Signing up...');
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  if(error){ setCloudStatus('Error: ' + error.message, true); return; }
+  if(data.session){
+    currentUser = data.user;
+    updateAuthUI();
+    await loadFromCloud();
+  } else {
+    setCloudStatus('Signed up! If email confirmation is enabled, please confirm your email and then log in.', false);
+  }
+}
+
+async function signIn(){
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  if(!email || !password){
+    setCloudStatus('Please enter your email and password.', true);
+    return;
+  }
+  setCloudStatus('Logging in...');
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if(error){ setCloudStatus('Error: ' + error.message, true); return; }
+  currentUser = data.user;
+  updateAuthUI();
+  await loadFromCloud();
+}
+
+async function signOut(){
+  await supabaseClient.auth.signOut();
+  currentUser = null;
+  updateAuthUI();
+  setCloudStatus('Logged out.', false);
+}
+
+async function initAuth(){
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  currentUser = session ? session.user : null;
+  updateAuthUI();
+  if(currentUser) await loadFromCloud();
+}
+
+function load(){
+  const saved=localStorage.getItem(STORAGE_KEY);
+  if(saved){
+    try{
+      const parsed=JSON.parse(saved);
+      state.learned=parsed.learned||{};
+      state.savant=parsed.savant||{};
+      state.oracle=parsed.oracle||{};
+      state.collapsed=parsed.collapsed||{};
+      if(parsed.hasOwnProperty('showLight')) state.showLight = parsed.showLight;
+      if(parsed.hasOwnProperty('showDark')) state.showDark = parsed.showDark;
+      state.charInfo = parsed.charInfo || {};
+    }catch(e){console.error(e);}
+  }
+  document.getElementById('filter-light').checked = state.showLight;
+  document.getElementById('filter-dark').checked = state.showDark;
+  populateCharInfoFields();
+  render();
+}
+
+function populateCharInfoFields(){
+  CHAR_INFO_FIELDS.forEach(key => {
+    const el = document.querySelector(`[data-ci="${key}"]`);
+    if(el) el.value = state.charInfo[key] || '';
+  });
+}
+
+window.onCharInfoChange = function(){
+  CHAR_INFO_FIELDS.forEach(key => {
+    const el = document.querySelector(`[data-ci="${key}"]`);
+    if(el) state.charInfo[key] = el.value;
+  });
+  persist();
+};
+
+function onFilterChange(){
+  state.showLight = document.getElementById('filter-light').checked;
+  state.showDark = document.getElementById('filter-dark').checked;
+  persist();
+  render();
+}
+
+function getVisibleSchools(){
+  return SCHOOLS.filter(sch => {
+    if(sch.type === 'neutral') return true;
+    if(sch.type === 'light' && state.showLight) return true;
+    if(sch.type === 'dark' && state.showDark) return true;
+    return false;
+  });
+}
+
+function countGroup(spells){
+  let learned = 0;
+  spells.forEach(sp => { if(isLearned(sp.id)) learned++; });
+  return {learned, total: spells.length, missing: spells.length - learned};
+}
+
+function schoolMainSpells(sch){
+  return sch.groups.filter(g => g.tier === 'main').flatMap(g => g.spells);
+}
+
+function renderSpellItem(sp){
+  const checked = isLearned(sp.id) ? 'checked' : '';
+  return `
+    <li class="spell-item" data-name="${(sp.latin+' '+sp.en).toLowerCase()}">
+      <input type="checkbox" id="cb_${sp.id}" ${checked} onchange="onToggleSpell('${sp.id}', this.checked)">
+      <label for="cb_${sp.id}"><span class="spell-name">${sp.latin}</span><span class="spell-latin">(${sp.en})</span></label>
+    </li>`;
+}
+
+function renderGroup(sch, g){
+  const c = countGroup(g.spells);
+  const cls = g.tier === 'savant' ? 'savant-group' : (g.tier === 'oracle' ? 'oracle-group' : '');
+  return `
+    <div class="group ${cls}">
+      <div class="group-label"><span>${g.label}</span><span class="group-count">${c.learned}/${c.total} learned</span></div>
+      <ul class="spell-list">${g.spells.map(renderSpellItem).join('')}</ul>
+    </div>`;
+}
+
+function renderSchool(sch){
+  const mainSpells = schoolMainSpells(sch);
+  const mainCount = countGroup(mainSpells);
+  const pct = mainCount.total ? Math.round(100*mainCount.learned/mainCount.total) : 0;
+  const isSavant = !!state.savant[sch.key];
+  const isOracle = !!state.oracle[sch.key];
+  const savantDisabled = (!isSavant && savantUsed() >= MAX_SAVANT) ? 'disabled' : '';
+
+  const otherGroups = sch.groups.filter(g => g.tier !== 'main');
+  const mastered = mainCount.total > 0 && mainCount.missing === 0;
+
+  return `
+  <section class="school type-${sch.type} ${mastered?'is-mastered':''}" data-school="${sch.key}">
+    <div class="school-head">
+      <div class="school-title-row">
+        <div>
+          <div class="school-title">${sch.name}</div>
+          <span class="type-tag">${sch.type} magic</span>
+        </div>
+        <div class="badges">
+          <button class="badge-btn savant ${isSavant?'active':''}" ${savantDisabled} onclick="toggleSavant('${sch.key}')" title="Mark yourself Savant of this order">${isSavant? '★ Savant':'☆ Savant'}</button>
+          <button class="badge-btn oracle ${isOracle?'active':''}" onclick="toggleOracle('${sch.key}')" title="Mark yourself Oracle of this order">${isOracle? '♦ Oracle':'♢ Oracle'}</button>
+        </div>
+      </div>
+      <div class="school-progress">
+        <div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div>
+        <div class="progress-text"><b>${mainCount.learned}/${mainCount.total}</b> learned · <span class="missing-count">${mainCount.missing} missing</span></div>
+      </div>
+      ${mastered ? `<div class="mastered-ribbon">✦ Mastered</div>` : ''}
+    </div>
+    ${sch.groups.filter(g=>g.tier==='main').map(g => renderGroup(sch,g)).join('')}
+    ${otherGroups.map(g => renderGroup(sch,g)).join('')}
+    <div class="school-foot"></div>
+  </section>`;
+}
+
+function savantUsed(){
+  return Object.values(state.savant).filter(Boolean).length;
+}
+function oracleUsed(){
+  return Object.values(state.oracle).filter(Boolean).length;
+}
+
+window.onToggleSpell = function(id, val){
+  setLearned(id, val);
+  render();
+};
+
+window.toggleSavant = function(key){
+  const currentlyOn = !!state.savant[key];
+  if(!currentlyOn && savantUsed() >= MAX_SAVANT){
+    return; 
+  }
+  state.savant[key] = !currentlyOn;
+  persist();
+  render();
+};
+
+window.toggleOracle = function(key){
+  state.oracle[key] = !state.oracle[key];
+  persist();
+  render();
+};
+
+function renderGlobalStats(){
+  let totalLearned = 0, totalMain = 0, masteredCount = 0;
+  const visibleSchools = getVisibleSchools();
+  
+  visibleSchools.forEach(sch => {
+    const c = countGroup(schoolMainSpells(sch));
+    totalLearned += c.learned;
+    totalMain += c.total;
+    if(c.total > 0 && c.missing === 0) masteredCount++;
+  });
+  
+  document.getElementById('stat-learned').textContent = totalLearned;
+  document.getElementById('stat-missing').textContent = totalMain - totalLearned;
+  document.getElementById('stat-savant').textContent = `${savantUsed()} / ${MAX_SAVANT}`;
+  document.getElementById('stat-oracle').textContent = oracleUsed();
+  document.getElementById('stat-mastered').textContent = `${masteredCount} / ${visibleSchools.length}`;
+}
+
+function render(){
+  const visible = getVisibleSchools();
+  document.getElementById('grid').innerHTML = visible.map(renderSchool).join('');
+  renderGlobalStats();
+  applySearch();
+}
+
+/* Character Export / Import Functions */
+function exportCharacter() {
+  const dataStr = btoa(JSON.stringify(state));
+  navigator.clipboard.writeText(dataStr).then(() => {
+    const note = document.getElementById('save-note');
+    note.textContent = 'Copied text string to clipboard!';
+    setTimeout(() => note.textContent = '', 2200);
+  }).catch(err => {
+    alert("Could not copy automatically. Here is your character export string:\n\n" + dataStr);
+  });
+}
+
+function importCharacter() {
+  const code = prompt("Paste your character export string here:");
+  if (!code) return;
+  try {
+    const parsed = JSON.parse(atob(code.trim()));
+    if (parsed && typeof parsed === 'object' && parsed.learned) {
+      state = parsed;
+      if(!state.charInfo) state.charInfo = {};
+      persist();
+      render();
+      
+      document.getElementById('filter-light').checked = !!state.showLight;
+      document.getElementById('filter-dark').checked = !!state.showDark;
+      populateCharInfoFields();
+      
+      const note = document.getElementById('save-note');
+      note.textContent = 'Character loaded successfully!';
+      setTimeout(() => note.textContent = '', 2200);
+    } else {
+      alert("Invalid character code format.");
+    }
+  } catch (e) {
+    alert("Failed to parse character code. Make sure you copied the exact string text.");
+  }
+}
+
+/* search */
+function applySearch(){
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  document.querySelectorAll('.spell-item').forEach(li => {
+    if(!q){ li.classList.remove('hidden'); return; }
+    const name = li.getAttribute('data-name') || '';
+    li.classList.toggle('hidden', !name.includes(q));
+  });
+}
+
+document.getElementById('search').addEventListener('input', applySearch);
+
+document.getElementById('reset-all').addEventListener('click', async () => {
+  if(!confirm('Reset ALL checkmarks, savant/oracle marks AND the character sheet fields (name, race, stats, inventory, etc.) back to blank? This cannot be undone.')) return;
+  
+  // Explicitly assign 'false' to every single spell ID to bypass hardcoded true defaults
+  const resetLearned = {};
+  SCHOOLS.forEach(sch => {
+    sch.groups.forEach(g => {
+      g.spells.forEach(sp => {
+        resetLearned[sp.id] = false;
+      });
+    });
+  });
+
+  state = { learned: resetLearned, savant:{}, oracle:{}, collapsed:{}, showLight: state.showLight, showDark: state.showDark, charInfo: {} };
+  await persist();
+  populateCharInfoFields();
+  render();
+});
+
+document.getElementById('auth-signup').addEventListener('click', signUp);
+document.getElementById('auth-signin').addEventListener('click', signIn);
+document.getElementById('auth-signout').addEventListener('click', signOut);
+document.getElementById('cloud-save').addEventListener('click', () => saveToCloud(true));
+document.getElementById('cloud-reload').addEventListener('click', loadFromCloud);
+
+load();
+initAuth();
+</script>
+</body>
+</html>
