@@ -176,6 +176,46 @@
     cursor:pointer;
   }
   .toolbar button:hover{color:var(--light-accent);border-color:var(--gold);}
+  /* EDIT LOCK BANNER — sits directly above the character sheet, hard to miss */
+  .edit-lock-banner{
+    display:flex;
+    justify-content:center;
+    margin:0 0 18px;
+  }
+  #edit-lock-toggle{
+    width:100%;
+    font-weight:700;
+    background:var(--panel-2);
+    border:2px solid var(--hairline);
+    color:var(--parchment-dim);
+    padding:16px 20px;
+    border-radius:10px;
+    font-family:'Crimson Pro',serif;
+    font-size:17px;
+    letter-spacing:0.03em;
+    cursor:pointer;
+    text-transform:uppercase;
+    transition:background 0.15s, border-color 0.15s, box-shadow 0.15s, color 0.15s;
+  }
+  #edit-lock-toggle:hover{color:var(--light-accent);border-color:var(--gold);}
+  #edit-lock-toggle.locked{
+    border-color:var(--danger);
+    color:var(--danger);
+    background:rgba(168,84,84,0.14);
+    box-shadow:0 0 0 1px rgba(168,84,84,0.35), 0 0 22px rgba(168,84,84,0.22);
+    animation:lock-pulse 2.4s ease-in-out infinite;
+  }
+  #edit-lock-toggle.unlocked{
+    border-color:var(--ok);
+    color:var(--ok);
+    background:rgba(127,159,111,0.14);
+    box-shadow:0 0 0 1px rgba(127,159,111,0.35), 0 0 22px rgba(127,159,111,0.22);
+  }
+  #edit-lock-toggle:disabled{opacity:0.6;cursor:not-allowed;animation:none;}
+  @keyframes lock-pulse{
+    0%,100%{box-shadow:0 0 0 1px rgba(168,84,84,0.35), 0 0 22px rgba(168,84,84,0.22);}
+    50%{box-shadow:0 0 0 1px rgba(168,84,84,0.55), 0 0 34px rgba(168,84,84,0.4);}
+  }
   .toolbar-sep{
     border-left:1px solid var(--hairline);
     height:24px;
@@ -482,7 +522,12 @@
   .school.type-chaos .spell-item input[type=checkbox]{accent-color:var(--chaos-accent);}
   .school.type-order .spell-item input[type=checkbox]{accent-color:var(--order-accent);}
   .spell-name{font-weight:600;color:var(--parchment);font-size:14.5px;}
-  
+
+  /* NOT LEARNED: red text so missing spells stand out clearly */
+  .spell-item input:not(:checked) ~ label .spell-name {
+    color: #d17a7a;
+  }
+
   /* HIGHLIGHT EFFECT: Changes text color to high-contrast gold with text glow */
   .spell-item input:checked ~ label .spell-name {
     color: #ffebad !important;
@@ -607,6 +652,104 @@
   }
   .stat-mini input[type=datetime-local]:focus{outline:1px solid var(--gold);}
 
+  /* ROLL BUFFS / DEBUFFS */
+  .rollbuff-display{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:10px;
+    min-height:0;
+  }
+  .rollbuff-pill{
+    background:rgba(0,0,0,0.28);
+    border:1px solid var(--hairline);
+    border-radius:20px;
+    padding:6px 12px;
+    font-size:13px;
+    display:flex;
+    align-items:baseline;
+    gap:6px;
+  }
+  .rollbuff-pill .rb-val{font-weight:700;color:var(--gold-bright);font-family:Garamond, serif;font-size:14.5px;}
+  .rollbuff-pill .rb-abbr{color:var(--parchment-dim);letter-spacing:0.03em;}
+  .rollbuff-empty-note{font-size:12.5px;font-style:italic;color:var(--parchment-dim);}
+  .rollbuff-manage-btn{
+    align-self:flex-start;
+    background:var(--panel-2);
+    border:1px solid var(--hairline);
+    color:var(--parchment-dim);
+    padding:8px 14px;
+    border-radius:7px;
+    font-family:'Crimson Pro',serif;
+    font-size:13.5px;
+    cursor:pointer;
+  }
+  .rollbuff-manage-btn:hover{color:var(--light-accent);border-color:var(--gold);}
+  .rollbuff-manage-btn:disabled{opacity:0.5;cursor:not-allowed;}
+  .rollbuff-row{
+    background:rgba(0,0,0,0.2);
+    border:1px solid var(--hairline);
+    border-radius:8px;
+    padding:12px;
+    margin-bottom:12px;
+    position:relative;
+  }
+  .rollbuff-remove{
+    position:absolute;
+    top:8px;right:8px;
+    background:transparent;
+    border:none;
+    color:var(--parchment-dim);
+    font-size:14px;
+    cursor:pointer;
+  }
+  .rollbuff-remove:hover{color:var(--danger);}
+  .rollbuff-row-fields{
+    display:grid;
+    grid-template-columns:1fr 2fr;
+    gap:10px;
+    margin-bottom:10px;
+    padding-right:20px;
+  }
+  .rollbuff-row-fields label,
+  .rollbuff-field-desc label{
+    display:block;
+    font-size:10.5px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--parchment-dim);
+    margin-bottom:4px;
+  }
+  .rollbuff-row-fields input, .rollbuff-field-desc textarea{
+    width:100%;
+    background:var(--ink);
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    padding:7px 9px;
+    border-radius:6px;
+    font-family:'Crimson Pro',serif;
+    font-size:14px;
+  }
+  .rollbuff-field-desc textarea{resize:none;overflow:hidden;min-height:44px;line-height:1.4;}
+  .rollbuff-list-empty{font-size:13px;font-style:italic;color:var(--parchment-dim);margin-bottom:14px;}
+  .rollbuff-field-abbr{margin-bottom:10px;padding-right:20px;}
+  .rollbuff-field-abbr label{display:block;font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--parchment-dim);margin-bottom:4px;}
+  .rollbuff-field-abbr input{width:100%;background:var(--ink);border:1px solid var(--hairline);color:var(--parchment);padding:7px 9px;border-radius:6px;font-family:'Crimson Pro',serif;font-size:14px;}
+  .rollbuff-row-fields select{
+    width:100%;
+    background:var(--ink);
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    padding:7px 9px;
+    border-radius:6px;
+    font-family:'Crimson Pro',serif;
+    font-size:14px;
+  }
+  .rollbuff-pill-total{border-color:var(--gold);background:rgba(201,160,84,0.14);}
+  .rollbuff-pill-total .rb-val.rb-pos{color:var(--ok);}
+  .rollbuff-pill-total .rb-val.rb-neg{color:var(--danger);}
+  .rollbuff-pill-total .rb-abbr{color:var(--gold-bright);}
+
   /* CLOUD SYNC */
   .cloud-box{
     background:var(--panel);
@@ -706,6 +849,10 @@
     </div>
   </div>
 
+  <div class="edit-lock-banner">
+    <button id="edit-lock-toggle" onclick="toggleEditLock()">🔒 Editing Locked</button>
+  </div>
+
   <div class="charsheet">
     <div class="charsheet-title">Character Sheet</div>
     <div class="charsheet-grid">
@@ -777,6 +924,13 @@
           <div class="stat-mini"><label for="ci-armor-precast">Armor</label><input type="text" id="ci-armor-precast" data-ci="armor_precast" oninput="onCharInfoChange()"></div>
           <div class="stat-mini"><label for="ci-rank-precast">Rank</label><input type="text" id="ci-rank-precast" data-ci="rank_stat_precast" oninput="onCharInfoChange()"></div>
         </div>
+      </div>
+
+      <!-- ROLL BUFFS / DEBUFFS -->
+      <div class="charsheet-field wide">
+        <label>Roll Buffs / Debuffs</label>
+        <div class="rollbuff-display" id="rollbuff-display"></div>
+        <button type="button" class="rollbuff-manage-btn" onclick="openRollBuffModal()">⚙ Manage Roll Buffs</button>
       </div>
     </div>
   </div>
@@ -938,6 +1092,22 @@
     <div class="modal-actions">
       <button onclick="closeSpellModal()">Close</button>
       <button id="modal-save" onclick="saveSpellModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="rollbuff-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeRollBuffModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeRollBuffModal()">✕</button>
+    <h2 id="modal-title-rollbuff">Roll Buffs / Debuffs</h2>
+    <p class="modal-subtitle">Track modifiers to apply against enemy rolls. Pick a type for DC/Attack/Defense buffs — matching types are added together automatically on your sheet. Only the value and abbreviation show on your sheet — the description stays here.</p>
+
+    <div id="rollbuff-list"></div>
+    <p id="rollbuff-list-empty" class="rollbuff-list-empty" style="display:none;">No roll buffs or debuffs yet. Add one below.</p>
+
+    <div class="modal-actions" style="justify-content:space-between;">
+      <button type="button" onclick="addRollBuff()">+ Add Buff / Debuff</button>
+      <button type="button" id="rollbuff-done" onclick="closeRollBuffModal()">Done</button>
     </div>
   </div>
 </div>
@@ -1755,9 +1925,13 @@ window.openSpellModal = function(evt, id){
     'modal-heal-upkeep-body','modal-heal-upkeep-mind','modal-heal-upkeep-spirit',
     'modal-buff-body','modal-buff-mind','modal-buff-spirit',
     'modal-buff-upkeep-body','modal-buff-upkeep-mind','modal-buff-upkeep-spirit','modal-desc'];
-  editableIds.forEach(id => { document.getElementById(id).disabled = !isSpellEditor; });
-  document.getElementById('modal-save').style.display = isSpellEditor ? '' : 'none';
-  document.getElementById('modal-readonly-hint').style.display = isSpellEditor ? 'none' : 'block';
+  const canEditSpell = isSpellEditor && !editLocked;
+  editableIds.forEach(id => { document.getElementById(id).disabled = !canEditSpell; });
+  document.getElementById('modal-save').style.display = canEditSpell ? '' : 'none';
+  document.getElementById('modal-readonly-hint').style.display = canEditSpell ? 'none' : 'block';
+  document.getElementById('modal-readonly-hint').textContent = isSpellEditor && editLocked
+    ? 'Editing is locked. Click the lock button in the toolbar to unlock it before editing spells.'
+    : "You don't have edit rights for the shared spell data. Ask the tracker owner to add you as an editor if you should be able to change this.";
 
   document.getElementById('spell-modal-backdrop').classList.add('open');
   autosizeTextarea(document.getElementById('modal-desc'));
@@ -1769,7 +1943,7 @@ window.closeSpellModal = function(){
 };
 
 window.saveSpellModal = async function(){
-  if(!currentModalSpellId || !isSpellEditor) return;
+  if(!currentModalSpellId || !isSpellEditor || editLocked) return;
   const tags = document.getElementById('modal-tags').value
     .split(',').map(t=>t.trim().toLowerCase()).filter(Boolean);
   const num = (elId) => { const v = parseFloat(document.getElementById(elId).value); return isNaN(v) ? 0 : v; };
@@ -1804,7 +1978,7 @@ window.saveSpellModal = async function(){
 };
 
 document.addEventListener('keydown', (e) => {
-  if(e.key === 'Escape') closeSpellModal();
+  if(e.key === 'Escape'){ closeSpellModal(); closeRollBuffModal(); }
 });
 
 document.getElementById('modal-desc').addEventListener('input', function(){ autosizeTextarea(this); });
@@ -1834,12 +2008,14 @@ let state = {
   showDark: false,
   showLegacy: false,
   showDeity: false,
-  charInfo: {}
+  charInfo: {},
+  rollBuffs: []
 };
 
 /* ---------- BROWSING STATE VARIABLES ---------- */
 let myStoredState = null; 
 let isViewingOther = false;
+let editLocked = (localStorage.getItem('spellbook_edit_lock') ?? 'true') === 'true';
 let globalOtherSheetsData = []; 
 
 function buildDefaults(){
@@ -1922,12 +2098,14 @@ async function loadFromCloud(){
     }
     state = data.data || state;
     if(!state.charInfo) state.charInfo = {};
+    if(!Array.isArray(state.rollBuffs)) state.rollBuffs = [];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     document.getElementById('filter-light').checked = !!state.showLight;
     document.getElementById('filter-dark').checked = !!state.showDark;
     document.getElementById('filter-legacy').checked = !!state.showLegacy;
     document.getElementById('filter-deity').checked = !!state.showDeity;
     populateCharInfoFields();
+    renderRollBuffDisplay();
     render();
     setCloudStatus('Loaded from cloud ✓');
   }catch(e){
@@ -1951,7 +2129,7 @@ function updateAuthUI(){
     loggedInRow.style.display = 'none';
     otherCharsBox.style.display = 'none';
     isViewingOther = false;
-    toggleReadOnly(false);
+    applyEditLockState();
   }
 }
 
@@ -2025,6 +2203,7 @@ function switchToAlternativeSheet(targetUserId) {
     
     state = JSON.parse(JSON.stringify(foundRow.data));
     if(!state.charInfo) state.charInfo = {};
+    if(!Array.isArray(state.rollBuffs)) state.rollBuffs = [];
     
     document.getElementById('filter-light').checked = !!state.showLight;
     document.getElementById('filter-dark').checked = !!state.showDark;
@@ -2032,8 +2211,9 @@ function switchToAlternativeSheet(targetUserId) {
     document.getElementById('filter-deity').checked = !!state.showDeity;
     
     populateCharInfoFields();
+    renderRollBuffDisplay();
     render();
-    toggleReadOnly(true); 
+    applyEditLockState(); 
   }
 }
 
@@ -2046,6 +2226,7 @@ function returnToOwnSheet() {
     state = myStoredState;
     myStoredState = null;
   }
+  if(!Array.isArray(state.rollBuffs)) state.rollBuffs = [];
   
   document.getElementById('filter-light').checked = !!state.showLight;
   document.getElementById('filter-dark').checked = !!state.showDark;
@@ -2053,8 +2234,9 @@ function returnToOwnSheet() {
   document.getElementById('filter-deity').checked = !!state.showDeity;
   
   populateCharInfoFields();
+  renderRollBuffDisplay();
   render();
-  toggleReadOnly(false); 
+  applyEditLockState(); 
   saveState(); 
 }
 
@@ -2124,6 +2306,7 @@ function load(){
       if(parsed.hasOwnProperty('showLegacy')) state.showLegacy = parsed.showLegacy;
       if(parsed.hasOwnProperty('showDeity')) state.showDeity = parsed.showDeity;
       state.charInfo = parsed.charInfo || {};
+      state.rollBuffs = Array.isArray(parsed.rollBuffs) ? parsed.rollBuffs : [];
     }catch(e){console.error(e);}
   }
   document.getElementById('filter-light').checked = state.showLight;
@@ -2131,6 +2314,7 @@ function load(){
   document.getElementById('filter-legacy').checked = state.showLegacy;
   document.getElementById('filter-deity').checked = state.showDeity;
   populateCharInfoFields();
+  renderRollBuffDisplay();
   render();
 }
 
@@ -2167,6 +2351,158 @@ window.onCharInfoChange = function(){
     const el = document.querySelector(`[data-ci="${key}"]`);
     if(el) state.charInfo[key] = el.value;
   });
+  persist();
+};
+
+/* ---------- ROLL BUFFS / DEBUFFS ---------- */
+function escapeHtml(str){
+  return String(str == null ? '' : str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+const ROLLBUFF_TYPE_LABELS = { dc:'DC', attack:'Attack', defense:'Defense' };
+const ROLLBUFF_TYPE_ORDER = ['dc','attack','defense'];
+
+function parseRollBuffValue(v){
+  if(v == null) return NaN;
+  const s = String(v).trim().replace(',', '.');
+  if(!s) return NaN;
+  if(!/^[+-]?\d+(\.\d+)?$/.test(s)) return NaN;
+  return parseFloat(s);
+}
+
+function getBuffTypes(b){
+  if(Array.isArray(b.types) && b.types.length) return b.types;
+  if(b.type) return [b.type];
+  return ['other'];
+}
+
+function renderRollBuffDisplay(){
+  const wrap = document.getElementById('rollbuff-display');
+  if(!wrap) return;
+  const buffs = Array.isArray(state.rollBuffs) ? state.rollBuffs : [];
+  if(!buffs.length){
+    wrap.innerHTML = '<span class="rollbuff-empty-note">None set — click "Manage Roll Buffs" to add one.</span>';
+    return;
+  }
+
+  let html = '';
+
+  ROLLBUFF_TYPE_ORDER.forEach(type => {
+    const group = buffs.filter(b => getBuffTypes(b).includes(type));
+    if(!group.length) return;
+    let sum = 0;
+    let hasNumeric = false;
+    const parts = group.map(b => {
+      const raw = (b.value || '').trim();
+      const n = parseRollBuffValue(raw);
+      if(!isNaN(n)){ sum += n; hasNumeric = true; }
+      const label = (b.abbr || '').trim();
+      const shown = raw || '?';
+      return label ? `${label}: ${shown}` : shown;
+    });
+    const totalStr = hasNumeric ? (sum > 0 ? `+${sum}` : `${sum}`) : '—';
+    const signClass = hasNumeric ? (sum > 0 ? 'rb-pos' : (sum < 0 ? 'rb-neg' : '')) : '';
+    const tooltip = parts.join(', ');
+    html += `<span class="rollbuff-pill rollbuff-pill-total" title="${escapeHtml(tooltip)}"><span class="rb-val ${signClass}">${escapeHtml(totalStr)}</span><span class="rb-abbr">${ROLLBUFF_TYPE_LABELS[type]}${group.length>1 ? ` (${group.length})` : ''}</span></span>`;
+  });
+
+  const others = buffs.filter(b => getBuffTypes(b).includes('other'));
+  others.forEach(b => {
+    const val = (b.value || '').trim();
+    const abbr = (b.abbr || '').trim();
+    html += `<span class="rollbuff-pill">${val ? `<span class="rb-val">${escapeHtml(val)}</span>` : ''}${abbr ? `<span class="rb-abbr">${escapeHtml(abbr)}</span>` : ''}${(!val && !abbr) ? '<span class="rb-abbr">(unnamed)</span>' : ''}</span>`;
+  });
+
+  wrap.innerHTML = html;
+}
+
+function renderRollBuffList(){
+  const listEl = document.getElementById('rollbuff-list');
+  const emptyEl = document.getElementById('rollbuff-list-empty');
+  if(!listEl) return;
+  const buffs = Array.isArray(state.rollBuffs) ? state.rollBuffs : [];
+  if(!buffs.length){
+    listEl.innerHTML = '';
+    if(emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+  if(emptyEl) emptyEl.style.display = 'none';
+  listEl.innerHTML = buffs.map(b => {
+    const types = getBuffTypes(b);
+    const isOther = types.includes('other');
+    return `
+    <div class="rollbuff-row" data-id="${b.id}">
+      <button type="button" class="rollbuff-remove" title="Remove" onclick="removeRollBuff('${b.id}')">✕</button>
+      <div class="rollbuff-type-group">
+        <label>Applies to <span class="modal-hint">(pick any combo — matching types add together; Other is kept separate, e.g. for enemy debuffs)</span></label>
+        <div class="rollbuff-type-checks">
+          <label class="rollbuff-check"><input type="checkbox" ${types.includes('dc')?'checked':''} onchange="toggleRollBuffType('${b.id}','dc',this.checked)"> DC</label>
+          <label class="rollbuff-check"><input type="checkbox" ${types.includes('attack')?'checked':''} onchange="toggleRollBuffType('${b.id}','attack',this.checked)"> Attack</label>
+          <label class="rollbuff-check"><input type="checkbox" ${types.includes('defense')?'checked':''} onchange="toggleRollBuffType('${b.id}','defense',this.checked)"> Defense</label>
+          <label class="rollbuff-check"><input type="checkbox" ${isOther?'checked':''} onchange="toggleRollBuffType('${b.id}','other',this.checked)"> Other / enemy debuff</label>
+        </div>
+      </div>
+      <div class="rollbuff-row-fields">
+        <div>
+          <label for="rb-value-${b.id}">Value</label>
+          <input type="text" id="rb-value-${b.id}" value="${escapeHtml(b.value)}" placeholder="e.g. +2" oninput="updateRollBuff('${b.id}','value',this.value)">
+        </div>
+        <div>
+          <label for="rb-abbr-${b.id}">Abbreviation <span class="modal-hint">(shows on sheet)</span></label>
+          <input type="text" id="rb-abbr-${b.id}" value="${escapeHtml(b.abbr)}" placeholder="e.g. ATK vs undead" oninput="updateRollBuff('${b.id}','abbr',this.value)">
+        </div>
+      </div>
+      <div class="rollbuff-field-desc">
+        <label for="rb-desc-${b.id}">Description <span class="modal-hint">(only visible in this menu)</span></label>
+        <textarea id="rb-desc-${b.id}" placeholder="What triggers it, how it stacks, source, duration..." oninput="updateRollBuff('${b.id}','desc',this.value); autosizeTextarea(this)">${escapeHtml(b.desc)}</textarea>
+      </div>
+    </div>
+  `;
+  }).join('');
+  listEl.querySelectorAll('.rollbuff-field-desc textarea').forEach(autosizeTextarea);
+}
+
+function makeRollBuffId(){
+  return 'rb_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+}
+
+window.addRollBuff = function(){
+  if (isViewingOther || editLocked) return;
+  if(!Array.isArray(state.rollBuffs)) state.rollBuffs = [];
+  state.rollBuffs.push({ id: makeRollBuffId(), type:'other', value:'', abbr:'', desc:'' });
+  persist();
+  renderRollBuffList();
+};
+
+window.removeRollBuff = function(id){
+  if (isViewingOther || editLocked) return;
+  state.rollBuffs = (state.rollBuffs || []).filter(b => b.id !== id);
+  persist();
+  renderRollBuffList();
+};
+
+window.updateRollBuff = function(id, field, value){
+  if (isViewingOther || editLocked) return;
+  const buff = (state.rollBuffs || []).find(b => b.id === id);
+  if(!buff) return;
+  buff[field] = value;
+  persist();
+};
+
+window.openRollBuffModal = function(){
+  if (isViewingOther || editLocked) return;
+  renderRollBuffList();
+  document.getElementById('rollbuff-modal-backdrop').classList.add('open');
+};
+
+window.closeRollBuffModal = function(){
+  document.getElementById('rollbuff-modal-backdrop').classList.remove('open');
+  renderRollBuffDisplay();
   persist();
 };
 
@@ -2353,6 +2689,7 @@ function importCharacter() {
     if (parsed && typeof parsed === 'object' && parsed.learned) {
       state = parsed;
       if(!state.charInfo) state.charInfo = {};
+      if(!Array.isArray(state.rollBuffs)) state.rollBuffs = [];
       persist();
       render();
       
@@ -2361,6 +2698,7 @@ function importCharacter() {
       document.getElementById('filter-legacy').checked = !!state.showLegacy;
       document.getElementById('filter-deity').checked = !!state.showDeity;
       populateCharInfoFields();
+      renderRollBuffDisplay();
       
       const note = document.getElementById('save-note');
       note.textContent = 'Character loaded successfully!';
@@ -2432,7 +2770,7 @@ function applyFilters(){
 }
 
 function toggleReadOnly(readOnly) {
-  const inputs = document.querySelectorAll('.charsheet input, .charsheet textarea, .alignment-box input, #grid input, #grid button');
+  const inputs = document.querySelectorAll('.charsheet input, .charsheet textarea, .charsheet button, .alignment-box input, #grid input, #grid button');
   const cloudSaveBtn = document.getElementById('cloud-save');
   const resetBtn = document.getElementById('reset-all');
   const importBtn = document.getElementById('import-char');
@@ -2442,18 +2780,44 @@ function toggleReadOnly(readOnly) {
   if (importBtn) importBtn.disabled = readOnly;
 
   inputs.forEach(el => {
-    if (el.tagName === 'BUTTON') {
-      if (readOnly) el.setAttribute('disabled', 'true');
+    if (readOnly) {
+      el.setAttribute('disabled', 'true');
     } else {
-      if (readOnly) {
-        el.setAttribute('disabled', 'true');
-      } else {
-        el.removeAttribute('disabled');
-      }
+      el.removeAttribute('disabled');
     }
   });
   
   if (!readOnly) render(); 
+}
+
+/* The edit lock is a manual on/off switch (persisted in localStorage) that
+   protects against accidentally ticking a checkbox, editing a field, or -
+   for spell editors - opening a spell in edit mode when you only wanted to
+   look something up. It combines with (but doesn't override) the existing
+   "viewing someone else's sheet" read-only mode, which always wins. */
+function applyEditLockState(){
+  toggleReadOnly(isViewingOther || editLocked);
+  updateEditLockButtonUI();
+}
+
+function updateEditLockButtonUI(){
+  const btn = document.getElementById('edit-lock-toggle');
+  if (!btn) return;
+  const locked = isViewingOther || editLocked;
+  btn.textContent = locked ? '🔒 Editing Locked' : '🔓 Editing Unlocked';
+  btn.classList.toggle('locked', locked);
+  btn.classList.toggle('unlocked', !locked);
+  btn.disabled = isViewingOther; // can't unlock while looking at someone else's sheet
+  btn.title = isViewingOther
+    ? "Someone else's sheet is always read-only."
+    : (editLocked ? 'Click to unlock editing.' : 'Click to lock editing again.');
+}
+
+function toggleEditLock(){
+  if (isViewingOther) return;
+  editLocked = !editLocked;
+  localStorage.setItem('spellbook_edit_lock', editLocked ? 'true' : 'false');
+  applyEditLockState();
 }
 
 document.getElementById('btn-toggle-list-view').addEventListener('click', () => {
@@ -2482,9 +2846,10 @@ document.getElementById('reset-all').addEventListener('click', async () => {
     });
   });
 
-  state = { learned: resetLearned, savant:{}, oracle:{}, collapsed:{}, showLight: state.showLight, showDark: state.showDark, showLegacy: state.showLegacy, showDeity: state.showDeity, charInfo: {} };
+  state = { learned: resetLearned, savant:{}, oracle:{}, collapsed:{}, showLight: state.showLight, showDark: state.showDark, showLegacy: state.showLegacy, showDeity: state.showDeity, charInfo: {}, rollBuffs: [] };
   await persist();
   populateCharInfoFields();
+  renderRollBuffDisplay();
   render();
 });
 
@@ -2504,6 +2869,7 @@ document.getElementById('cloud-reload').addEventListener('click', () => {
   await loadSpellMeta();     // fetch shared spell data (desc/tags/cost/damage) from the cloud
   renderTagFilters();
   load();                    // renders the grid with the loaded spell metadata
+  applyEditLockState();      // apply saved lock preference before anything can be touched
   await initAuth();          // also determines isSpellEditor
   initAutosizeTextareas();
 })();
