@@ -20,6 +20,14 @@
     --dark-accent:#a85454;
     --danger:#a85454;
     --ok:#7f9f6f;
+    --legacy-curse-accent:#9b6fc9;
+    --legacy-curse-glow: rgba(155,111,201,0.15);
+    --legacy-judge-accent:#5fa8b3;
+    --legacy-judge-glow: rgba(95,168,179,0.15);
+    --chaos-accent:#d1548a;
+    --chaos-glow: rgba(209,84,138,0.15);
+    --order-accent:#6f93c9;
+    --order-glow: rgba(111,147,201,0.15);
   }
   *{box-sizing:border-box;}
   body{
@@ -191,6 +199,10 @@
   .school.type-light{box-shadow:inset 3px 0 0 var(--light-accent);}
   .school.type-neutral{box-shadow:inset 3px 0 0 var(--neutral-accent);}
   .school.type-dark{box-shadow:inset 3px 0 0 var(--dark-accent);}
+  .school.type-legacy-curse{box-shadow:inset 3px 0 0 var(--legacy-curse-accent);}
+  .school.type-legacy-judgement{box-shadow:inset 3px 0 0 var(--legacy-judge-accent);}
+  .school.type-chaos{box-shadow:inset 3px 0 0 var(--chaos-accent);}
+  .school.type-order{box-shadow:inset 3px 0 0 var(--order-accent);}
 
   .school-head{
     padding:16px 18px 12px;
@@ -211,6 +223,10 @@
   }
   .school.type-neutral .school-title{color:var(--parchment);}
   .school.type-dark .school-title{color:var(--light-accent);}
+  .school.type-legacy-curse .school-title{color:var(--legacy-curse-accent);}
+  .school.type-legacy-judgement .school-title{color:var(--legacy-judge-accent);}
+  .school.type-chaos .school-title{color:var(--chaos-accent);}
+  .school.type-order .school-title{color:var(--order-accent);}
   .type-tag{
     font-size:10px;
     letter-spacing:0.1em;
@@ -255,6 +271,10 @@
   .bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-bright));}
   .school.type-neutral .bar-fill{background:linear-gradient(90deg,var(--neutral-accent),#a9d6cb);}
   .school.type-dark .bar-fill{background:linear-gradient(90deg,var(--dark-accent),#c77373);}
+  .school.type-legacy-curse .bar-fill{background:linear-gradient(90deg,var(--legacy-curse-accent),#c9a8e6);}
+  .school.type-legacy-judgement .bar-fill{background:linear-gradient(90deg,var(--legacy-judge-accent),#a8dbe6);}
+  .school.type-chaos .bar-fill{background:linear-gradient(90deg,var(--chaos-accent),#f0a8c9);}
+  .school.type-order .bar-fill{background:linear-gradient(90deg,var(--order-accent),#a8c4e6);}
   .progress-text{font-size:12.5px;color:var(--parchment-dim);white-space:nowrap;}
   .progress-text b{color:var(--parchment);}
   .missing-count{color:var(--danger) !important;font-weight:600;}
@@ -294,6 +314,10 @@
   }
   .school.type-neutral .spell-item input[type=checkbox]{accent-color:var(--neutral-accent);}
   .school.type-dark .spell-item input[type=checkbox]{accent-color:var(--dark-accent);}
+  .school.type-legacy-curse .spell-item input[type=checkbox]{accent-color:var(--legacy-curse-accent);}
+  .school.type-legacy-judgement .spell-item input[type=checkbox]{accent-color:var(--legacy-judge-accent);}
+  .school.type-chaos .spell-item input[type=checkbox]{accent-color:var(--chaos-accent);}
+  .school.type-order .spell-item input[type=checkbox]{accent-color:var(--order-accent);}
   .spell-name{font-weight:600;color:var(--parchment);font-size:14.5px;}
   
   /* HIGHLIGHT EFFECT: Changes text color to high-contrast gold with text glow */
@@ -599,6 +623,12 @@
     <label class="alignment-label" style="color: var(--dark-accent)">
       <input type="checkbox" id="filter-dark" onchange="onFilterChange()"> Dark Magic Allowed
     </label>
+    <label class="alignment-label" style="color: var(--legacy-curse-accent)">
+      <input type="checkbox" id="filter-legacy" onchange="onFilterChange()"> Legacy Spells Allowed
+    </label>
+    <label class="alignment-label" style="color: var(--chaos-accent)">
+      <input type="checkbox" id="filter-deity" onchange="onFilterChange()"> Deity Magic Allowed (Triumvirate Only)
+    </label>
   </div>
 
   <div class="statbar">
@@ -842,7 +872,7 @@ const SCHOOLS = [
         S('tra_reformatio','Reformatio','Reform'),
         S('tra_tardus','Tardus','Slow'),
       ]},
-      {label:'Any Fae Race', tier:'main', spells:[
+      {label:'Any Fae Race', tier:'main', excludeFromMastery:true, spells:[
         S('tra_faerie','Faerie Fire','Faerie Fire'),
       ]},
       {label:'Savant Spells', tier:'savant', spells:[
@@ -967,7 +997,7 @@ const SCHOOLS = [
         S('lig_perforans','Perforans Sagitta','Piercing Arrow'),
         S('lig_trabem','Trabem Caeca','Blinding Beam'),
       ]},
-      {label:'Angelics — All Ranks', tier:'main', spells:[
+      {label:'Angelics — All Ranks', tier:'main', excludeFromMastery:true, spells:[
         S('lig_alis','Alis Lucis','Wings of Light'),
       ]},
       {label:'Savant Spells', tier:'savant', spells:[
@@ -1165,6 +1195,69 @@ const SCHOOLS = [
         S('shd_or_hirudo','Umbra Hirudo','Shadow Leech'),
       ]},
     ]
+  },
+  {
+    key:'legacy_curses', name:'Legacy Curses', type:'legacy-curse',
+    groups:[
+      {label:'All Ranks', tier:'main', spells:[
+        S('lgc_mentis','Mentis Maledictio','Mind Curse'),
+        S('lgc_infirmitas','Infirmitas Maledicta','Weakness Curse'),
+        S('lgc_tarda','Tarda Maledicta','Slow Curse'),
+        S('lgc_gracile','Gracile Maledictum','Slender Curse'),
+        S('lgc_mors','Mors Maledicta','Death Curse'),
+        S('lgc_pax','Pax Maledicta','Peace Curse'),
+        S('lgc_anchora','Anchora Maledicta','Anchor Curse'),
+        S('lgc_stypticus','Stypticus Maledicta','Paralyze Curse'),
+        S('lgc_occidere','Occidere Maledicta','Killing Curse'),
+      ]},
+    ]
+  },
+  {
+    key:'legacy_judgements', name:'Legacy Judgements', type:'legacy-judgement',
+    groups:[
+      {label:'All Ranks', tier:'main', spells:[
+        S('lgj_mentis','Mentis Judicii','Mind Judgement'),
+        S('lgj_infirmitas','Infirmitas Judicii','Weakness Judgement'),
+        S('lgj_tarda','Tarda Judicii','Slow Judgement'),
+        S('lgj_gracile','Gracile Judicii','Slender Judgement'),
+        S('lgj_mors','Mors Judicii','Death Judgement'),
+        S('lgj_fragilis','Fragilis Judicii','Fragile Judgement'),
+        S('lgj_pax','Pax Judicii','Peace Judgement'),
+        S('lgj_anchora','Anchora Judicii','Anchor Judgement'),
+        S('lgj_stypticus','Stypticus Judicii','Paralyze Judgement'),
+        S('lgj_occidere','Occidere Judicii','Killing Judgement'),
+      ]},
+    ]
+  },
+  {
+    key:'chaos_magic', name:'Chaos Magic', type:'chaos',
+    groups:[
+      {label:'All Ranks', tier:'main', spells:[
+        S('cha_missa','Missa Extinctio','Mass Extinction'),
+        S('cha_apoc','Apocalypsis','Apocalypse'),
+        S('cha_oblivio','Oblivio','Oblivion'),
+        S('cha_praetrunco','Praetrunco','Sever'),
+        S('cha_corruptus','Corruptus','Corrupt'),
+        S('cha_stamen','Stamen Veritas','Warp Reality'),
+        S('cha_turbatio','Turbatio','Discord'),
+        S('cha_retexo','Retexo','Unravel'),
+      ]},
+    ]
+  },
+  {
+    key:'order_magic', name:'Order Magic', type:'order',
+    groups:[
+      {label:'All Ranks', tier:'main', spells:[
+        S('ord_missa','Missa Restitutio','Mass Restoration'),
+        S('ord_miraculum','Miraculum','Miracle'),
+        S('ord_vigilantia','Vigilantia','Vigilance'),
+        S('ord_unitas','Unitas','Unity'),
+        S('ord_creatio','Creatio','Creation'),
+        S('ord_restituere','Restituere Veritas','Restore Reality'),
+        S('ord_concordia','Concordia','Harmony'),
+        S('ord_emendo','Emendo','Mend'),
+      ]},
+    ]
   }
 ];
 
@@ -1194,6 +1287,8 @@ let state = {
   collapsed: {}, 
   showLight: true,
   showDark: false,
+  showLegacy: false,
+  showDeity: false,
   charInfo: {}
 };
 
@@ -1285,6 +1380,8 @@ async function loadFromCloud(){
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     document.getElementById('filter-light').checked = !!state.showLight;
     document.getElementById('filter-dark').checked = !!state.showDark;
+    document.getElementById('filter-legacy').checked = !!state.showLegacy;
+    document.getElementById('filter-deity').checked = !!state.showDeity;
     populateCharInfoFields();
     render();
     setCloudStatus('Loaded from cloud ✓');
@@ -1386,6 +1483,8 @@ function switchToAlternativeSheet(targetUserId) {
     
     document.getElementById('filter-light').checked = !!state.showLight;
     document.getElementById('filter-dark').checked = !!state.showDark;
+    document.getElementById('filter-legacy').checked = !!state.showLegacy;
+    document.getElementById('filter-deity').checked = !!state.showDeity;
     
     populateCharInfoFields();
     render();
@@ -1405,6 +1504,8 @@ function returnToOwnSheet() {
   
   document.getElementById('filter-light').checked = !!state.showLight;
   document.getElementById('filter-dark').checked = !!state.showDark;
+  document.getElementById('filter-legacy').checked = !!state.showLegacy;
+  document.getElementById('filter-deity').checked = !!state.showDeity;
   
   populateCharInfoFields();
   render();
@@ -1471,11 +1572,15 @@ function load(){
       state.collapsed=parsed.collapsed||{};
       if(parsed.hasOwnProperty('showLight')) state.showLight = parsed.showLight;
       if(parsed.hasOwnProperty('showDark')) state.showDark = parsed.showDark;
+      if(parsed.hasOwnProperty('showLegacy')) state.showLegacy = parsed.showLegacy;
+      if(parsed.hasOwnProperty('showDeity')) state.showDeity = parsed.showDeity;
       state.charInfo = parsed.charInfo || {};
     }catch(e){console.error(e);}
   }
   document.getElementById('filter-light').checked = state.showLight;
   document.getElementById('filter-dark').checked = state.showDark;
+  document.getElementById('filter-legacy').checked = state.showLegacy;
+  document.getElementById('filter-deity').checked = state.showDeity;
   populateCharInfoFields();
   render();
 }
@@ -1519,6 +1624,8 @@ window.onCharInfoChange = function(){
 function onFilterChange(){
   state.showLight = document.getElementById('filter-light').checked;
   state.showDark = document.getElementById('filter-dark').checked;
+  state.showLegacy = document.getElementById('filter-legacy').checked;
+  state.showDeity = document.getElementById('filter-deity').checked;
   persist();
   render();
 }
@@ -1528,6 +1635,8 @@ function getVisibleSchools(){
     if(sch.type === 'neutral') return true;
     if(sch.type === 'light' && state.showLight) return true;
     if(sch.type === 'dark' && state.showDark) return true;
+    if((sch.type === 'legacy-curse' || sch.type === 'legacy-judgement') && state.showLegacy) return true;
+    if((sch.type === 'chaos' || sch.type === 'order') && state.showDeity) return true;
     return false;
   });
 }
@@ -1539,7 +1648,7 @@ function countGroup(spells){
 }
 
 function schoolMainSpells(sch){
-  return sch.groups.filter(g => g.tier === 'main').flatMap(g => g.spells);
+  return sch.groups.filter(g => g.tier === 'main' && !g.excludeFromMastery).flatMap(g => g.spells);
 }
 
 function renderSpellItem(sp){
@@ -1561,6 +1670,8 @@ function renderGroup(sch, g){
     </div>`;
 }
 
+const NO_SAVANT_ORACLE_TYPES = ['legacy-curse','legacy-judgement','chaos','order'];
+
 function renderSchool(sch){
   const mainSpells = schoolMainSpells(sch);
   const mainCount = countGroup(mainSpells);
@@ -1568,6 +1679,7 @@ function renderSchool(sch){
   const isSavant = !!state.savant[sch.key];
   const isOracle = !!state.oracle[sch.key];
   const savantDisabled = (!isSavant && savantUsed() >= MAX_SAVANT) ? 'disabled' : '';
+  const showBadges = !NO_SAVANT_ORACLE_TYPES.includes(sch.type);
 
   const otherGroups = sch.groups.filter(g => g.tier !== 'main');
   const mastered = mainCount.total > 0 && mainCount.missing === 0;
@@ -1580,10 +1692,11 @@ function renderSchool(sch){
           <div class="school-title">${sch.name}</div>
           <span class="type-tag">${sch.type} magic</span>
         </div>
+        ${showBadges ? `
         <div class="badges">
           <button class="badge-btn savant ${isSavant?'active':''}" ${savantDisabled} onclick="toggleSavant('${sch.key}')" title="Mark yourself Savant of this order">${isSavant? '★ Savant':'☆ Savant'}</button>
           <button class="badge-btn oracle ${isOracle?'active':''}" onclick="toggleOracle('${sch.key}')" title="Mark yourself Oracle of this order">${isOracle? '♦ Oracle':'♢ Oracle'}</button>
-        </div>
+        </div>` : ''}
       </div>
       <div class="school-progress">
         <div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div>
@@ -1679,6 +1792,8 @@ function importCharacter() {
       
       document.getElementById('filter-light').checked = !!state.showLight;
       document.getElementById('filter-dark').checked = !!state.showDark;
+      document.getElementById('filter-legacy').checked = !!state.showLegacy;
+      document.getElementById('filter-deity').checked = !!state.showDeity;
       populateCharInfoFields();
       
       const note = document.getElementById('save-note');
@@ -1753,7 +1868,7 @@ document.getElementById('reset-all').addEventListener('click', async () => {
     });
   });
 
-  state = { learned: resetLearned, savant:{}, oracle:{}, collapsed:{}, showLight: state.showLight, showDark: state.showDark, charInfo: {} };
+  state = { learned: resetLearned, savant:{}, oracle:{}, collapsed:{}, showLight: state.showLight, showDark: state.showDark, showLegacy: state.showLegacy, showDeity: state.showDeity, charInfo: {} };
   await persist();
   populateCharInfoFields();
   render();
