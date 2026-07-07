@@ -57,34 +57,7 @@
     -webkit-font-smoothing:antialiased;
   }
   /* Use the full viewport width, generous fluid padding so it breathes on ultrawide screens too */
-  .wrap{max-width:2200px;margin:0 auto;padding:28px clamp(18px,3.2vw,56px) 60px;}
-
-  /* TWO-COLUMN LAYOUT: character sheet fixed on the left, spells scroll on the right */
-  .layout{
-    display:grid;
-    grid-template-columns: minmax(360px, 30%) 1fr;
-    align-items:start;
-    gap:28px;
-  }
-  .sidebar{
-    display:flex;
-    flex-direction:column;
-    gap:18px;
-    position:sticky;
-    top:20px;
-    max-height:calc(100vh - 40px);
-    overflow-y:auto;
-    overflow-x:hidden;
-    padding-right:6px;
-    padding-bottom:20px;
-  }
-  .main-panel{
-    min-width:0; /* prevents grid children from forcing the column wider than the viewport */
-  }
-  @media (max-width:1100px){
-    .layout{grid-template-columns:1fr;}
-    .sidebar{position:static;max-height:none;overflow:visible;padding-right:0;}
-  }
+  .wrap{max-width:1500px;margin:0 auto;padding:28px clamp(18px,3.2vw,56px) 90px;}
 
   /* All native dropdowns/date pickers should render in dark mode, not the browser's light default */
   select, input[type=datetime-local]{color-scheme:dark;}
@@ -493,13 +466,32 @@
   .school-head{
     padding:16px 18px 12px;
     border-bottom:1px solid var(--hairline);
+    cursor:pointer;
+    user-select:none;
+    transition:background .15s;
   }
+  .school-head:hover{background:rgba(255,255,255,0.03);}
+  .school-head:focus-visible{outline:2px solid var(--gold);outline-offset:-2px;}
   .school-title-row{
     display:flex;
     justify-content:space-between;
     align-items:flex-start;
     gap:10px;
   }
+  .school-title-main{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+  }
+  .school-chevron{
+    display:inline-block;
+    font-size:15px;
+    color:var(--parchment-dim);
+    margin-top:5px;
+    transition:transform .18s;
+    flex-shrink:0;
+  }
+  .school-chevron.open{transform:rotate(90deg);}
   .school-title{
     font-family:'Cinzel', Garamond, serif;
     font-size:25.5px;
@@ -522,6 +514,8 @@
     margin-top:2px;
   }
   .badges{display:flex;gap:6px;flex-shrink:0;}
+  .school-body.collapsed{display:none;}
+  .school-body.collapsed.filter-open{display:block;}
   .badge-btn{
     font-family:'Cinzel', Garamond, serif;
     font-size:14px;
@@ -655,6 +649,13 @@
     .toolbar{position:static;backdrop-filter:none;}
     .grid{grid-template-columns:1fr;}
     .charsheet{padding:16px;}
+    .charsheet-grid{column-count:1;}
+    .stat-row{gap:8px;}
+    .stat-mini{min-width:70px;}
+    .stat-mini input[type=text]{font-size:16px;padding:6px 4px;}
+  }
+  @media (max-width:900px){
+    .charsheet-grid{column-count:1;}
   }
 
   /* CHARACTER SHEET */
@@ -662,7 +663,7 @@
     background:linear-gradient(180deg,var(--panel),var(--panel-2));
     border:1px solid var(--hairline);
     border-radius:var(--radius-lg);
-    padding:22px 26px 26px;
+    padding:26px 30px 30px;
     margin-bottom:26px;
     box-shadow:inset 3px 0 0 var(--gold), var(--shadow-soft);
   }
@@ -678,16 +679,18 @@
     border-bottom:1px solid var(--hairline);
   }
   .charsheet-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-    gap:16px 20px;
+    column-count:2;
+    column-gap:28px;
   }
   .charsheet-field{
     display:flex;
     flex-direction:column;
     gap:6px;
+    break-inside:avoid;
+    -webkit-column-break-inside:avoid;
+    margin-bottom:18px;
   }
-  .charsheet-field.wide{grid-column:1 / -1;}
+  .charsheet-field.wide{width:100%;}
   .charsheet-field label{
     font-size:15px;
     letter-spacing:0.09em;
@@ -715,13 +718,13 @@
   .stat-row{
     display:flex;
     flex-wrap:wrap;
-    gap:12px;
+    gap:14px;
   }
   .stat-mini{
     display:flex;
     flex-direction:column;
     gap:4px;
-    min-width:92px;
+    min-width:100px;
     flex:1;
   }
   .stat-mini label{
@@ -734,7 +737,7 @@
     background:rgba(0,0,0,0.28);
     border:1px solid var(--hairline);
     color:var(--parchment);
-    padding:7px 8px;
+    padding:8px 8px;
     border-radius:6px;
     font-family:'Crimson Pro',Georgia,serif;
     font-size:18.5px;
@@ -742,12 +745,12 @@
     text-align:center;
   }
   .stat-mini input[type=text]:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,160,84,0.15);}
-  .stat-mini.reset-time{min-width:190px;flex:1.6;}
+  .stat-mini.reset-time{min-width:200px;flex:1.6;}
   .stat-mini input[type=datetime-local]{
     background:rgba(0,0,0,0.28);
     border:1px solid var(--hairline);
     color:var(--parchment);
-    padding:6px 8px;
+    padding:7px 8px;
     border-radius:6px;
     font-family:'Crimson Pro',Georgia,serif;
     font-size:17px;
@@ -964,8 +967,6 @@
     <p class="sub">Track what you know, what you're missing, and where you stand as Savant or Oracle</p>
   </header>
 
-  <div class="layout">
-  <aside class="sidebar">
 
   <div class="cloud-box" id="auth-box">
     <div class="cloud-row" id="auth-form-row">
@@ -1069,7 +1070,7 @@
         <label for="ci-weapons">Weapons / Weapon Skills</label>
         <textarea id="ci-weapons" data-ci="weapons" oninput="onCharInfoChange()"></textarea>
       </div>
-      
+
       <!-- PRECAST ACTIONS FIELDS BENEATH WEAPONS -->
       <div class="charsheet-field wide">
         <label for="ci-precast-actions">Precast Actions</label>
@@ -1110,9 +1111,7 @@
     </label>
   </div>
 
-  </aside>
 
-  <main class="main-panel">
 
 
   <div class="statbar">
@@ -1126,9 +1125,14 @@
   <div class="toolbar">
     <input type="text" id="search" placeholder="Search a spell or school...">
     <button id="reset-all">Reset all checks</button>
-    
+
     <div class="toolbar-sep"></div>
-    
+
+    <button id="expand-all" onclick="setAllSchoolsCollapsed(false)">Expand all schools</button>
+    <button id="collapse-all" onclick="setAllSchoolsCollapsed(true)">Collapse all schools</button>
+
+    <div class="toolbar-sep"></div>
+
     <button id="export-char" onclick="exportCharacter()">Copy Export Code</button>
     <button id="import-char" onclick="importCharacter()">Import Character</button>
     
@@ -1152,8 +1156,6 @@
 
   <footer>Progress saves automatically to your local storage. Cloud saving of your character sheet only happens when you click "Save to Cloud Now" while logged in. Spell descriptions, tags, costs and damage are shared reference data stored centrally in the cloud for everyone using this tracker; only designated editors can change them (click a spell name to view or, if you're an editor, edit it).</footer>
 
-  </main>
-  </div><!-- /.layout -->
 </div>
 
 <div id="spell-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeSpellModal()">
@@ -2765,19 +2767,23 @@ function renderSchool(sch){
 
   const otherGroups = sch.groups.filter(g => g.tier !== 'main');
   const mastered = mainCount.total > 0 && mainCount.missing === 0;
+  const collapsed = isSchoolCollapsed(sch.key);
 
   return `
   <section class="school type-${sch.type} ${mastered?'is-mastered':''}" data-school="${sch.key}" data-school-name="${sch.name.toLowerCase()}">
-    <div class="school-head">
+    <div class="school-head" onclick="toggleSchoolCollapse('${sch.key}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSchoolCollapse('${sch.key}')}">
       <div class="school-title-row">
-        <div>
-          <div class="school-title">${sch.name}</div>
-          <span class="type-tag">${sch.type} magic</span>
+        <div class="school-title-main">
+          <span class="school-chevron ${collapsed?'':'open'}">▸</span>
+          <div>
+            <div class="school-title">${sch.name}</div>
+            <span class="type-tag">${sch.type} magic</span>
+          </div>
         </div>
         ${showBadges ? `
         <div class="badges">
-          <button class="badge-btn savant ${isSavant?'active':''}" ${savantDisabled} onclick="toggleSavant('${sch.key}')" title="Mark yourself Savant of this order">${isSavant? '★ Savant':'☆ Savant'}</button>
-          <button class="badge-btn oracle ${isOracle?'active':''}" onclick="toggleOracle('${sch.key}')" title="Mark yourself Oracle of this order">${isOracle? '♦ Oracle':'♢ Oracle'}</button>
+          <button class="badge-btn savant ${isSavant?'active':''}" ${savantDisabled} onclick="event.stopPropagation(); toggleSavant('${sch.key}')" title="Mark yourself Savant of this order">${isSavant? '★ Savant':'☆ Savant'}</button>
+          <button class="badge-btn oracle ${isOracle?'active':''}" onclick="event.stopPropagation(); toggleOracle('${sch.key}')" title="Mark yourself Oracle of this order">${isOracle? '♦ Oracle':'♢ Oracle'}</button>
         </div>` : ''}
       </div>
       <div class="school-progress">
@@ -2786,11 +2792,32 @@ function renderSchool(sch){
       </div>
       ${mastered ? `<div class="mastered-ribbon">✦ Mastered</div>` : ''}
     </div>
-    ${sch.groups.filter(g=>g.tier==='main').map(g => renderGroup(sch,g)).join('')}
-    ${otherGroups.map(g => renderGroup(sch,g)).join('')}
-    <div class="school-foot"></div>
+    <div class="school-body ${collapsed?'collapsed':''}">
+      ${sch.groups.filter(g=>g.tier==='main').map(g => renderGroup(sch,g)).join('')}
+      ${otherGroups.map(g => renderGroup(sch,g)).join('')}
+      <div class="school-foot"></div>
+    </div>
   </section>`;
 }
+
+function isSchoolCollapsed(key){
+  // Schools default to collapsed (compact button-style) unless the user
+  // has explicitly opened them before — keeps the 24-school grid from
+  // overwhelming the screen while still remembering what you opened.
+  return state.collapsed[key] !== false;
+}
+
+window.toggleSchoolCollapse = function(key){
+  state.collapsed[key] = isSchoolCollapsed(key) ? false : true;
+  persist();
+  render();
+};
+
+window.setAllSchoolsCollapsed = function(collapse){
+  getVisibleSchools().forEach(sch => { state.collapsed[sch.key] = collapse; });
+  persist();
+  render();
+};
 
 function savantUsed(){
   return Object.values(state.savant).filter(Boolean).length;
@@ -2960,6 +2987,14 @@ function applyFilters(){
   document.querySelectorAll('.school').forEach(school => {
     const hasVisible = school.querySelectorAll('.spell-item:not(.hidden)').length > 0;
     school.classList.toggle('hidden', filtersActive && !hasVisible);
+
+    // While a search/tag/cost filter is active, force open any collapsed
+    // school that has matches, so results aren't hidden behind a closed
+    // button; once filters clear, schools go back to their saved state.
+    const body = school.querySelector('.school-body');
+    if(body) body.classList.toggle('filter-open', filtersActive && hasVisible);
+    const chevron = school.querySelector('.school-chevron');
+    if(chevron) chevron.classList.toggle('open', (filtersActive && hasVisible) || !body?.classList.contains('collapsed'));
   });
 }
 
