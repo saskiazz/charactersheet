@@ -1124,7 +1124,7 @@
   </div>
 
   <div class="toolbar">
-    <input type="text" id="search" placeholder="Search a spell...">
+    <input type="text" id="search" placeholder="Search a spell or school...">
     <button id="reset-all">Reset all checks</button>
     
     <div class="toolbar-sep"></div>
@@ -2767,7 +2767,7 @@ function renderSchool(sch){
   const mastered = mainCount.total > 0 && mainCount.missing === 0;
 
   return `
-  <section class="school type-${sch.type} ${mastered?'is-mastered':''}" data-school="${sch.key}">
+  <section class="school type-${sch.type} ${mastered?'is-mastered':''}" data-school="${sch.key}" data-school-name="${sch.name.toLowerCase()}">
     <div class="school-head">
       <div class="school-title-row">
         <div>
@@ -2909,13 +2909,27 @@ function applyFilters(){
   const activeTags = Array.from(document.querySelectorAll('.tag-filter-btn.active')).map(b => b.dataset.tag);
   const costFilters = readThresholdFilters('.cost-filter-check', '.cost-filter-max');
 
+  // Schools whose own name matches the search text — spells inside them are
+  // kept visible by name even if the individual spell name doesn't match,
+  // so searching e.g. "pyromancy" surfaces the whole school.
+  const matchedSchools = new Set();
+  if(q){
+    document.querySelectorAll('.school').forEach(school => {
+      const schoolName = school.getAttribute('data-school-name') || '';
+      if(schoolName.includes(q)) matchedSchools.add(school);
+    });
+  }
+
   document.querySelectorAll('.spell-item').forEach(li => {
     const name = li.getAttribute('data-name') || '';
     const id = li.getAttribute('data-id');
     const meta = getMeta(id);
     let visible = true;
 
-    if(q && !name.includes(q)) visible = false;
+    if(q){
+      const inMatchedSchool = matchedSchools.has(li.closest('.school'));
+      if(!inMatchedSchool && !name.includes(q)) visible = false;
+    }
 
     if(visible && activeTags.length){
       if(!activeTags.some(t => meta.tags.includes(t))) visible = false;
