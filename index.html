@@ -735,6 +735,27 @@
   .rollbuff-field-abbr{margin-bottom:10px;padding-right:20px;}
   .rollbuff-field-abbr label{display:block;font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--parchment-dim);margin-bottom:4px;}
   .rollbuff-field-abbr input{width:100%;background:var(--ink);border:1px solid var(--hairline);color:var(--parchment);padding:7px 9px;border-radius:6px;font-family:'Crimson Pro',serif;font-size:14px;}
+  .rollbuff-type-checks{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px 16px;
+  }
+  .rollbuff-type-check{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    font-size:13px;
+    text-transform:none;
+    letter-spacing:0;
+    color:var(--parchment);
+    cursor:pointer;
+    font-weight:400;
+  }
+  .rollbuff-type-check input{
+    cursor:pointer;
+    accent-color:var(--gold);
+  }
+  .rollbuff-field-types{grid-column:1 / -1;}
   .rollbuff-row-fields select{
     width:100%;
     background:var(--ink);
@@ -1100,7 +1121,7 @@
   <div class="modal-box">
     <button class="modal-close" onclick="closeRollBuffModal()">✕</button>
     <h2 id="modal-title-rollbuff">Roll Buffs / Debuffs</h2>
-    <p class="modal-subtitle">Track modifiers to apply against enemy rolls. Pick a type for DC/Attack/Defense buffs — matching types are added together automatically on your sheet. Only the value and abbreviation show on your sheet — the description stays here.</p>
+    <p class="modal-subtitle">Track modifiers to apply against enemy rolls. Check any totals a buff applies to (DC / Attack / Defense) — check more than one if it's a general buff, and matching types are added together automatically on your sheet. Leave all unchecked for anything you just want to keep track of (like enemy debuffs) without it affecting any total. Only the value and abbreviation show on your sheet — the description stays here.</p>
 
     <div id="rollbuff-list"></div>
     <p id="rollbuff-list-empty" class="rollbuff-list-empty" style="display:none;">No roll buffs or debuffs yet. Add one below.</p>
@@ -2367,18 +2388,18 @@ function escapeHtml(str){
 const ROLLBUFF_TYPE_LABELS = { dc:'DC', attack:'Attack', defense:'Defense' };
 const ROLLBUFF_TYPE_ORDER = ['dc','attack','defense'];
 
+function getBuffTypes(b){
+  if(Array.isArray(b.types)) return b.types.filter(t => ROLLBUFF_TYPE_ORDER.includes(t));
+  if(b.type && b.type !== 'other') return [b.type];
+  return [];
+}
+
 function parseRollBuffValue(v){
   if(v == null) return NaN;
   const s = String(v).trim().replace(',', '.');
   if(!s) return NaN;
   if(!/^[+-]?\d+(\.\d+)?$/.test(s)) return NaN;
   return parseFloat(s);
-}
-
-function getBuffTypes(b){
-  if(Array.isArray(b.types) && b.types.length) return b.types;
-  if(b.type) return [b.type];
-  return ['other'];
 }
 
 function renderRollBuffDisplay(){
@@ -2411,7 +2432,7 @@ function renderRollBuffDisplay(){
     html += `<span class="rollbuff-pill rollbuff-pill-total" title="${escapeHtml(tooltip)}"><span class="rb-val ${signClass}">${escapeHtml(totalStr)}</span><span class="rb-abbr">${ROLLBUFF_TYPE_LABELS[type]}${group.length>1 ? ` (${group.length})` : ''}</span></span>`;
   });
 
-  const others = buffs.filter(b => getBuffTypes(b).includes('other'));
+  const others = buffs.filter(b => getBuffTypes(b).length === 0);
   others.forEach(b => {
     const val = (b.value || '').trim();
     const abbr = (b.abbr || '').trim();
@@ -2434,28 +2455,27 @@ function renderRollBuffList(){
   if(emptyEl) emptyEl.style.display = 'none';
   listEl.innerHTML = buffs.map(b => {
     const types = getBuffTypes(b);
-    const isOther = types.includes('other');
     return `
     <div class="rollbuff-row" data-id="${b.id}">
       <button type="button" class="rollbuff-remove" title="Remove" onclick="removeRollBuff('${b.id}')">✕</button>
-      <div class="rollbuff-type-group">
-        <label>Applies to <span class="modal-hint">(pick any combo — matching types add together; Other is kept separate, e.g. for enemy debuffs)</span></label>
-        <div class="rollbuff-type-checks">
-          <label class="rollbuff-check"><input type="checkbox" ${types.includes('dc')?'checked':''} onchange="toggleRollBuffType('${b.id}','dc',this.checked)"> DC</label>
-          <label class="rollbuff-check"><input type="checkbox" ${types.includes('attack')?'checked':''} onchange="toggleRollBuffType('${b.id}','attack',this.checked)"> Attack</label>
-          <label class="rollbuff-check"><input type="checkbox" ${types.includes('defense')?'checked':''} onchange="toggleRollBuffType('${b.id}','defense',this.checked)"> Defense</label>
-          <label class="rollbuff-check"><input type="checkbox" ${isOther?'checked':''} onchange="toggleRollBuffType('${b.id}','other',this.checked)"> Other / enemy debuff</label>
-        </div>
-      </div>
       <div class="rollbuff-row-fields">
-        <div>
+        <div class="rollbuff-field-types" style="grid-column:1 / -1;">
+          <label>Applies to <span class="modal-hint">(check any that apply — matching types are added together)</span></label>
+          <div class="rollbuff-type-checks">
+            <label class="rollbuff-type-check"><input type="checkbox" ${types.includes('dc')?'checked':''} onchange="toggleRollBuffType('${b.id}','dc',this.checked)"> DC</label>
+            <label class="rollbuff-type-check"><input type="checkbox" ${types.includes('attack')?'checked':''} onchange="toggleRollBuffType('${b.id}','attack',this.checked)"> Attack Roll</label>
+            <label class="rollbuff-type-check"><input type="checkbox" ${types.includes('defense')?'checked':''} onchange="toggleRollBuffType('${b.id}','defense',this.checked)"> Defense Roll</label>
+          </div>
+          <p class="modal-hint" style="margin:4px 0 0;">${types.length ? '' : 'None checked — tracked only, not added to any total (use this for enemy debuffs, notes, etc).'}</p>
+        </div>
+        <div style="grid-column:1 / -1;">
           <label for="rb-value-${b.id}">Value</label>
           <input type="text" id="rb-value-${b.id}" value="${escapeHtml(b.value)}" placeholder="e.g. +2" oninput="updateRollBuff('${b.id}','value',this.value)">
         </div>
-        <div>
-          <label for="rb-abbr-${b.id}">Abbreviation <span class="modal-hint">(shows on sheet)</span></label>
-          <input type="text" id="rb-abbr-${b.id}" value="${escapeHtml(b.abbr)}" placeholder="e.g. ATK vs undead" oninput="updateRollBuff('${b.id}','abbr',this.value)">
-        </div>
+      </div>
+      <div class="rollbuff-field-abbr">
+        <label for="rb-abbr-${b.id}">Abbreviation <span class="modal-hint">(shows on sheet)</span></label>
+        <input type="text" id="rb-abbr-${b.id}" value="${escapeHtml(b.abbr)}" placeholder="e.g. ATK vs undead" oninput="updateRollBuff('${b.id}','abbr',this.value)">
       </div>
       <div class="rollbuff-field-desc">
         <label for="rb-desc-${b.id}">Description <span class="modal-hint">(only visible in this menu)</span></label>
@@ -2474,7 +2494,20 @@ function makeRollBuffId(){
 window.addRollBuff = function(){
   if (isViewingOther || editLocked) return;
   if(!Array.isArray(state.rollBuffs)) state.rollBuffs = [];
-  state.rollBuffs.push({ id: makeRollBuffId(), type:'other', value:'', abbr:'', desc:'' });
+  state.rollBuffs.push({ id: makeRollBuffId(), types:[], value:'', abbr:'', desc:'' });
+  persist();
+  renderRollBuffList();
+};
+
+window.toggleRollBuffType = function(id, type, checked){
+  if (isViewingOther || editLocked) return;
+  const buff = (state.rollBuffs || []).find(b => b.id === id);
+  if(!buff) return;
+  let types = getBuffTypes(buff);
+  if(checked && !types.includes(type)) types = types.concat([type]);
+  if(!checked) types = types.filter(t => t !== type);
+  buff.types = types;
+  delete buff.type;
   persist();
   renderRollBuffList();
 };
