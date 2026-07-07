@@ -2006,11 +2006,13 @@ function capitalize(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
 function formatCost(meta){
   const castParts = [];
   ['body','mind','spirit'].forEach(stat=>{
-    if(meta.cost[stat]) castParts.push(`${meta.cost[stat]} ${capitalize(stat)}`);
+    const v = Number(meta.cost[stat]) || 0;
+    if(v) castParts.push(`${v} ${capitalize(stat)}`);
   });
   const upkeepParts = [];
   ['body','mind','spirit'].forEach(stat=>{
-    if(meta.upkeep[stat]) upkeepParts.push(`${meta.upkeep[stat]} ${capitalize(stat)}`);
+    const v = Number(meta.upkeep[stat]) || 0;
+    if(v) upkeepParts.push(`${v} ${capitalize(stat)}`);
   });
   let str = castParts.join(' + ');
   if(upkeepParts.length){
@@ -2022,11 +2024,13 @@ function formatCost(meta){
 function formatEffect(onCast, perRound){
   const castParts = [];
   ['body','mind','spirit'].forEach(stat=>{
-    if(onCast[stat]) castParts.push(`${onCast[stat]} ${capitalize(stat)}`);
+    const v = Number(onCast[stat]) || 0;
+    if(v) castParts.push(`${v} ${capitalize(stat)}`);
   });
   const recastParts = [];
   ['body','mind','spirit'].forEach(stat=>{
-    if(perRound[stat]) recastParts.push(`${perRound[stat]} ${capitalize(stat)}`);
+    const v = Number(perRound[stat]) || 0;
+    if(v) recastParts.push(`${v} ${capitalize(stat)}`);
   });
   let str = castParts.join(' + ');
   if(recastParts.length){
@@ -2050,7 +2054,7 @@ function renderTagFilters(){
     container.innerHTML = `<span class="filter-hint">No tags yet — click a spell name to add some.</span>`;
     return;
   }
-  container.innerHTML = tags.map(t => `<button type="button" class="tag-filter-btn ${activeTags.includes(t)?'active':''}" data-tag="${t}" onclick="toggleTagFilter(this)">${t}</button>`).join('');
+  container.innerHTML = tags.map(t => `<button type="button" class="tag-filter-btn ${activeTags.includes(t)?'active':''}" data-tag="${escapeHtml(t)}" onclick="toggleTagFilter(this)">${escapeHtml(t)}</button>`).join('');
 }
 
 window.toggleTagFilter = function(btn){
@@ -2368,7 +2372,7 @@ async function fetchOtherCharacters() {
 
         const card = document.createElement('button');
         card.style.cssText = "background: rgba(0,0,0,0.2); border: 1px solid var(--hairline); color: var(--parchment); padding: 10px; border-radius: 6px; text-align: left; cursor: pointer; font-family: inherit; transition: border-color 0.2s;";
-        card.innerHTML = `<strong style="color: var(--light-accent); display:block; margin-bottom:2px;">${charName}</strong><span style="font-size:16px; color:var(--parchment-dim);">${charInfo.race || 'No Race'} · ${charInfo.rank || 'No Rank'}</span>`;
+        card.innerHTML = `<strong style="color: var(--light-accent); display:block; margin-bottom:2px;">${escapeHtml(charName)}</strong><span style="font-size:16px; color:var(--parchment-dim);">${escapeHtml(charInfo.race || 'No Race')} · ${escapeHtml(charInfo.rank || 'No Rank')}</span>`;
         
         card.addEventListener('mouseenter', () => card.style.borderColor = "var(--gold)");
         card.addEventListener('mouseleave', () => card.style.borderColor = "var(--hairline)");
@@ -2843,7 +2847,7 @@ function renderSpellItem(sp){
     const em = EFFECT_TYPE_META[type];
     return `<span class="${em.cls}">${em.icon} ${str}</span>`;
   }).join('');
-  const tagsHtml = meta.tags.length ? `<span class="spell-tags">${meta.tags.map(t=>`<span class="mini-tag">${t}</span>`).join('')}</span>` : '';
+  const tagsHtml = meta.tags.length ? `<span class="spell-tags">${meta.tags.map(t=>`<span class="mini-tag">${escapeHtml(t)}</span>`).join('')}</span>` : '';
   return `
     <li class="spell-item" data-name="${(sp.latin+' '+sp.en).toLowerCase()}" data-id="${sp.id}">
       <input type="checkbox" id="cb_${sp.id}" ${checked} onchange="onToggleSpell('${sp.id}', this.checked)">
