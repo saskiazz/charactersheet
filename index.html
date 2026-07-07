@@ -291,7 +291,111 @@
     color:var(--parchment-dim);
     margin-right:2px;
   }
-  .tag-filters{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+  .filter-row-tags-wrap{display:flex;flex-direction:column;gap:11px;width:100%;}
+  .filter-row-tags-header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  .tag-filters-actions{display:flex;align-items:center;gap:8px;margin-right:auto;}
+  .tag-mini-btn{
+    background:none;
+    border:none;
+    color:var(--parchment-dim);
+    font-family:'Crimson Pro',serif;
+    font-size:13.5px;
+    cursor:pointer;
+    padding:2px 1px;
+    text-decoration:underline;
+    text-decoration-color:transparent;
+    text-underline-offset:3px;
+    transition:color .15s, text-decoration-color .15s;
+  }
+  .tag-mini-btn:hover{color:var(--gold-bright);text-decoration-color:var(--gold-bright);}
+  .tag-mini-sep{color:var(--hairline);font-size:12px;}
+  .tag-filters{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(230px, 1fr));
+    gap:10px;
+    align-items:start;
+    flex:1;
+    min-width:0;
+  }
+  .tag-group{
+    background:var(--panel-2);
+    border:1px solid var(--hairline-soft);
+    border-radius:var(--radius-sm);
+    overflow:hidden;
+    transition:border-color .15s, background .15s;
+  }
+  .tag-group.open{border-color:var(--hairline);background:var(--panel-3);}
+  .tag-group-header{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    width:100%;
+    background:none;
+    border:none;
+    padding:9px 12px;
+    cursor:pointer;
+    font-family:'Crimson Pro',serif;
+    text-align:left;
+    color:inherit;
+  }
+  .tag-group-header:hover .tag-group-label{color:var(--gold-bright);}
+  .tag-group-chevron{
+    font-size:10px;
+    color:var(--parchment-dim);
+    flex-shrink:0;
+    width:9px;
+    display:inline-block;
+    transition:transform .18s ease;
+  }
+  .tag-group.open .tag-group-chevron{transform:rotate(90deg);}
+  .tag-group-label{
+    font-size:12.5px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--gold);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    transition:color .15s;
+  }
+  .tag-group-count{
+    font-size:12px;
+    color:var(--parchment-dim);
+    opacity:0.65;
+    flex-shrink:0;
+  }
+  .tag-group-active-badge{
+    margin-left:auto;
+    background:var(--gold);
+    color:#1a1408;
+    font-size:11px;
+    font-weight:700;
+    line-height:1;
+    padding:3px 7px;
+    border-radius:9px;
+    flex-shrink:0;
+  }
+  .tag-group-chips{
+    display:none;
+    flex-wrap:wrap;
+    gap:7px;
+    padding:0 12px 12px;
+  }
+  .tag-group.open .tag-group-chips{display:flex;}
+  .manage-tag-groups-btn{
+    background:var(--panel-2);
+    border:1px solid var(--hairline);
+    color:var(--parchment-dim);
+    padding:7px 13px;
+    border-radius:20px;
+    font-family:'Crimson Pro',serif;
+    font-size:13.5px;
+    cursor:pointer;
+    white-space:nowrap;
+    flex-shrink:0;
+    transition:color .15s, border-color .15s;
+  }
+  .manage-tag-groups-btn:hover{color:var(--light-accent);border-color:var(--gold);}
   .threshold-filter{
     display:flex;
     align-items:center;
@@ -831,6 +935,58 @@
     cursor:pointer;
   }
   .rollbuff-remove:hover{color:var(--danger);}
+  .tag-group-move-row{
+    position:absolute;
+    top:8px;right:38px;
+    display:flex;
+    gap:2px;
+  }
+  .tag-group-move-btn{
+    background:transparent;
+    border:none;
+    color:var(--parchment-dim);
+    font-size:13px;
+    cursor:pointer;
+    padding:2px 4px;
+  }
+  .tag-group-move-btn:hover:not(:disabled){color:var(--gold-bright);}
+  .tag-group-move-btn:disabled{opacity:0.25;cursor:not-allowed;}
+
+  .tag-pool-block{margin-bottom:18px;}
+  .tag-pool-label{
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--gold);
+    margin-bottom:6px;
+  }
+  .tag-dropzone{
+    display:flex;
+    flex-wrap:wrap;
+    gap:7px;
+    min-height:42px;
+    border:1px dashed var(--hairline);
+    border-radius:8px;
+    padding:8px;
+    transition:border-color .15s, background .15s;
+  }
+  .tag-dropzone.drag-over{border-color:var(--gold);background:rgba(201,160,84,0.08);}
+  .tag-pool-zone{background:rgba(0,0,0,0.15);}
+  .tag-zone-empty{font-size:12.5px;color:var(--parchment-dim);font-style:italic;align-self:center;}
+  .tag-chip{
+    background:var(--panel-2);
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    padding:5px 12px;
+    border-radius:16px;
+    font-size:13px;
+    cursor:grab;
+    user-select:none;
+    transition:border-color .15s, opacity .15s;
+  }
+  .tag-chip:hover{border-color:var(--gold);}
+  .tag-chip:active{cursor:grabbing;}
+  .tag-chip.dragging{opacity:0.35;}
   .rollbuff-row-fields{
     display:grid;
     grid-template-columns:1fr 2fr;
@@ -1167,8 +1323,16 @@
       <label class="threshold-filter"><input type="checkbox" class="cost-filter-check" data-stat="mind" onchange="applyFilters()"> Mind <input type="number" class="cost-filter-max" data-stat="mind" min="0" step="1" placeholder="any" oninput="applyFilters()"></label>
       <label class="threshold-filter"><input type="checkbox" class="cost-filter-check" data-stat="spirit" onchange="applyFilters()"> Spirit <input type="number" class="cost-filter-max" data-stat="spirit" min="0" step="1" placeholder="any" oninput="applyFilters()"></label>
     </div>
-    <div class="filter-row">
-      <span class="filter-row-label">Tags:</span>
+    <div class="filter-row-tags-wrap">
+      <div class="filter-row-tags-header">
+        <span class="filter-row-label">Tags:</span>
+        <div class="tag-filters-actions">
+          <button type="button" class="tag-mini-btn" onclick="expandAllTagGroups()">Expand all</button>
+          <span class="tag-mini-sep">·</span>
+          <button type="button" class="tag-mini-btn" onclick="collapseAllTagGroups()">Collapse all</button>
+        </div>
+        <button type="button" id="manage-tag-groups-btn" class="manage-tag-groups-btn" style="display:none;" onclick="openTagGroupsModal()" title="Organize tags into groups (visible to everyone, editable by spell editors)">⚙ Manage Tag Groups</button>
+      </div>
       <div id="tag-filters" class="tag-filters"></div>
     </div>
   </div>
@@ -1299,6 +1463,26 @@
     <div class="modal-actions" style="justify-content:space-between;">
       <button type="button" onclick="addRollBuff()">+ Add Buff / Debuff</button>
       <button type="button" id="rollbuff-done" onclick="closeRollBuffModal()">Done</button>
+    </div>
+  </div>
+</div>
+
+<div id="tag-groups-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeTagGroupsModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeTagGroupsModal()">✕</button>
+    <h2 id="modal-title-tag-groups">Manage Tag Groups</h2>
+    <p class="modal-subtitle">Organize how tags are clustered in the filter menu. This is shared, cloud-stored data — everyone using the tracker sees the same groups, and any spell editor can change them. Drag a tag from the pool into a group to assign it, or back out to unassign it.</p>
+
+    <div id="tag-groups-list"></div>
+    <p id="tag-groups-list-empty" class="rollbuff-list-empty" style="display:none;">No tag groups yet. Add one below — everything not covered by a group will keep showing under "Other".</p>
+
+    <div class="modal-actions" style="justify-content:space-between;">
+      <button type="button" onclick="addTagGroup()">+ Add Group</button>
+      <div style="display:flex; gap:10px;">
+        <span id="tag-groups-status" style="font-size:13px; color:var(--parchment-dim); font-style:italic; align-self:center;"></span>
+        <button type="button" onclick="closeTagGroupsModal()">Cancel</button>
+        <button type="button" id="tag-groups-save" onclick="saveTagGroupsModal()">Save</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1951,7 +2135,7 @@ async function loadSpellMeta(){
 
 async function checkSpellEditorStatus(){
   isSpellEditor = false;
-  if(!currentUser) return;
+  if(!currentUser){ updateTagGroupsButtonVisibility(); return; }
   try{
     const { data, error } = await supabaseClient
       .from('spell_editors')
@@ -1960,6 +2144,7 @@ async function checkSpellEditorStatus(){
       .maybeSingle();
     if(!error && data) isSpellEditor = true;
   }catch(e){ console.error(e); }
+  updateTagGroupsButtonVisibility();
 }
 
 async function saveSpellMetaRow(id, meta){
@@ -2045,6 +2230,8 @@ function getAllTags(){
   return Array.from(tagSet).sort();
 }
 
+let tagGroupOpenKeys = new Set(); // which tag-group accordions are expanded (persists across re-renders)
+
 function renderTagFilters(){
   const container = document.getElementById('tag-filters');
   if(!container) return;
@@ -2054,11 +2241,65 @@ function renderTagFilters(){
     container.innerHTML = `<span class="filter-hint">No tags yet — click a spell name to add some.</span>`;
     return;
   }
-  container.innerHTML = tags.map(t => `<button type="button" class="tag-filter-btn ${activeTags.includes(t)?'active':''}" data-tag="${escapeHtml(t)}" onclick="toggleTagFilter(this)">${escapeHtml(t)}</button>`).join('');
+  const groups = groupTags(tags);
+  container.innerHTML = groups.map(g => {
+    const key = g.label;
+    const activeInGroup = g.tags.filter(t => activeTags.includes(t));
+    const isOpen = tagGroupOpenKeys.has(key) || activeInGroup.length > 0;
+    return `
+    <div class="tag-group ${isOpen?'open':''}" data-group-key="${escapeHtml(key)}">
+      <button type="button" class="tag-group-header" onclick="toggleTagGroup(this.closest('.tag-group'))">
+        <span class="tag-group-chevron">▸</span>
+        <span class="tag-group-label">${escapeHtml(g.label)}</span>
+        <span class="tag-group-count">${g.tags.length}</span>
+        ${activeInGroup.length ? `<span class="tag-group-active-badge">${activeInGroup.length}</span>` : ''}
+      </button>
+      <div class="tag-group-chips">
+        ${g.tags.map(t => `<button type="button" class="tag-filter-btn ${activeTags.includes(t)?'active':''}" data-tag="${escapeHtml(t)}" onclick="toggleTagFilter(this)">${escapeHtml(t)}</button>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
 }
+
+window.toggleTagGroup = function(groupEl){
+  if(!groupEl) return;
+  const key = groupEl.dataset.groupKey;
+  const nowOpen = groupEl.classList.toggle('open');
+  if(nowOpen) tagGroupOpenKeys.add(key);
+  else tagGroupOpenKeys.delete(key);
+};
+
+window.expandAllTagGroups = function(){
+  document.querySelectorAll('#tag-filters .tag-group').forEach(el => {
+    el.classList.add('open');
+    tagGroupOpenKeys.add(el.dataset.groupKey);
+  });
+};
+
+window.collapseAllTagGroups = function(){
+  document.querySelectorAll('#tag-filters .tag-group').forEach(el => {
+    el.classList.remove('open');
+    tagGroupOpenKeys.delete(el.dataset.groupKey);
+  });
+};
 
 window.toggleTagFilter = function(btn){
   btn.classList.toggle('active');
+  const groupEl = btn.closest('.tag-group');
+  if(groupEl){
+    const activeCount = groupEl.querySelectorAll('.tag-filter-btn.active').length;
+    let badge = groupEl.querySelector('.tag-group-active-badge');
+    if(activeCount > 0){
+      if(!badge){
+        badge = document.createElement('span');
+        badge.className = 'tag-group-active-badge';
+        groupEl.querySelector('.tag-group-header').appendChild(badge);
+      }
+      badge.textContent = activeCount;
+    } else if(badge){
+      badge.remove();
+    }
+  }
   applyFilters();
 };
 
@@ -2486,6 +2727,7 @@ async function signOut(){
   currentUser = null;
   isSpellEditor = false;
   updateAuthUI();
+  updateTagGroupsButtonVisibility();
   setCloudStatus('Logged out.', false);
 }
 
@@ -2570,6 +2812,245 @@ function escapeHtml(str){
 }
 
 const ROLLBUFF_TYPE_LABELS = { dc:'DC', attack:'Attack', defense:'Defense' };
+
+/* TAG GROUPS — purely a display/organization layer over the tags that
+   already live in the shared spell_meta cloud table. This does NOT change
+   or move any cloud data; it only decides how the filter menu clusters the
+   tag chips it already gets from getAllTags(). Edit the arrays below to
+   match how you actually use tags — any real tag not listed here still
+   shows up, just under "Other" at the end, so nothing ever gets hidden.
+   Tag names must match exactly (case-sensitive) what's stored in the
+   spell_meta.tags array. */
+/* TAG GROUPS — shared cloud data (table "tag_groups"), same pattern as
+   spell_meta: everyone can read them, only users listed in spell_editors
+   can create/edit/delete them, via the "Manage Tag Groups" button. Until
+   an editor actually creates groups, every tag simply shows under "Other" —
+   there is no hardcoded/guessed default grouping. */
+const OTHER_TAG_GROUP_LABEL = 'Other';
+
+let tagGroups = [];        // loaded from cloud table "tag_groups"
+let tagGroupsLoaded = false;
+
+async function loadTagGroups(){
+  try{
+    const { data, error } = await supabaseClient
+      .from('tag_groups')
+      .select('*')
+      .order('sort_order', { ascending: true });
+    if(error) throw error;
+    tagGroups = (data || []).map(row => ({
+      key: row.key,
+      label: row.label,
+      tags: Array.isArray(row.tags) ? row.tags : [],
+    }));
+  }catch(e){
+    console.error('Could not load tag groups from cloud:', e);
+    tagGroups = [];
+  }
+  tagGroupsLoaded = true;
+}
+
+/* Splits the full (sorted) tag list into the configured groups, in order,
+   followed by an "Other" bucket for anything not explicitly assigned. */
+function groupTags(allTags){
+  const assigned = new Set();
+  const groups = tagGroups.map(g => {
+    const present = g.tags.filter(t => allTags.includes(t));
+    present.forEach(t => assigned.add(t));
+    return { label: g.label, tags: present };
+  }).filter(g => g.tags.length);
+  const leftover = allTags.filter(t => !assigned.has(t));
+  if(leftover.length) groups.push({ label: OTHER_TAG_GROUP_LABEL, tags: leftover });
+  return groups;
+}
+
+function genTagGroupKey(){
+  return 'tg_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+}
+
+function updateTagGroupsButtonVisibility(){
+  const btn = document.getElementById('manage-tag-groups-btn');
+  if(btn) btn.style.display = isSpellEditor ? '' : 'none';
+}
+
+/* Working copy edited while the modal is open — Cancel just discards it,
+   only Save writes anything to the cloud. */
+let editingTagGroups = [];
+
+window.openTagGroupsModal = function(){
+  if(!isSpellEditor) return;
+  editingTagGroups = tagGroups.map(g => ({
+    key: g.key,
+    label: g.label,
+    tags: (g.tags || []).slice(),
+  }));
+  document.getElementById('tag-groups-status').textContent = '';
+  renderTagGroupsList();
+  document.getElementById('tag-groups-modal-backdrop').classList.add('open');
+};
+
+window.closeTagGroupsModal = function(){
+  document.getElementById('tag-groups-modal-backdrop').classList.remove('open');
+  editingTagGroups = [];
+};
+
+function renderTagGroupsList(){
+  const listEl = document.getElementById('tag-groups-list');
+  const emptyEl = document.getElementById('tag-groups-list-empty');
+  emptyEl.style.display = editingTagGroups.length ? 'none' : 'block';
+
+  // Union of real spell tags + anything already sitting in a group (so a
+  // tag that's no longer used on any spell doesn't just silently vanish
+  // from the editor — you can still see and remove it).
+  const allKnown = Array.from(new Set([...getAllTags(), ...editingTagGroups.flatMap(g => g.tags)])).sort();
+  const assigned = new Set(editingTagGroups.flatMap(g => g.tags));
+  const unassigned = allKnown.filter(t => !assigned.has(t));
+
+  const chip = (tag, groupKey) => `<span class="tag-chip" draggable="true" data-tag="${escapeHtml(tag)}" data-from-group="${groupKey}"
+      ondragstart="handleTagChipDragStart(event)"
+      ondragend="handleTagChipDragEnd()">${escapeHtml(tag)}</span>`;
+
+  const poolHtml = `
+    <div class="tag-pool-block">
+      <div class="tag-pool-label">Unassigned tags <span class="modal-hint">(drag into a group below)</span></div>
+      <div class="tag-dropzone tag-pool-zone" ondragover="handleTagZoneDragOver(event)" ondragleave="handleTagZoneDragLeave(event)" ondrop="handleTagZoneDrop(event,'__unassigned__')">
+        ${unassigned.length ? unassigned.map(t => chip(t, '__unassigned__')).join('') : '<span class="tag-zone-empty">Nothing unassigned — nice and tidy.</span>'}
+      </div>
+    </div>`;
+
+  const groupsHtml = editingTagGroups.map((g, i) => `
+    <div class="rollbuff-row">
+      <button type="button" class="rollbuff-remove" onclick="removeTagGroup('${g.key}')" title="Remove group">✕</button>
+      <div class="tag-group-move-row">
+        <button type="button" class="tag-group-move-btn" onclick="moveTagGroup('${g.key}',-1)" ${i===0?'disabled':''} title="Move up">▲</button>
+        <button type="button" class="tag-group-move-btn" onclick="moveTagGroup('${g.key}',1)" ${i===editingTagGroups.length-1?'disabled':''} title="Move down">▼</button>
+      </div>
+      <div style="padding-right:64px; margin-bottom:10px;">
+        <label for="tg-label-${g.key}">Group name</label>
+        <input type="text" id="tg-label-${g.key}" value="${escapeHtml(g.label)}" placeholder="e.g. Crowd Control" oninput="updateTagGroupField('${g.key}',this.value)">
+      </div>
+      <div class="tag-dropzone" ondragover="handleTagZoneDragOver(event)" ondragleave="handleTagZoneDragLeave(event)" ondrop="handleTagZoneDrop(event,'${g.key}')">
+        ${g.tags.length ? g.tags.map(t => chip(t, g.key)).join('') : '<span class="tag-zone-empty">Drag tags here</span>'}
+      </div>
+    </div>`).join('');
+
+  listEl.innerHTML = poolHtml + groupsHtml;
+}
+
+let draggedTag = null;
+let draggedFromGroupKey = null;
+
+window.handleTagChipDragStart = function(e){
+  const el = e.target;
+  draggedTag = el.dataset.tag;
+  draggedFromGroupKey = el.dataset.fromGroup;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', draggedTag);
+  el.classList.add('dragging');
+};
+
+window.handleTagChipDragEnd = function(){
+  document.querySelectorAll('.tag-chip.dragging').forEach(el => el.classList.remove('dragging'));
+  document.querySelectorAll('.tag-dropzone.drag-over').forEach(el => el.classList.remove('drag-over'));
+  draggedTag = null;
+  draggedFromGroupKey = null;
+};
+
+window.handleTagZoneDragOver = function(e){
+  e.preventDefault();
+  e.currentTarget.classList.add('drag-over');
+};
+
+window.handleTagZoneDragLeave = function(e){
+  e.currentTarget.classList.remove('drag-over');
+};
+
+window.handleTagZoneDrop = function(e, toGroupKey){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const tag = draggedTag || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
+  if(!tag) return;
+
+  // Remove it from wherever it currently lives (a real group; the pool
+  // itself holds nothing to remove from).
+  editingTagGroups.forEach(g => { g.tags = g.tags.filter(t => t !== tag); });
+
+  // A tag belongs to at most one group at a time — dropping it into a
+  // group assigns it there; dropping it back on the pool just unassigns it.
+  if(toGroupKey !== '__unassigned__'){
+    const target = editingTagGroups.find(g => g.key === toGroupKey);
+    if(target && !target.tags.includes(tag)) target.tags.push(tag);
+  }
+  renderTagGroupsList();
+};
+
+window.addTagGroup = function(){
+  editingTagGroups.push({ key: genTagGroupKey(), label: '', tags: [] });
+  renderTagGroupsList();
+};
+
+window.removeTagGroup = function(key){
+  // Tags in the removed group fall back to "unassigned" automatically,
+  // since the pool is computed from what's left over.
+  editingTagGroups = editingTagGroups.filter(g => g.key !== key);
+  renderTagGroupsList();
+};
+
+window.moveTagGroup = function(key, dir){
+  const i = editingTagGroups.findIndex(g => g.key === key);
+  const j = i + dir;
+  if(i === -1 || j < 0 || j >= editingTagGroups.length) return;
+  [editingTagGroups[i], editingTagGroups[j]] = [editingTagGroups[j], editingTagGroups[i]];
+  renderTagGroupsList();
+};
+
+window.updateTagGroupField = function(key, value){
+  const g = editingTagGroups.find(g => g.key === key);
+  if(g) g.label = value;
+};
+
+window.saveTagGroupsModal = async function(){
+  if(!isSpellEditor) return;
+  const statusEl = document.getElementById('tag-groups-status');
+  const saveBtn = document.getElementById('tag-groups-save');
+  const cleaned = editingTagGroups
+    .map(g => ({ key: g.key, label: g.label.trim(), tags: g.tags }))
+    .filter(g => g.label);
+
+  saveBtn.disabled = true;
+  statusEl.textContent = 'Saving...';
+  try{
+    const beforeKeys = new Set(tagGroups.map(g => g.key));
+    const afterKeys = new Set(cleaned.map(g => g.key));
+    const removedKeys = [...beforeKeys].filter(k => !afterKeys.has(k));
+
+    const upserts = cleaned.map((g, i) => ({
+      key: g.key,
+      label: g.label,
+      tags: g.tags,
+      sort_order: i,
+      updated_at: new Date().toISOString(),
+    }));
+
+    if(upserts.length){
+      const { error: upsertError } = await supabaseClient.from('tag_groups').upsert(upserts, { onConflict: 'key' });
+      if(upsertError) throw upsertError;
+    }
+    if(removedKeys.length){
+      const { error: deleteError } = await supabaseClient.from('tag_groups').delete().in('key', removedKeys);
+      if(deleteError) throw deleteError;
+    }
+
+    tagGroups = cleaned;
+    renderTagFilters();
+    closeTagGroupsModal();
+  }catch(e){
+    console.error(e);
+    statusEl.textContent = 'Error: ' + (e.message || 'could not save.');
+  }finally{
+    saveBtn.disabled = false;
+  }
+};
 const ROLLBUFF_TYPE_ORDER = ['dc','attack','defense'];
 
 function getBuffTypes(b){
@@ -3230,6 +3711,7 @@ document.getElementById('cloud-reload').addEventListener('click', () => {
 
 (async function boot(){
   await loadSpellMeta();     // fetch shared spell data (desc/tags/cost/damage) from the cloud
+  await loadTagGroups();     // fetch shared tag-group organization from the cloud
   renderTagFilters();
   load();                    // renders the grid with the loaded spell metadata
   applyEditLockState();      // apply saved lock preference before anything can be touched
