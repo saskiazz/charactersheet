@@ -444,6 +444,7 @@
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(420px,1fr));
     gap:22px;
+    align-items:start;
   }
   .school{
     background:linear-gradient(180deg,var(--panel),var(--panel-2));
@@ -492,6 +493,25 @@
     flex-shrink:0;
   }
   .school-chevron.open{transform:rotate(90deg);}
+  .school-drag-handle{
+    display:inline-block;
+    font-size:19px;
+    line-height:1;
+    color:var(--parchment-dim);
+    margin-top:3px;
+    padding:2px 4px;
+    cursor:grab;
+    flex-shrink:0;
+    user-select:none;
+    border-radius:5px;
+    transition:color .15s, background .15s;
+  }
+  .school-drag-handle:hover{color:var(--gold-bright);background:rgba(255,255,255,0.05);}
+  .school-drag-handle:active{cursor:grabbing;}
+  .school.dragging{opacity:0.4;}
+  .school.drag-over{outline:2px dashed var(--gold);outline-offset:3px;border-radius:var(--radius-lg);}
+  .school.drag-over.drop-before{box-shadow:inset 0 4px 0 var(--gold-bright);}
+  .school.drag-over.drop-after{box-shadow:inset 0 -4px 0 var(--gold-bright);}
   .school-title{
     font-family:'Cinzel', Garamond, serif;
     font-size:25.5px;
@@ -1130,6 +1150,7 @@
 
     <button id="expand-all" onclick="setAllSchoolsCollapsed(false)">Expand all schools</button>
     <button id="collapse-all" onclick="setAllSchoolsCollapsed(true)">Collapse all schools</button>
+    <button id="reset-school-order" onclick="resetSchoolOrder()" title="Back to the default school order (this device only)">Reset school order</button>
 
     <div class="toolbar-sep"></div>
 
@@ -2186,6 +2207,16 @@ let state = {
 let myStoredState = null; 
 let isViewingOther = false;
 let editLocked = (localStorage.getItem('spellbook_edit_lock') ?? 'true') === 'true';
+
+/* SCHOOL ORDER — deliberately kept OUT of `state`/localStorage save-state,
+   so it never touches cloud saves, export codes, or other people's view of
+   your sheet. It's purely a personal "how I like my own screen arranged"
+   preference stored under its own key. */
+let schoolOrder = (() => {
+  try { return JSON.parse(localStorage.getItem('spellbook_school_order') || 'null'); }
+  catch(e) { return null; }
+})();
+let dragSchoolKey = null;
 let globalOtherSheetsData = []; 
 
 function buildDefaults(){
@@ -2698,7 +2729,7 @@ function onFilterChange(){
 }
 
 function getVisibleSchools(){
-  return SCHOOLS.filter(sch => {
+  const filtered = SCHOOLS.filter(sch => {
     if(sch.type === 'neutral') return true;
     if(sch.type === 'light' && state.showLight) return true;
     if(sch.type === 'dark' && state.showDark) return true;
@@ -2706,7 +2737,83 @@ function getVisibleSchools(){
     if((sch.type === 'chaos' || sch.type === 'order') && state.showDeity) return true;
     return false;
   });
+  if(!schoolOrder || !schoolOrder.length) return filtered;
+  const orderIndex = new Map(schoolOrder.map((k,i) => [k,i]));
+  return filtered.slice().sort((a,b) => {
+    const ai = orderIndex.has(a.key) ? orderIndex.get(a.key) : Infinity;
+    const bi = orderIndex.has(b.key) ? orderIndex.get(b.key) : Infinity;
+    return ai - bi;
+  });
 }
+
+/* Reorders schools by dragging `draggedKey` to sit where `targetKey` is.
+   Stored under its own localStorage key (see `schoolOrder` above) — never
+   written into `state`, so it stays out of cloud saves / export codes. */
+function reorderSchools(draggedKey, targetKey, insertBefore){
+  if(!draggedKey || draggedKey === targetKey) return;
+  const allKeys = SCHOOLS.map(s => s.key);
+  let fullOrder = (schoolOrder && schoolOrder.length) ? schoolOrder.slice() : allKeys.slice();
+  allKeys.forEach(k => { if(!fullOrder.includes(k)) fullOrder.push(k); });
+
+  const fromIdx = fullOrder.indexOf(draggedKey);
+  if(fromIdx === -1) return;
+  fullOrder.splice(fromIdx, 1);
+
+  let toIdx = fullOrder.indexOf(targetKey);
+  if(toIdx === -1) toIdx = fullOrder.length;
+  else if(!insertBefore) toIdx += 1; // dropped on the lower half -> land after the target
+
+  fullOrder.splice(toIdx, 0, draggedKey);
+
+  schoolOrder = fullOrder;
+  localStorage.setItem('spellbook_school_order', JSON.stringify(schoolOrder));
+  render();
+}
+
+window.resetSchoolOrder = function(){
+  schoolOrder = null;
+  localStorage.removeItem('spellbook_school_order');
+  render();
+};
+
+window.handleSchoolDragStart = function(e, key){
+  dragSchoolKey = key;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', key);
+  const section = e.target.closest('.school');
+  if(section) section.classList.add('dragging');
+};
+
+window.handleSchoolDragEnd = function(){
+  document.querySelectorAll('.school.dragging').forEach(el => el.classList.remove('dragging'));
+  document.querySelectorAll('.school.drag-over').forEach(el => el.classList.remove('drag-over','drop-before','drop-after'));
+  dragSchoolKey = null;
+};
+
+/* Figures out whether the dragged school should land before or after the
+   one currently under the cursor, based on which half of that card's
+   height the pointer is over — the standard "drop above/below this item"
+   behavior, so you can drop directly on your intended neighbor instead of
+   always landing just before it. */
+window.handleSchoolDragOver = function(e, key){
+  e.preventDefault();
+  if(key === dragSchoolKey) return;
+  const section = e.currentTarget;
+  section.classList.add('drag-over');
+  const rect = section.getBoundingClientRect();
+  const before = (e.clientY - rect.top) < rect.height / 2;
+  section.classList.toggle('drop-before', before);
+  section.classList.toggle('drop-after', !before);
+};
+
+window.handleSchoolDrop = function(e, targetKey){
+  e.preventDefault();
+  const section = e.currentTarget;
+  const insertBefore = section.classList.contains('drop-before');
+  section.classList.remove('drag-over','drop-before','drop-after');
+  const draggedKey = (e.dataTransfer && e.dataTransfer.getData('text/plain')) || dragSchoolKey;
+  reorderSchools(draggedKey, targetKey, insertBefore);
+};
 
 function countGroup(spells){
   let learned = 0;
@@ -2770,10 +2877,17 @@ function renderSchool(sch){
   const collapsed = isSchoolCollapsed(sch.key);
 
   return `
-  <section class="school type-${sch.type} ${mastered?'is-mastered':''}" data-school="${sch.key}" data-school-name="${sch.name.toLowerCase()}">
+  <section class="school type-${sch.type} ${mastered?'is-mastered':''}" data-school="${sch.key}" data-school-name="${sch.name.toLowerCase()}"
+    ondragover="handleSchoolDragOver(event,'${sch.key}')"
+    ondragleave="this.classList.remove('drag-over','drop-before','drop-after')"
+    ondrop="handleSchoolDrop(event,'${sch.key}')">
     <div class="school-head" onclick="toggleSchoolCollapse('${sch.key}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSchoolCollapse('${sch.key}')}">
       <div class="school-title-row">
         <div class="school-title-main">
+          <span class="school-drag-handle" draggable="true" title="Drag to reorder (this device only)"
+            onclick="event.stopPropagation()"
+            ondragstart="event.stopPropagation(); handleSchoolDragStart(event,'${sch.key}')"
+            ondragend="event.stopPropagation(); handleSchoolDragEnd()">⠿</span>
           <span class="school-chevron ${collapsed?'':'open'}">▸</span>
           <div>
             <div class="school-title">${sch.name}</div>
@@ -2873,6 +2987,22 @@ function render(){
   document.getElementById('grid').innerHTML = visible.map(renderSchool).join('');
   renderGlobalStats();
   applyFilters();
+  applyGridLockState();
+}
+
+/* render() rebuilds #grid from scratch every time (e.g. opening/closing a
+   school, ticking a spell, changing filters), which wipes any `disabled`
+   attributes a previous toggleReadOnly() pass had set. Re-apply the current
+   lock state to the freshly-rendered elements so a collapsed/expanded school
+   can never end up editable while the sheet is actually locked or read-only.
+   (This intentionally does NOT call toggleReadOnly/render itself, to avoid
+   recursion — it only touches the grid's own inputs/buttons.) */
+function applyGridLockState(){
+  const locked = isViewingOther || editLocked;
+  document.querySelectorAll('#grid input, #grid button').forEach(el => {
+    if (locked) el.setAttribute('disabled', 'true');
+    else el.removeAttribute('disabled');
+  });
 }
 
 /* Character Export / Import Functions */
