@@ -183,6 +183,169 @@
   }
   #save-note{font-size:12px;color:var(--parchment-dim);font-style:italic;min-width:90px;text-align:left;}
 
+  /* SPELL FILTER BAR */
+  .spell-filter-bar{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    align-items:center;
+    margin:0 0 26px;
+  }
+  .filter-row{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    justify-content:center;
+    align-items:center;
+  }
+  .filter-row-label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--parchment-dim);
+    margin-right:2px;
+  }
+  .tag-filters{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+  .threshold-filter{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    font-size:12.5px;
+    color:var(--parchment-dim);
+    background:var(--panel);
+    border:1px solid var(--hairline);
+    border-radius:7px;
+    padding:5px 10px;
+    cursor:pointer;
+  }
+  .threshold-filter input[type=checkbox]{cursor:pointer;accent-color:var(--gold);}
+  .threshold-filter input[type=number]{
+    width:52px;
+    background:var(--panel-2);
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    border-radius:5px;
+    padding:2px 5px;
+    font-family:'Crimson Pro',serif;
+    font-size:12.5px;
+  }
+  .tag-filter-btn, .cost-filter-btn{
+    background:var(--panel-2);
+    border:1px solid var(--hairline);
+    color:var(--parchment-dim);
+    padding:6px 13px;
+    border-radius:16px;
+    font-size:12.5px;
+    cursor:pointer;
+    font-family:'Crimson Pro',serif;
+    transition:all .15s;
+  }
+  .tag-filter-btn:hover, .cost-filter-btn:hover{border-color:var(--gold);color:var(--light-accent);}
+  .tag-filter-btn.active, .cost-filter-btn.active{background:var(--gold);border-color:var(--gold);color:#1a1408;font-weight:700;}
+  .filter-hint{font-size:12px;color:var(--parchment-dim);font-style:italic;}
+
+  /* SPELL NAME CLICK / COST / TAG BADGES */
+  .spell-name{cursor:pointer;}
+  .spell-name:hover{text-decoration:underline;color:var(--gold-bright);}
+  .spell-cost{font-size:11px;color:var(--gold);margin-left:7px;white-space:nowrap;}
+  .spell-damage{font-size:11px;color:var(--dark-accent);margin-left:7px;white-space:nowrap;}
+  .spell-heal{font-size:11px;color:var(--ok);margin-left:7px;white-space:nowrap;}
+  .spell-buff{font-size:11px;color:var(--neutral-accent);margin-left:7px;white-space:nowrap;}
+  .spell-tags{margin-left:7px;display:inline-flex;gap:4px;flex-wrap:wrap;vertical-align:middle;}
+  .mini-tag{
+    font-size:9.5px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    background:rgba(255,255,255,0.06);
+    border:1px solid var(--hairline);
+    border-radius:10px;
+    padding:1px 7px;
+    color:var(--parchment-dim);
+  }
+
+  /* SPELL DETAIL MODAL */
+  .modal-backdrop{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.65);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:1000;
+    padding:20px;
+  }
+  .modal-backdrop.open{display:flex;}
+  .modal-box{
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--hairline);
+    border-radius:12px;
+    padding:26px;
+    max-width:520px;
+    width:100%;
+    max-height:88vh;
+    overflow-y:auto;
+    position:relative;
+    box-shadow:0 0 40px rgba(0,0,0,0.5);
+  }
+  .modal-close{
+    position:absolute;
+    top:14px;right:14px;
+    background:transparent;
+    border:none;
+    color:var(--parchment-dim);
+    font-size:18px;
+    cursor:pointer;
+  }
+  .modal-close:hover{color:var(--gold);}
+  #modal-title{font-family:Garamond, serif;color:var(--light-accent);margin:0 0 2px;font-size:22px;}
+  .modal-subtitle{color:var(--parchment-dim);font-style:italic;margin:0 0 18px;}
+  .modal-section{margin-bottom:16px;}
+  .modal-label{display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:6px;}
+  .modal-hint{text-transform:none;letter-spacing:0;color:var(--parchment-dim);font-size:11px;}
+  .modal-section input[type=text], .modal-section textarea{
+    width:100%;
+    background:var(--ink);
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    padding:8px 10px;
+    border-radius:6px;
+    font-family:'Crimson Pro',serif;
+    font-size:14px;
+  }
+  .modal-section textarea{resize:none;overflow:hidden;}
+  .modal-cost-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .effect-type-picker{display:flex;gap:16px;flex-wrap:wrap;}
+  .effect-type-option{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:13.5px;
+    color:var(--parchment);
+    cursor:pointer;
+  }
+  .effect-type-option input{cursor:pointer;accent-color:var(--gold);}
+  .modal-cost-grid label{display:block;font-size:11px;color:var(--parchment-dim);margin-bottom:4px;}
+  .modal-cost-grid input{
+    width:100%;
+    background:var(--ink);
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    padding:6px 8px;
+    border-radius:6px;
+  }
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;}
+  .modal-actions button{
+    background:var(--panel-2);
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    padding:9px 16px;
+    border-radius:7px;
+    cursor:pointer;
+    font-family:'Crimson Pro',serif;
+  }
+  #modal-save{background:var(--gold);border-color:var(--gold);color:#1a1408;font-weight:700;}
+  #modal-save:hover{background:var(--gold-bright);}
+
   /* SCHOOL GRID */
   .grid{
     display:grid;
@@ -334,6 +497,8 @@
   .spell-latin{font-size:12.5px;color:var(--parchment-dim);font-style:italic;margin-left:4px;}
   .spell-item label{cursor:pointer;}
   .spell-item.hidden{display:none;}
+  .group.hidden{display:none;}
+  .school.hidden{display:none;}
 
   .school-foot{height:14px;}
 
@@ -651,9 +816,130 @@
     <span id="save-note"></span>
   </div>
 
+  <div class="spell-filter-bar">
+    <div class="filter-row">
+      <span class="filter-row-label">Cost ≤:</span>
+      <label class="threshold-filter"><input type="checkbox" class="cost-filter-check" data-stat="body" onchange="applyFilters()"> Body <input type="number" class="cost-filter-max" data-stat="body" min="0" step="1" placeholder="any" oninput="applyFilters()"></label>
+      <label class="threshold-filter"><input type="checkbox" class="cost-filter-check" data-stat="mind" onchange="applyFilters()"> Mind <input type="number" class="cost-filter-max" data-stat="mind" min="0" step="1" placeholder="any" oninput="applyFilters()"></label>
+      <label class="threshold-filter"><input type="checkbox" class="cost-filter-check" data-stat="spirit" onchange="applyFilters()"> Spirit <input type="number" class="cost-filter-max" data-stat="spirit" min="0" step="1" placeholder="any" oninput="applyFilters()"></label>
+    </div>
+    <div class="filter-row">
+      <span class="filter-row-label">Tags:</span>
+      <div id="tag-filters" class="tag-filters"></div>
+    </div>
+  </div>
+
   <div class="grid" id="grid"></div>
 
-  <footer>Progress saves automatically to your local storage. Cloud saving only happens when you click "Save to Cloud Now" while logged in.</footer>
+  <footer>Progress saves automatically to your local storage. Cloud saving of your character sheet only happens when you click "Save to Cloud Now" while logged in. Spell descriptions, tags, costs and damage are shared reference data stored centrally in the cloud for everyone using this tracker; only designated editors can change them (click a spell name to view or, if you're an editor, edit it).</footer>
+</div>
+
+<div id="spell-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeSpellModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeSpellModal()">✕</button>
+    <h2 id="modal-title"></h2>
+    <p id="modal-subtitle" class="modal-subtitle"></p>
+
+    <div class="modal-section">
+      <label class="modal-label">Tags <span class="modal-hint">(comma separated, e.g. movement, healing, shielding, cc, damage)</span></label>
+      <input type="text" id="modal-tags" placeholder="movement, healing, shielding...">
+    </div>
+
+    <div class="modal-section">
+      <label class="modal-label">Cost to Cast</label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><input type="number" id="modal-cost-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="modal-cost-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="modal-cost-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <label class="modal-label">Upkeep <span class="modal-hint">(per round, if any)</span></label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><input type="number" id="modal-upkeep-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="modal-upkeep-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="modal-upkeep-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <label class="modal-label">Effect Type <span class="modal-hint">(pick all that apply)</span></label>
+      <div class="effect-type-picker">
+        <label class="effect-type-option"><input type="checkbox" id="modal-effect-damage" data-effect="damage" onchange="updateEffectSectionVisibility()"> Damage</label>
+        <label class="effect-type-option"><input type="checkbox" id="modal-effect-heal" data-effect="heal" onchange="updateEffectSectionVisibility()"> Healing</label>
+        <label class="effect-type-option"><input type="checkbox" id="modal-effect-buff" data-effect="buff" onchange="updateEffectSectionVisibility()"> Buff</label>
+      </div>
+    </div>
+
+    <div class="modal-section" data-effect-section="damage">
+      <label class="modal-label">Damage on Cast</label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><input type="number" id="modal-damage-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="modal-damage-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="modal-damage-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+
+    <div class="modal-section" data-effect-section="damage">
+      <label class="modal-label">Damage per Round / on Recast <span class="modal-hint">(e.g. bomb spell exploding again)</span></label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><input type="number" id="modal-damage-upkeep-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="modal-damage-upkeep-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="modal-damage-upkeep-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+
+    <div class="modal-section" data-effect-section="heal">
+      <label class="modal-label">Healing on Cast</label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><input type="number" id="modal-heal-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="modal-heal-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="modal-heal-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+
+    <div class="modal-section" data-effect-section="heal">
+      <label class="modal-label">Healing per Round / on Recast</label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><input type="number" id="modal-heal-upkeep-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="modal-heal-upkeep-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="modal-heal-upkeep-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+
+    <div class="modal-section" data-effect-section="buff">
+      <label class="modal-label">Buff on Cast</label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><input type="number" id="modal-buff-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="modal-buff-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="modal-buff-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+
+    <div class="modal-section" data-effect-section="buff">
+      <label class="modal-label">Buff per Round / on Recast</label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><input type="number" id="modal-buff-upkeep-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="modal-buff-upkeep-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="modal-buff-upkeep-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <label class="modal-label">Description</label>
+      <textarea id="modal-desc" rows="5" placeholder="What does this spell do?"></textarea>
+    </div>
+
+    <p id="modal-readonly-hint" class="modal-hint" style="display:none;color:var(--danger);">
+      You don't have edit rights for the shared spell data. Ask the tracker owner to add you as an editor if you should be able to change this.
+    </p>
+
+    <div class="modal-actions">
+      <button onclick="closeSpellModal()">Close</button>
+      <button id="modal-save" onclick="saveSpellModal()">Save</button>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1264,6 +1550,265 @@ const SCHOOLS = [
 const MAX_SAVANT = 3;
 const STORAGE_KEY = 'tracker-state-v2';
 
+/* ---------- SPELL METADATA (descriptions, tags, costs, damage) ---------- */
+/* This is now stored centrally in Supabase (table "spell_meta") instead of
+   localStorage — it's reference data about the spells themselves, shared
+   across EVERY user of the tracker, not just this browser. Only users
+   listed in the "spell_editors" table (managed by you in the Supabase
+   dashboard) are allowed to write changes; everyone else can read it. */
+let spellMeta = {};
+let isSpellEditor = false;
+
+const SPELL_INDEX = {};
+SCHOOLS.forEach(sch => sch.groups.forEach(g => g.spells.forEach(sp => { SPELL_INDEX[sp.id] = sp; })));
+
+async function loadSpellMeta(){
+  try{
+    const { data, error } = await supabaseClient.from('spell_meta').select('*');
+    if(error) throw error;
+    const next = {};
+    (data || []).forEach(row => {
+      next[row.id] = {
+        desc: row.description || '',
+        tags: row.tags || [],
+        effectTypes: row.effect_types || [],
+        cost: row.cost || {body:0, mind:0, spirit:0},
+        upkeep: row.upkeep || {body:0, mind:0, spirit:0},
+        damage: row.damage || {body:0, mind:0, spirit:0},
+        damageUpkeep: row.damage_upkeep || {body:0, mind:0, spirit:0},
+        heal: row.heal || {body:0, mind:0, spirit:0},
+        healUpkeep: row.heal_upkeep || {body:0, mind:0, spirit:0},
+        buff: row.buff || {body:0, mind:0, spirit:0},
+        buffUpkeep: row.buff_upkeep || {body:0, mind:0, spirit:0},
+      };
+    });
+    spellMeta = next;
+  }catch(e){
+    console.error('Could not load spell metadata from cloud:', e);
+  }
+}
+
+async function checkSpellEditorStatus(){
+  isSpellEditor = false;
+  if(!currentUser) return;
+  try{
+    const { data, error } = await supabaseClient
+      .from('spell_editors')
+      .select('user_id')
+      .eq('user_id', currentUser.id)
+      .maybeSingle();
+    if(!error && data) isSpellEditor = true;
+  }catch(e){ console.error(e); }
+}
+
+async function saveSpellMetaRow(id, meta){
+  const payload = {
+    id,
+    description: meta.desc,
+    tags: meta.tags,
+    effect_types: meta.effectTypes,
+    cost: meta.cost,
+    upkeep: meta.upkeep,
+    damage: meta.damage,
+    damage_upkeep: meta.damageUpkeep,
+    heal: meta.heal,
+    heal_upkeep: meta.healUpkeep,
+    buff: meta.buff,
+    buff_upkeep: meta.buffUpkeep,
+    updated_by: currentUser ? currentUser.id : null,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabaseClient.from('spell_meta').upsert(payload, { onConflict: 'id' });
+  if(error) throw error;
+  spellMeta[id] = meta;
+}
+
+function getMeta(id){
+  const m = spellMeta[id];
+  return {
+    desc: (m && m.desc) || '',
+    tags: (m && m.tags) || [],
+    effectTypes: (m && m.effectTypes) || [],
+    cost: (m && m.cost) || {body:0, mind:0, spirit:0},
+    upkeep: (m && m.upkeep) || {body:0, mind:0, spirit:0},
+    damage: (m && m.damage) || {body:0, mind:0, spirit:0},
+    damageUpkeep: (m && m.damageUpkeep) || {body:0, mind:0, spirit:0},
+    heal: (m && m.heal) || {body:0, mind:0, spirit:0},
+    healUpkeep: (m && m.healUpkeep) || {body:0, mind:0, spirit:0},
+    buff: (m && m.buff) || {body:0, mind:0, spirit:0},
+    buffUpkeep: (m && m.buffUpkeep) || {body:0, mind:0, spirit:0},
+  };
+}
+
+function capitalize(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+
+function formatCost(meta){
+  const castParts = [];
+  ['body','mind','spirit'].forEach(stat=>{
+    if(meta.cost[stat]) castParts.push(`${meta.cost[stat]} ${capitalize(stat)}`);
+  });
+  const upkeepParts = [];
+  ['body','mind','spirit'].forEach(stat=>{
+    if(meta.upkeep[stat]) upkeepParts.push(`${meta.upkeep[stat]} ${capitalize(stat)}`);
+  });
+  let str = castParts.join(' + ');
+  if(upkeepParts.length){
+    str += (str ? ', then ' : '') + upkeepParts.join(' + ') + '/round';
+  }
+  return str;
+}
+
+function formatEffect(onCast, perRound){
+  const castParts = [];
+  ['body','mind','spirit'].forEach(stat=>{
+    if(onCast[stat]) castParts.push(`${onCast[stat]} ${capitalize(stat)}`);
+  });
+  const recastParts = [];
+  ['body','mind','spirit'].forEach(stat=>{
+    if(perRound[stat]) recastParts.push(`${perRound[stat]} ${capitalize(stat)}`);
+  });
+  let str = castParts.join(' + ');
+  if(recastParts.length){
+    str += (str ? ', then ' : '') + recastParts.join(' + ') + '/round';
+  }
+  return str;
+}
+
+function getAllTags(){
+  const tagSet = new Set();
+  Object.values(spellMeta).forEach(m => (m.tags||[]).forEach(t => tagSet.add(t)));
+  return Array.from(tagSet).sort();
+}
+
+function renderTagFilters(){
+  const container = document.getElementById('tag-filters');
+  if(!container) return;
+  const activeTags = Array.from(container.querySelectorAll('.tag-filter-btn.active')).map(b=>b.dataset.tag);
+  const tags = getAllTags();
+  if(!tags.length){
+    container.innerHTML = `<span class="filter-hint">No tags yet — click a spell name to add some.</span>`;
+    return;
+  }
+  container.innerHTML = tags.map(t => `<button type="button" class="tag-filter-btn ${activeTags.includes(t)?'active':''}" data-tag="${t}" onclick="toggleTagFilter(this)">${t}</button>`).join('');
+}
+
+window.toggleTagFilter = function(btn){
+  btn.classList.toggle('active');
+  applyFilters();
+};
+
+let currentModalSpellId = null;
+
+function updateEffectSectionVisibility(){
+  const activeEffects = Array.from(document.querySelectorAll('.effect-type-option input:checked')).map(el => el.dataset.effect);
+  document.querySelectorAll('[data-effect-section]').forEach(section => {
+    section.style.display = activeEffects.includes(section.dataset.effectSection) ? '' : 'none';
+  });
+}
+
+window.openSpellModal = function(evt, id){
+  if(evt){ evt.preventDefault(); evt.stopPropagation(); }
+  const sp = SPELL_INDEX[id];
+  if(!sp) return;
+  currentModalSpellId = id;
+  const meta = getMeta(id);
+  document.getElementById('modal-title').textContent = sp.latin;
+  document.getElementById('modal-subtitle').textContent = sp.en;
+  document.getElementById('modal-tags').value = meta.tags.join(', ');
+  document.getElementById('modal-cost-body').value = meta.cost.body || '';
+  document.getElementById('modal-cost-mind').value = meta.cost.mind || '';
+  document.getElementById('modal-cost-spirit').value = meta.cost.spirit || '';
+  document.getElementById('modal-upkeep-body').value = meta.upkeep.body || '';
+  document.getElementById('modal-upkeep-mind').value = meta.upkeep.mind || '';
+  document.getElementById('modal-upkeep-spirit').value = meta.upkeep.spirit || '';
+  document.getElementById('modal-damage-body').value = meta.damage.body || '';
+  document.getElementById('modal-damage-mind').value = meta.damage.mind || '';
+  document.getElementById('modal-damage-spirit').value = meta.damage.spirit || '';
+  document.getElementById('modal-damage-upkeep-body').value = meta.damageUpkeep.body || '';
+  document.getElementById('modal-damage-upkeep-mind').value = meta.damageUpkeep.mind || '';
+  document.getElementById('modal-damage-upkeep-spirit').value = meta.damageUpkeep.spirit || '';
+  document.getElementById('modal-heal-body').value = meta.heal.body || '';
+  document.getElementById('modal-heal-mind').value = meta.heal.mind || '';
+  document.getElementById('modal-heal-spirit').value = meta.heal.spirit || '';
+  document.getElementById('modal-heal-upkeep-body').value = meta.healUpkeep.body || '';
+  document.getElementById('modal-heal-upkeep-mind').value = meta.healUpkeep.mind || '';
+  document.getElementById('modal-heal-upkeep-spirit').value = meta.healUpkeep.spirit || '';
+  document.getElementById('modal-buff-body').value = meta.buff.body || '';
+  document.getElementById('modal-buff-mind').value = meta.buff.mind || '';
+  document.getElementById('modal-buff-spirit').value = meta.buff.spirit || '';
+  document.getElementById('modal-buff-upkeep-body').value = meta.buffUpkeep.body || '';
+  document.getElementById('modal-buff-upkeep-mind').value = meta.buffUpkeep.mind || '';
+  document.getElementById('modal-buff-upkeep-spirit').value = meta.buffUpkeep.spirit || '';
+  document.getElementById('modal-desc').value = meta.desc;
+
+  document.getElementById('modal-effect-damage').checked = meta.effectTypes.includes('damage');
+  document.getElementById('modal-effect-heal').checked = meta.effectTypes.includes('heal');
+  document.getElementById('modal-effect-buff').checked = meta.effectTypes.includes('buff');
+  updateEffectSectionVisibility();
+
+  const editableIds = ['modal-tags','modal-cost-body','modal-cost-mind','modal-cost-spirit',
+    'modal-upkeep-body','modal-upkeep-mind','modal-upkeep-spirit',
+    'modal-effect-damage','modal-effect-heal','modal-effect-buff',
+    'modal-damage-body','modal-damage-mind','modal-damage-spirit',
+    'modal-damage-upkeep-body','modal-damage-upkeep-mind','modal-damage-upkeep-spirit',
+    'modal-heal-body','modal-heal-mind','modal-heal-spirit',
+    'modal-heal-upkeep-body','modal-heal-upkeep-mind','modal-heal-upkeep-spirit',
+    'modal-buff-body','modal-buff-mind','modal-buff-spirit',
+    'modal-buff-upkeep-body','modal-buff-upkeep-mind','modal-buff-upkeep-spirit','modal-desc'];
+  editableIds.forEach(id => { document.getElementById(id).disabled = !isSpellEditor; });
+  document.getElementById('modal-save').style.display = isSpellEditor ? '' : 'none';
+  document.getElementById('modal-readonly-hint').style.display = isSpellEditor ? 'none' : 'block';
+
+  document.getElementById('spell-modal-backdrop').classList.add('open');
+  autosizeTextarea(document.getElementById('modal-desc'));
+};
+
+window.closeSpellModal = function(){
+  document.getElementById('spell-modal-backdrop').classList.remove('open');
+  currentModalSpellId = null;
+};
+
+window.saveSpellModal = async function(){
+  if(!currentModalSpellId || !isSpellEditor) return;
+  const tags = document.getElementById('modal-tags').value
+    .split(',').map(t=>t.trim().toLowerCase()).filter(Boolean);
+  const num = (elId) => { const v = parseFloat(document.getElementById(elId).value); return isNaN(v) ? 0 : v; };
+  const effectTypes = ['damage','heal','buff'].filter(t => document.getElementById(`modal-effect-${t}`).checked);
+  const meta = {
+    desc: document.getElementById('modal-desc').value,
+    tags,
+    effectTypes,
+    cost: { body: num('modal-cost-body'), mind: num('modal-cost-mind'), spirit: num('modal-cost-spirit') },
+    upkeep: { body: num('modal-upkeep-body'), mind: num('modal-upkeep-mind'), spirit: num('modal-upkeep-spirit') },
+    damage: { body: num('modal-damage-body'), mind: num('modal-damage-mind'), spirit: num('modal-damage-spirit') },
+    damageUpkeep: { body: num('modal-damage-upkeep-body'), mind: num('modal-damage-upkeep-mind'), spirit: num('modal-damage-upkeep-spirit') },
+    heal: { body: num('modal-heal-body'), mind: num('modal-heal-mind'), spirit: num('modal-heal-spirit') },
+    healUpkeep: { body: num('modal-heal-upkeep-body'), mind: num('modal-heal-upkeep-mind'), spirit: num('modal-heal-upkeep-spirit') },
+    buff: { body: num('modal-buff-body'), mind: num('modal-buff-mind'), spirit: num('modal-buff-spirit') },
+    buffUpkeep: { body: num('modal-buff-upkeep-body'), mind: num('modal-buff-upkeep-mind'), spirit: num('modal-buff-upkeep-spirit') },
+  };
+  const saveBtn = document.getElementById('modal-save');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving...';
+  try{
+    await saveSpellMetaRow(currentModalSpellId, meta);
+    renderTagFilters();
+    render();
+    closeSpellModal();
+  }catch(e){
+    alert('Could not save to the shared spell database: ' + (e.message || e));
+  }finally{
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save';
+  }
+};
+
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape') closeSpellModal();
+});
+
+document.getElementById('modal-desc').addEventListener('input', function(){ autosizeTextarea(this); });
+
 /* ---------- CLOUD SYNC (Supabase Auth) ---------- */
 const SUPABASE_URL = 'https://jrtnlfqjwxdnlqcibciv.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpydG5sZnFqd3hkbmxxY2liY2l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMTczODYsImV4cCI6MjA5ODg5MzM4Nn0.S7tRQL4oV1OBQlzs72QbltTRiWyXPHjCNsA0HtcSnKE';
@@ -1526,6 +2071,7 @@ async function signUp(){
   if(data.session){
     currentUser = data.user;
     updateAuthUI();
+    await checkSpellEditorStatus();
     await loadFromCloud();
   } else {
     setCloudStatus('Signed up! If email confirmation is enabled, please confirm your email and then log in.', false);
@@ -1544,12 +2090,14 @@ async function signIn(){
   if(error){ setCloudStatus('Error: ' + error.message, true); return; }
   currentUser = data.user;
   updateAuthUI();
+  await checkSpellEditorStatus();
   await loadFromCloud();
 }
 
 async function signOut(){
   await supabaseClient.auth.signOut();
   currentUser = null;
+  isSpellEditor = false;
   updateAuthUI();
   setCloudStatus('Logged out.', false);
 }
@@ -1558,6 +2106,7 @@ async function initAuth(){
   const { data: { session } } = await supabaseClient.auth.getSession();
   currentUser = session ? session.user : null;
   updateAuthUI();
+  await checkSpellEditorStatus();
   if(currentUser) await loadFromCloud();
 }
 
@@ -1651,12 +2200,29 @@ function schoolMainSpells(sch){
   return sch.groups.filter(g => g.tier === 'main' && !g.excludeFromMastery).flatMap(g => g.spells);
 }
 
+const EFFECT_TYPE_META = {
+  damage: { icon: '⚔', cls: 'spell-damage' },
+  heal:   { icon: '✚', cls: 'spell-heal' },
+  buff:   { icon: '✦', cls: 'spell-buff' },
+};
+
 function renderSpellItem(sp){
   const checked = isLearned(sp.id) ? 'checked' : '';
+  const meta = getMeta(sp.id);
+  const costStr = formatCost(meta);
+  const effectHtml = meta.effectTypes.map(type => {
+    const onCast = type === 'damage' ? meta.damage : (type === 'heal' ? meta.heal : meta.buff);
+    const perRound = type === 'damage' ? meta.damageUpkeep : (type === 'heal' ? meta.healUpkeep : meta.buffUpkeep);
+    const str = formatEffect(onCast, perRound);
+    if(!str) return '';
+    const em = EFFECT_TYPE_META[type];
+    return `<span class="${em.cls}">${em.icon} ${str}</span>`;
+  }).join('');
+  const tagsHtml = meta.tags.length ? `<span class="spell-tags">${meta.tags.map(t=>`<span class="mini-tag">${t}</span>`).join('')}</span>` : '';
   return `
-    <li class="spell-item" data-name="${(sp.latin+' '+sp.en).toLowerCase()}">
+    <li class="spell-item" data-name="${(sp.latin+' '+sp.en).toLowerCase()}" data-id="${sp.id}">
       <input type="checkbox" id="cb_${sp.id}" ${checked} onchange="onToggleSpell('${sp.id}', this.checked)">
-      <label for="cb_${sp.id}"><span class="spell-name">${sp.latin}</span><span class="spell-latin">(${sp.en})</span></label>
+      <label for="cb_${sp.id}"><span class="spell-name" onclick="openSpellModal(event,'${sp.id}')">${sp.latin}</span><span class="spell-latin">(${sp.en})</span>${costStr ? `<span class="spell-cost">${costStr}</span>` : ''}${effectHtml}${tagsHtml}</label>
     </li>`;
 }
 
@@ -1763,7 +2329,7 @@ function render(){
   const visible = getVisibleSchools();
   document.getElementById('grid').innerHTML = visible.map(renderSchool).join('');
   renderGlobalStats();
-  applySearch();
+  applyFilters();
 }
 
 /* Character Export / Import Functions */
@@ -1807,13 +2373,61 @@ function importCharacter() {
   }
 }
 
-/* search */
-function applySearch(){
+/* search + tag + cost threshold filters */
+function readThresholdFilters(checkSelector, inputSelector){
+  const filters = [];
+  document.querySelectorAll(checkSelector + ':checked').forEach(chk => {
+    const stat = chk.dataset.stat;
+    const numEl = document.querySelector(`${inputSelector}[data-stat="${stat}"]`);
+    const raw = numEl ? numEl.value : '';
+    const val = raw === '' ? null : parseFloat(raw);
+    filters.push({ stat, limit: (val === null || isNaN(val)) ? null : val });
+  });
+  return filters;
+}
+
+function applyFilters(){
   const q = document.getElementById('search').value.trim().toLowerCase();
+  const activeTags = Array.from(document.querySelectorAll('.tag-filter-btn.active')).map(b => b.dataset.tag);
+  const costFilters = readThresholdFilters('.cost-filter-check', '.cost-filter-max');
+
   document.querySelectorAll('.spell-item').forEach(li => {
-    if(!q){ li.classList.remove('hidden'); return; }
     const name = li.getAttribute('data-name') || '';
-    li.classList.toggle('hidden', !name.includes(q));
+    const id = li.getAttribute('data-id');
+    const meta = getMeta(id);
+    let visible = true;
+
+    if(q && !name.includes(q)) visible = false;
+
+    if(visible && activeTags.length){
+      if(!activeTags.some(t => meta.tags.includes(t))) visible = false;
+    }
+
+    // Cost filters: spell must USE the stat (cost or upkeep > 0), and if a max
+    // value was given, the total (cast + upkeep) for that stat must be <= max.
+    if(visible && costFilters.length){
+      const ok = costFilters.every(f => {
+        const total = (meta.cost[f.stat] || 0) + (meta.upkeep[f.stat] || 0);
+        if(total <= 0) return false;
+        if(f.limit === null) return true;
+        return total <= f.limit;
+      });
+      if(!ok) visible = false;
+    }
+
+    li.classList.toggle('hidden', !visible);
+  });
+
+  const filtersActive = !!q || activeTags.length > 0 || costFilters.length > 0;
+
+  document.querySelectorAll('.group').forEach(group => {
+    const hasVisible = group.querySelectorAll('.spell-item:not(.hidden)').length > 0;
+    group.classList.toggle('hidden', filtersActive && !hasVisible);
+  });
+
+  document.querySelectorAll('.school').forEach(school => {
+    const hasVisible = school.querySelectorAll('.spell-item:not(.hidden)').length > 0;
+    school.classList.toggle('hidden', filtersActive && !hasVisible);
   });
 }
 
@@ -1853,7 +2467,7 @@ document.getElementById('other-char-select').addEventListener('change', (e) => {
 
 document.getElementById('btn-back-to-mine').addEventListener('click', returnToOwnSheet);
 
-document.getElementById('search').addEventListener('input', applySearch);
+document.getElementById('search').addEventListener('input', applyFilters);
 
 document.getElementById('reset-all').addEventListener('click', async () => {
   if (isViewingOther) return;
@@ -1886,9 +2500,13 @@ document.getElementById('cloud-reload').addEventListener('click', () => {
   loadFromCloud();
 });
 
-load();
-initAuth();
-initAutosizeTextareas();
+(async function boot(){
+  await loadSpellMeta();     // fetch shared spell data (desc/tags/cost/damage) from the cloud
+  renderTagFilters();
+  load();                    // renders the grid with the loaded spell metadata
+  await initAuth();          // also determines isSpellEditor
+  initAutosizeTextareas();
+})();
 </script>
 </body>
 </html>
