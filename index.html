@@ -618,6 +618,7 @@
   .school-head:focus-visible{outline:2px solid var(--gold);outline-offset:-2px;}
   .school-title-row{
     display:flex;
+    flex-wrap:wrap;
     justify-content:space-between;
     align-items:flex-start;
     gap:10px;
@@ -626,6 +627,12 @@
     display:flex;
     align-items:flex-start;
     gap:10px;
+    min-width:0;
+    flex:1 1 auto;
+  }
+  .school-title-main .school-title{
+    min-width:0;
+    overflow-wrap:break-word;
   }
   .school-chevron{
     display:inline-block;
@@ -674,7 +681,7 @@
     display:block;
     margin-top:2px;
   }
-  .badges{display:flex;gap:6px;flex-shrink:0;}
+  .badges{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;}
   .school-body.collapsed{display:none;}
   .school-body.collapsed.filter-open{display:block;}
   .badge-btn{
