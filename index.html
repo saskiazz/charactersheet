@@ -212,43 +212,61 @@
     transition:color .15s, border-color .15s, background .15s;
   }
   .toolbar button:hover{color:var(--light-accent);border-color:var(--gold);background:var(--panel-3);}
-  /* EDIT LOCK BANNER — sits directly above the character sheet, hard to miss */
+  /* EDIT LOCK BUTTON — fixed to the left edge of the viewport, matched in height
+     and top position to the sticky login/save bar so the two read as a matching
+     pair of bars at the top of the site. Because it's fixed it never takes up
+     layout space (so nothing else shifts or narrows) and stays visible on screen
+     the entire time you scroll. The exact "top" and "height" are kept in sync
+     with the bar's real, rendered size by JS (see alignEditLockWithAuthBar),
+     since that bar's height differs when logged in vs. logged out and can wrap
+     onto multiple lines on a narrow window. */
   .edit-lock-banner{
-    display:flex;
-    justify-content:center;
-    margin:0 0 18px;
+    position:fixed;
+    left:18px;
+    top:16px;
+    z-index:650;
+    margin:0;
   }
   #edit-lock-toggle{
-    width:100%;
+    display:flex;
+    align-items:center;
+    gap:8px;
     font-weight:700;
     background:linear-gradient(180deg,var(--panel-2),var(--panel));
-    border:2px solid var(--hairline);
+    border:2.5px solid var(--hairline);
     color:var(--parchment-dim);
-    padding:16px 20px;
-    border-radius:var(--radius-md);
+    padding:10px 16px;
+    border-radius:999px;
     font-family:'Crimson Pro',serif;
-    font-size:22.5px;
-    letter-spacing:0.05em;
+    font-size:16px;
+    letter-spacing:0.04em;
     cursor:pointer;
     text-transform:uppercase;
+    white-space:nowrap;
+    box-shadow:var(--shadow-lift);
+    transform-origin:top left;
     transition:background 0.15s, border-color 0.15s, box-shadow 0.15s, color 0.15s, transform .15s;
   }
-  #edit-lock-toggle:not(:disabled):hover{transform:translateY(-1px);}
+  #edit-lock-toggle:not(:disabled):hover{transform:scale(1.06);}
   #edit-lock-toggle:hover{color:var(--light-accent);border-color:var(--gold);}
   #edit-lock-toggle.locked{
     border-color:var(--danger);
-    color:var(--danger);
-    background:rgba(168,84,84,0.14);
-    box-shadow:0 0 0 1px rgba(168,84,84,0.35), 0 0 22px rgba(168,84,84,0.22);
+    color:var(--light-accent);
+    background:rgba(168,84,84,0.32);
+    box-shadow:0 0 0 2px rgba(168,84,84,0.5), 0 0 22px rgba(168,84,84,0.4), var(--shadow-lift);
     animation:lock-pulse 2.4s ease-in-out infinite;
   }
   #edit-lock-toggle.unlocked{
     border-color:var(--ok);
-    color:var(--ok);
-    background:rgba(127,159,111,0.14);
-    box-shadow:0 0 0 1px rgba(127,159,111,0.35), 0 0 22px rgba(127,159,111,0.22);
+    color:var(--light-accent);
+    background:rgba(127,159,111,0.32);
+    box-shadow:0 0 0 2px rgba(127,159,111,0.5), 0 0 22px rgba(127,159,111,0.4), var(--shadow-lift);
   }
   #edit-lock-toggle:disabled{opacity:0.6;cursor:not-allowed;animation:none;}
+  @media (max-width: 640px){
+    .edit-lock-banner{left:10px;top:auto;bottom:14px;}
+    #edit-lock-toggle{padding:8px 12px;font-size:13.5px;}
+  }
   @keyframes lock-pulse{
     0%,100%{box-shadow:0 0 0 1px rgba(168,84,84,0.35), 0 0 22px rgba(168,84,84,0.22);}
     50%{box-shadow:0 0 0 1px rgba(168,84,84,0.55), 0 0 34px rgba(168,84,84,0.4);}
@@ -543,6 +561,28 @@
   .modal-actions button:hover{border-color:var(--gold);transform:translateY(-1px);}
   #modal-save{background:var(--gold);border-color:var(--gold);color:#1a1408;font-weight:700;}
   #modal-save:hover{background:var(--gold-bright);border-color:var(--gold-bright);}
+
+  /* SPELL DETAIL MODAL — larger than the other modals so descriptions are easier to
+     read. The cost/damage number fields are deliberately excluded from the size bump
+     (kept compact) so short 1-2 digit numbers don't look lost in an oversized box. */
+  #spell-modal-backdrop .modal-box{
+    max-width:880px;
+    padding:38px 44px;
+    max-height:90vh;
+  }
+  #spell-modal-backdrop #modal-title{font-size:34px;}
+  #spell-modal-backdrop .modal-subtitle{font-size:20px;margin-bottom:22px;}
+  #spell-modal-backdrop .modal-label{font-size:16.5px;}
+  #spell-modal-backdrop .modal-section input[type=text]{font-size:19.5px;padding:11px 13px;}
+  #spell-modal-backdrop .modal-section textarea{
+    font-size:21px;
+    line-height:1.65;
+    min-height:220px;
+    padding:14px 16px;
+  }
+  #spell-modal-backdrop .modal-cost-grid input{font-size:15.5px;padding:6px 8px;}
+  #spell-modal-backdrop .modal-cost-grid label{font-size:15.5px;}
+  #spell-modal-backdrop .effect-type-option{font-size:18.5px;}
 
   /* SCHOOL GRID */
   .grid{
@@ -1056,6 +1096,46 @@
     margin-bottom:20px;
     box-shadow:inset 3px 0 0 var(--neutral-accent), var(--shadow-soft);
   }
+  /* AUTH BOX — pinned to the top of the site (login form, or the logged-in
+     row with Save/Reload/Logout) so it's always reachable without scrolling
+     back up, and so an unsaved-changes warning is always in view. */
+  #auth-box{
+    position:sticky;
+    top:0;
+    z-index:600;
+    background:linear-gradient(180deg,var(--panel-2),var(--panel));
+    box-shadow:inset 3px 0 0 var(--neutral-accent), 0 6px 18px rgba(0,0,0,0.45);
+    border-top:none;
+    border-left:none;
+    border-right:none;
+  }
+  .cloud-dirty-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-size:15.5px;
+    font-weight:700;
+    letter-spacing:0.03em;
+    color:var(--light-accent);
+    background:rgba(201,160,84,0.22);
+    border:1.5px solid var(--gold);
+    padding:6px 12px;
+    border-radius:999px;
+    box-shadow:0 0 0 1px rgba(201,160,84,0.3), 0 0 14px rgba(201,160,84,0.35);
+    animation:dirty-pulse 1.8s ease-in-out infinite;
+    white-space:nowrap;
+  }
+  @keyframes dirty-pulse{
+    0%,100%{box-shadow:0 0 0 1px rgba(201,160,84,0.3), 0 0 10px rgba(201,160,84,0.25);}
+    50%{box-shadow:0 0 0 1px rgba(201,160,84,0.55), 0 0 22px rgba(201,160,84,0.55);}
+  }
+  #cloud-save.has-unsaved{
+    color:var(--light-accent);
+    border-color:var(--gold);
+    background:rgba(201,160,84,0.22);
+    box-shadow:0 0 0 1px rgba(201,160,84,0.35), 0 0 14px rgba(201,160,84,0.3);
+    animation:dirty-pulse 1.8s ease-in-out infinite;
+  }
   .cloud-row{
     display:flex;
     flex-wrap:wrap;
@@ -1130,13 +1210,6 @@
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <div class="eyebrow">Fallen Gate</div>
-    <h1>Spellbook Tracker</h1>
-    <p class="sub">Track what you know, what you're missing, and where you stand as Savant or Oracle</p>
-  </header>
-
-
   <div class="cloud-box" id="auth-box">
     <div class="cloud-row" id="auth-form-row">
       <label for="auth-email">Email</label>
@@ -1151,11 +1224,18 @@
       <label>Logged in as</label>
       <span id="auth-user-email" style="color:var(--light-accent);font-weight:600;"></span>
       <button id="cloud-save">Save to Cloud Now</button>
+      <span id="cloud-dirty-badge" class="cloud-dirty-badge" style="display:none;">⚠ Unsaved changes</span>
       <button id="cloud-reload">Reload from Cloud</button>
       <button id="auth-signout">Logout</button>
       <span id="cloud-status-2"></span>
     </div>
   </div>
+
+  <header>
+    <div class="eyebrow">Fallen Gate</div>
+    <h1>Spellbook Tracker</h1>
+    <p class="sub">Track what you know, what you're missing, and where you stand as Savant or Oracle</p>
+  </header>
 
   <!-- BROWSE OTHER CHARACTERS BAR -->
   <div class="cloud-box" id="other-chars-box" style="display:none; box-shadow:inset 3px 0 0 var(--gold);">
@@ -2025,6 +2105,10 @@ let myStoredState = null;
 let isViewingOther = false;
 let editLocked = (localStorage.getItem('spellbook_edit_lock') ?? 'true') === 'true';
 
+/* Tracks whether local changes exist that haven't been pushed to the cloud yet.
+   Only meaningful while logged in — see setCloudDirty(). */
+let cloudDirty = false;
+
 /* SCHOOL ORDER — deliberately kept OUT of `state`/localStorage save-state,
    so it never touches cloud saves, export codes, or other people's view of
    your sheet. It's purely a personal "how I like my own screen arranged"
@@ -2054,17 +2138,30 @@ function setLearned(id, val){
   persist();
 }
 
-function saveState(){
+function saveState(markDirty){
   if (isViewingOther) return; 
+  if (markDirty === undefined) markDirty = true;
   
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   const note=document.getElementById('save-note');
   note.textContent='Saved ✓';
   clearTimeout(window._saveTimer);
   window._saveTimer=setTimeout(()=>note.textContent='',1200);
+  if(currentUser && markDirty) setCloudDirty(true);
 }
-function persist(){
-  saveState();
+function persist(markDirty){
+  saveState(markDirty);
+}
+
+/* Shows/hides the "Unsaved changes" badge and glows the Save to Cloud button
+   whenever local changes haven't been pushed to the cloud yet. */
+function setCloudDirty(dirty){
+  cloudDirty = dirty;
+  const badge = document.getElementById('cloud-dirty-badge');
+  const saveBtn = document.getElementById('cloud-save');
+  if(badge) badge.style.display = dirty ? 'inline-flex' : 'none';
+  if(saveBtn) saveBtn.classList.toggle('has-unsaved', dirty);
+  requestAnimationFrame(alignEditLockWithAuthBar);
 }
 
 function setCloudStatus(msg, isError){
@@ -2091,6 +2188,7 @@ async function saveToCloud(showStatus){
       setCloudStatus('Error: ' + error.message, true);
       return;
     }
+    setCloudDirty(false);
     if(showStatus) setCloudStatus('Saved to cloud ✓');
     else { setCloudStatus('Cloud sync ✓'); clearTimeout(window._cloudNoteTimer); window._cloudNoteTimer=setTimeout(()=>setCloudStatus(''),1500); }
   }catch(e){
@@ -2113,6 +2211,7 @@ async function loadFromCloud(){
     }
     if(!data){
       setCloudStatus('No sheet in the cloud yet – it will be created on next save.', false);
+      setCloudDirty(false);
       return;
     }
     state = data.data || state;
@@ -2126,6 +2225,7 @@ async function loadFromCloud(){
     populateCharInfoFields();
     renderRollBuffDisplay();
     render();
+    setCloudDirty(false);
     setCloudStatus('Loaded from cloud ✓');
   }catch(e){
     setCloudStatus('Network error while loading.', true);
@@ -2148,9 +2248,50 @@ function updateAuthUI(){
     loggedInRow.style.display = 'none';
     otherCharsBox.style.display = 'none';
     isViewingOther = false;
+    setCloudDirty(false);
     applyEditLockState();
   }
+  requestAnimationFrame(alignEditLockWithAuthBar);
 }
+
+/* Keeps the edit-lock button's fixed position/height AND the sticky in-page
+   toolbar's "top" offset in sync with the real, rendered size of the sticky
+   login/save bar at the very top of the site. Without this, once you scroll
+   far enough down that the toolbar (search/expand/collapse/export bar) locks
+   into its own sticky position, it would land underneath/behind the auth bar
+   and the edit-lock button instead of just below them. Runs on load, resize,
+   and scroll (rAF-throttled) since the bar's own top edge briefly moves during
+   the initial bit of scrolling before it locks into its stuck position. */
+function alignEditLockWithAuthBar(){
+  const bar = document.getElementById('auth-box');
+  const banner = document.querySelector('.edit-lock-banner');
+  const btn = document.getElementById('edit-lock-toggle');
+  const toolbar = document.querySelector('.toolbar');
+  if(!bar) return;
+  const barRect = bar.getBoundingClientRect();
+  const barHeight = Math.round(barRect.height);
+
+  // Push the sticky toolbar down so it locks into place just below the auth
+  // bar, never underneath/behind it, at any viewport width.
+  if(toolbar) toolbar.style.top = (barHeight + 12) + 'px';
+
+  if(!banner || !btn) return;
+  if(window.innerWidth <= 640){
+    banner.style.top = '';           // mobile layout docks it to the bottom instead (see CSS)
+    btn.style.height = '';
+    return;
+  }
+  banner.style.top = Math.max(0, Math.round(barRect.top)) + 'px';
+  btn.style.height = barHeight + 'px';
+}
+let _alignLockTicking = false;
+function scheduleAlignEditLock(){
+  if(_alignLockTicking) return;
+  _alignLockTicking = true;
+  requestAnimationFrame(() => { alignEditLockWithAuthBar(); _alignLockTicking = false; });
+}
+window.addEventListener('resize', scheduleAlignEditLock);
+window.addEventListener('scroll', scheduleAlignEditLock, { passive: true });
 
 async function fetchOtherCharacters() {
   const selectEl = document.getElementById('other-char-select');
@@ -2256,7 +2397,7 @@ function returnToOwnSheet() {
   renderRollBuffDisplay();
   render();
   applyEditLockState(); 
-  saveState(); 
+  saveState(false); 
 }
 
 async function signUp(){
@@ -3037,7 +3178,7 @@ function onFilterChange(){
   state.showDark = document.getElementById('filter-dark').checked;
   state.showLegacy = document.getElementById('filter-legacy').checked;
   state.showDeity = document.getElementById('filter-deity').checked;
-  persist();
+  persist(false);   // display filter only, not worth a cloud-save nag
   render();
 }
 
@@ -3239,13 +3380,13 @@ function isSchoolCollapsed(key){
 
 window.toggleSchoolCollapse = function(key){
   state.collapsed[key] = isSchoolCollapsed(key) ? false : true;
-  persist();
+  persist(false);   // expand/collapse is just a display preference, not worth a cloud-save nag
   render();
 };
 
 window.setAllSchoolsCollapsed = function(collapse){
   getVisibleSchools().forEach(sch => { state.collapsed[sch.key] = collapse; });
-  persist();
+  persist(false);   // same — display preference only
   render();
 };
 
@@ -3408,14 +3549,19 @@ function applyFilters(){
       if(!activeTags.some(t => meta.tags.includes(t))) visible = false;
     }
 
-    // Cost filters: spell must USE the stat (cost or upkeep > 0), and if a max
-    // value was given, the total (cast + upkeep) for that stat must be <= max.
+    // Cost filters: spell must USE the stat (cast cost > 0, or — only when
+    // there's no cast cost at all — upkeep > 0), and if a max value was given,
+    // that same value must be <= max. Upkeep is intentionally NOT added on top
+    // of a cast cost: keeping most spells "up" is optional, so only the
+    // one-time cast cost represents what filtering by cost should mean; upkeep
+    // is used only as a fallback for the rare spell with no cast cost at all.
     if(visible && costFilters.length){
       const ok = costFilters.every(f => {
-        const total = (meta.cost[f.stat] || 0) + (meta.upkeep[f.stat] || 0);
-        if(total <= 0) return false;
+        const castCost = meta.cost[f.stat] || 0;
+        const value = castCost > 0 ? castCost : (meta.upkeep[f.stat] || 0);
+        if(value <= 0) return false;
         if(f.limit === null) return true;
-        return total <= f.limit;
+        return value <= f.limit;
       });
       if(!ok) visible = false;
     }
@@ -3540,6 +3686,13 @@ document.getElementById('cloud-reload').addEventListener('click', () => {
   loadFromCloud();
 });
 
+window.addEventListener('beforeunload', function(e){
+  if(currentUser && cloudDirty && !isViewingOther){
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
 (async function boot(){
   await loadSchoolsAndSpells(); // fetch Schools of Magic + their spells from the cloud
   await loadSpellMeta();     // fetch shared spell data (desc/tags/cost/damage) from the cloud
@@ -3549,7 +3702,9 @@ document.getElementById('cloud-reload').addEventListener('click', () => {
   applyEditLockState();      // apply saved lock preference before anything can be touched
   await initAuth();          // also determines isSpellEditor
   initAutosizeTextareas();
+  requestAnimationFrame(alignEditLockWithAuthBar);
 })();
+window.addEventListener('load', () => requestAnimationFrame(alignEditLockWithAuthBar));
 </script>
 </body>
 </html>
