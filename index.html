@@ -26,14 +26,10 @@
     --dark-accent:#a85454;
     --danger:#c2685f;
     --ok:#7f9f6f;
-    --legacy-curse-accent:#9b6fc9;
-    --legacy-curse-glow: rgba(155,111,201,0.15);
-    --legacy-judge-accent:#5fa8b3;
-    --legacy-judge-glow: rgba(95,168,179,0.15);
-    --chaos-accent:#d1548a;
-    --chaos-glow: rgba(209,84,138,0.15);
-    --order-accent:#6f93c9;
-    --order-glow: rgba(111,147,201,0.15);
+    --legacy-accent:#9b6fc9;
+    --legacy-glow: rgba(155,111,201,0.15);
+    --deity-accent:#d1548a;
+    --deity-glow: rgba(209,84,138,0.15);
     --shadow-soft: 0 4px 14px rgba(0,0,0,0.28);
     --shadow-lift: 0 10px 30px rgba(0,0,0,0.4);
     --radius-lg: 14px;
@@ -396,6 +392,11 @@
     transition:color .15s, border-color .15s;
   }
   .manage-tag-groups-btn:hover{color:var(--light-accent);border-color:var(--gold);}
+  .school-order-list{list-style:none;margin:14px 0 0;padding:0;max-height:55vh;overflow-y:auto;}
+  .school-order-item{display:flex;align-items:center;gap:10px;padding:9px 12px;margin-bottom:6px;background:var(--panel-2);border:1px solid var(--hairline);border-radius:8px;cursor:grab;font-size:16px;}
+  .school-order-item .drag-handle{color:var(--parchment-dim);}
+  .school-order-item.dragging{opacity:0.35;}
+  .school-order-item.drag-over{border-color:var(--gold);}
   .threshold-filter{
     display:flex;
     align-items:center;
@@ -563,10 +564,8 @@
   .school.type-light{box-shadow:inset 3px 0 0 var(--light-accent);}
   .school.type-neutral{box-shadow:inset 3px 0 0 var(--neutral-accent);}
   .school.type-dark{box-shadow:inset 3px 0 0 var(--dark-accent);}
-  .school.type-legacy-curse{box-shadow:inset 3px 0 0 var(--legacy-curse-accent);}
-  .school.type-legacy-judgement{box-shadow:inset 3px 0 0 var(--legacy-judge-accent);}
-  .school.type-chaos{box-shadow:inset 3px 0 0 var(--chaos-accent);}
-  .school.type-order{box-shadow:inset 3px 0 0 var(--order-accent);}
+  .school.type-legacy{box-shadow:inset 3px 0 0 var(--legacy-accent);}
+  .school.type-deity{box-shadow:inset 3px 0 0 var(--deity-accent);}
 
   .school-head{
     padding:16px 18px 12px;
@@ -625,10 +624,8 @@
   }
   .school.type-neutral .school-title{color:var(--parchment);}
   .school.type-dark .school-title{color:var(--light-accent);}
-  .school.type-legacy-curse .school-title{color:var(--legacy-curse-accent);}
-  .school.type-legacy-judgement .school-title{color:var(--legacy-judge-accent);}
-  .school.type-chaos .school-title{color:var(--chaos-accent);}
-  .school.type-order .school-title{color:var(--order-accent);}
+  .school.type-legacy .school-title{color:var(--legacy-accent);}
+  .school.type-deity .school-title{color:var(--deity-accent);}
   .type-tag{
     font-size:13px;
     letter-spacing:0.1em;
@@ -676,10 +673,8 @@
   .bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-bright));}
   .school.type-neutral .bar-fill{background:linear-gradient(90deg,var(--neutral-accent),#a9d6cb);}
   .school.type-dark .bar-fill{background:linear-gradient(90deg,var(--dark-accent),#c77373);}
-  .school.type-legacy-curse .bar-fill{background:linear-gradient(90deg,var(--legacy-curse-accent),#c9a8e6);}
-  .school.type-legacy-judgement .bar-fill{background:linear-gradient(90deg,var(--legacy-judge-accent),#a8dbe6);}
-  .school.type-chaos .bar-fill{background:linear-gradient(90deg,var(--chaos-accent),#f0a8c9);}
-  .school.type-order .bar-fill{background:linear-gradient(90deg,var(--order-accent),#a8c4e6);}
+  .school.type-legacy .bar-fill{background:linear-gradient(90deg,var(--legacy-accent),#c9a8e6);}
+  .school.type-deity .bar-fill{background:linear-gradient(90deg,var(--deity-accent),#f0a8c9);}
   .progress-text{font-size:16.5px;color:var(--parchment-dim);white-space:nowrap;}
   .progress-text b{color:var(--parchment);}
   .missing-count{color:var(--danger) !important;font-weight:600;}
@@ -721,10 +716,8 @@
   }
   .school.type-neutral .spell-item input[type=checkbox]{accent-color:var(--neutral-accent);}
   .school.type-dark .spell-item input[type=checkbox]{accent-color:var(--dark-accent);}
-  .school.type-legacy-curse .spell-item input[type=checkbox]{accent-color:var(--legacy-curse-accent);}
-  .school.type-legacy-judgement .spell-item input[type=checkbox]{accent-color:var(--legacy-judge-accent);}
-  .school.type-chaos .spell-item input[type=checkbox]{accent-color:var(--chaos-accent);}
-  .school.type-order .spell-item input[type=checkbox]{accent-color:var(--order-accent);}
+  .school.type-legacy .spell-item input[type=checkbox]{accent-color:var(--legacy-accent);}
+  .school.type-deity .spell-item input[type=checkbox]{accent-color:var(--deity-accent);}
   .spell-name{font-weight:600;color:var(--parchment);font-size:19px;}
 
   /* NOT LEARNED: red text so missing spells stand out clearly */
@@ -1279,10 +1272,10 @@
     <label class="alignment-label" style="color: var(--dark-accent)">
       <input type="checkbox" id="filter-dark" onchange="onFilterChange()"> Dark Magic Allowed
     </label>
-    <label class="alignment-label" style="color: var(--legacy-curse-accent)">
+    <label class="alignment-label" style="color: var(--legacy-accent)">
       <input type="checkbox" id="filter-legacy" onchange="onFilterChange()"> Legacy Spells Allowed
     </label>
-    <label class="alignment-label" style="color: var(--chaos-accent)">
+    <label class="alignment-label" style="color: var(--deity-accent)">
       <input type="checkbox" id="filter-deity" onchange="onFilterChange()"> Deity Magic Allowed (Triumvirate Only)
     </label>
   </div>
@@ -1312,7 +1305,12 @@
 
     <button id="export-char" onclick="exportCharacter()">Copy Export Code</button>
     <button id="import-char" onclick="importCharacter()">Import Character</button>
-    
+
+    <div class="toolbar-sep"></div>
+
+    <button type="button" id="manage-schools-btn" class="manage-tag-groups-btn" style="display:none;" onclick="openSchoolsModal()" title="Add a new School of Magic (global editors only)">⚙ Manage Schools</button>
+    <button type="button" id="manage-school-order-btn" class="manage-tag-groups-btn" style="display:none;" onclick="openSchoolOrderModal()" title="Set the default order everyone sees (global editors only)">⚙ Manage School Order</button>
+
     <span id="save-note"></span>
   </div>
 
@@ -1445,6 +1443,7 @@
     </p>
 
     <div class="modal-actions">
+      <button id="modal-delete" onclick="deleteCurrentModalSpell()" style="background:var(--danger);border-color:var(--danger);color:#1a0d0b;display:none;">Delete Spell</button>
       <button onclick="closeSpellModal()">Close</button>
       <button id="modal-save" onclick="saveSpellModal()">Save</button>
     </div>
@@ -1487,610 +1486,96 @@
   </div>
 </div>
 
+<div id="schools-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeSchoolsModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeSchoolsModal()">✕</button>
+    <h2>Manage Schools of Magic</h2>
+    <p class="modal-subtitle">Add a new School of Magic. It appears for everyone immediately — no code changes needed. Spells are added afterwards from the "+ Add Spell" button inside the school itself.</p>
+
+    <label style="display:block;margin-top:14px;">School name
+      <input type="text" id="new-school-name" placeholder="e.g. Book of Frost" style="width:100%;margin-top:6px;">
+    </label>
+    <label style="display:block;margin-top:14px;">Category
+      <select id="new-school-type" style="width:100%;margin-top:6px;">
+        <option value="light">Light Magic</option>
+        <option value="dark">Dark Magic</option>
+        <option value="legacy">Legacy</option>
+        <option value="deity">Deity Magic</option>
+      </select>
+    </label>
+    <p id="schools-modal-status" style="font-size:13px;color:var(--parchment-dim);font-style:italic;min-height:1.2em;margin-top:10px;"></p>
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button type="button" onclick="closeSchoolsModal()">Cancel</button>
+      <button type="button" id="schools-modal-save" onclick="createSchool()">Add School</button>
+    </div>
+  </div>
+</div>
+
+<div id="add-spell-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeAddSpellModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeAddSpellModal()">✕</button>
+    <h2 id="add-spell-modal-title">Add Spell</h2>
+    <p class="modal-subtitle" id="add-spell-modal-subtitle"></p>
+
+    <label style="display:block;margin-top:14px;">Group
+      <select id="new-spell-group" style="width:100%;margin-top:6px;" onchange="onNewSpellGroupChange()"></select>
+    </label>
+    <div id="new-spell-group-custom-wrap" style="display:none;">
+      <label style="display:block;margin-top:14px;">New group name
+        <input type="text" id="new-spell-group-custom" placeholder="e.g. All Ranks" style="width:100%;margin-top:6px;">
+      </label>
+      <label style="display:block;margin-top:14px;">Tier
+        <select id="new-spell-tier" style="width:100%;margin-top:6px;">
+          <option value="main">Main</option>
+          <option value="savant">Savant</option>
+          <option value="oracle">Oracle</option>
+          <option value="special">Special</option>
+        </select>
+      </label>
+    </div>
+    <label style="display:block;margin-top:14px;">Latin name
+      <input type="text" id="new-spell-latin" placeholder="e.g. Gelu Manus" style="width:100%;margin-top:6px;">
+    </label>
+    <label style="display:block;margin-top:14px;">English name
+      <input type="text" id="new-spell-en" placeholder="e.g. Hand of Frost" style="width:100%;margin-top:6px;">
+    </label>
+    <p id="add-spell-modal-status" style="font-size:13px;color:var(--parchment-dim);font-style:italic;min-height:1.2em;margin-top:10px;"></p>
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button type="button" onclick="closeAddSpellModal()">Cancel</button>
+      <button type="button" id="add-spell-modal-save" onclick="createSpell()">Add Spell</button>
+    </div>
+  </div>
+</div>
+
+<div id="school-order-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeSchoolOrderModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeSchoolOrderModal()">✕</button>
+    <h2>Manage Default School Order</h2>
+    <p class="modal-subtitle">Sets the order everyone sees by default. Drag to reorder, then Save. Users who have already dragged their own personal order (via the ⠿ handle on each school) keep seeing their own custom order regardless of this — this only changes the starting order for everyone else / new users.</p>
+
+    <ul id="school-order-list" class="school-order-list"></ul>
+    <p id="school-order-status" style="font-size:13px;color:var(--parchment-dim);font-style:italic;min-height:1.2em;margin-top:10px;"></p>
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button type="button" onclick="closeSchoolOrderModal()">Cancel</button>
+      <button type="button" id="school-order-save" onclick="saveSchoolOrder()">Save Order</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ---------- DATA ---------- */
 function S(id, latin, en, learned){ return {id, latin, en, learned: !!learned}; }
 
-const SCHOOLS = [
-  {
-    key:'conjuration', name:'Book of Conjuration', type:'neutral',
-    groups:[
-      {label:'All Ranks', tier:'main', spells:[
-        S('conj_aufer','Aufer Materia','Remove Item'),
-        S('conj_cibus','Cibus et Potio','Create Food and Drink'),
-        S('conj_diff','Difficilis Materia','Difficult Item'),
-        S('conj_excand','Excandescunt Volucres','Flare Birds'),
-        S('conj_gemin','Geminae Golems','Twin Golems'),
-        S('conj_magiam','Magiam Detegere','Detect Magic'),
-        S('conj_manentia','Manentia','Permanency'),
-        S('conj_obarma','Obtestor Arma','Conjure Weapon'),
-        S('conj_obarmis','Obtestor Armis','Conjure Armor'),
-        S('conj_securus','Securus Materia','Simple Item'),
-        S('conj_scutum','Scutum Adamantinum','Adamantine Shield'),
-        S('conj_striges','Striges Iuniperorum',"Witches Broom"),
-        S('conj_telae','Telae Adhaerentes','Clinging Webs'),
-        S('conj_vita','Vita Temporaria','Temporary Life'),
-      ]},
-      {label:'Savant Spells', tier:'savant', spells:[
-        S('conj_sv_conv','Convivia Victory','Victory Feast'),
-        S('conj_sv_mirr','Magicae Speculum','Magic Mirror'),
-        S('conj_sv_prov','Provectus Armis','Advanced Armor'),
-      ]},
-      {label:'Oracle Spells', tier:'oracle', spells:[
-        S('conj_or_arm',"Armatura Inexpugnabilis Virium","Impregnable Armor of Might"),
-      ]},
-    ]
-  },
-  {
-    key:'ecomancy', name:'Book of Ecomancy', type:'neutral',
-    groups:[
-      {label:'All Ranks', tier:'main', spells:[
-        S('eco_ampelos','Ampelos Agria laqueum','Vine Trap'),
-        S('eco_camo','Camouflage Chamaeleonis','Chameleon Camouflage'),
-        S('eco_cortex','Cortex Manicae','Gauntlets of Bark'),
-        S('eco_melodiam','Melodiam Sanitatem','Melody of Healing'),
-        S('eco_raff','Rafflesia','Parasitic Plant'),
-        S('eco_urtica','Urtica dioica','Thorn Whip'),
-        S('eco_uniflora','Uniflora Caulis','One Flowered Stem'),
-        S('eco_venenum','Venenum Spinae','Poison Thorns'),
-        S('eco_vulpes','Vulpes Vociferatio','Vixen Scream'),
-      ]},
-      {label:'Savant Spells', tier:'savant', spells:[
-        S('eco_sv_arbor','Arbor Cor','Arbor Heart'),
-        S('eco_sv_ignis','Ignis Fugit','Fyre Flies'),
-        S('eco_sv_venator','Venator Sensus','Hunter Sense'),
-      ]},
-      {label:'Oracle Spells', tier:'oracle', spells:[
-        S('eco_or_naturas','Naturas Iram',"Nature's Wrath"),
-      ]},
-    ]
-  },
-  {
-    key:'elemental', name:'Elemental Magic', type:'neutral',
-    groups:[
-      {label:'All Ranks', tier:'main', spells:[
-        S('ele_aqua_ice','Aqua est Glacies','Water to Ice'),
-        S('ele_aquae_crea','Aquae Crea','Create Water'),
-        S('ele_aquae_prox','Aquae Proxima','Water Trap'),
-        S('ele_circulus','Circulus Ignis','Ring of Fire'),
-        S('ele_flatus','Flatus Ventus','Gust of Wind'),
-        S('ele_fulmen','Fulmen','Lightning'),
-        S('ele_fulmen_prox','Fulmen Proxima','Lightning Trap'),
-        S('ele_globus','Globus Ignis','Ball of Fire'),
-        S('ele_ignis_prox','Ignis Proxima','Flame Trap'),
-        S('ele_lapis','Lapis Carceris','Stone Prison'),
-        S('ele_parva','Parva Ignis','Small Flame'),
-        S('ele_petra','Petra Malleus','Rock Hammer'),
-        S('ele_sphaera','Sphaera Aquae','Sphere of Water'),
-        S('ele_terra_crea','Terra Crea','Create Earth'),
-        S('ele_terra_prox','Terra Proxima','Earth Trap'),
-        S('ele_vortex','Vortex','Whirlwind'),
-        S('ele_ignus_flag','Ignus Flagellum','Flame Whip'),
-        S('ele_glacies','Glacies Hasta','Ice Spear'),
-        S('ele_zephyr','Zephyr Arcus','Wind Bow'),
-        S('ele_comminutio','Comminutio Petra','Shattering Rock'),
-      ]},
-      {label:'Savant Spells', tier:'savant', spells:[
-        S('ele_sv_furia','Natura Furia',"Nature's Fury"),
-        S('ele_sv_mantel','Natura Mantellum',"Nature's Mantle"),
-      ]},
-      {label:'Oracle Spells', tier:'oracle', spells:[
-        S('ele_or_malum','Natura Malum',"Nature's Catastrophe"),
-      ]},
-    ]
-  },
-  {
-    key:'illusion', name:'Book of Illusion', type:'neutral',
-    groups:[
-      {label:'All Ranks', tier:'main', spells:[
-        S('ill_caecus','Caecus','Invisibility'),
-        S('ill_disguise','Disguise Te Ipsum','Disguise Self'),
-        S('ill_falsa_arma','Falsa Arma','Illusiory Weapon'),
-        S('ill_falsus_con','Falsus Construe','False Construct'),
-        S('ill_falsa_imago','Falsa Imago','False Image'),
-        S('ill_lux_ref','Lux Refulgeo','Light Flash'),
-        S('ill_pulsus','Pulsus Lucis','Pulse of Light'),
-        S('ill_speculum','Speculum Imaginum','Mirror Image'),
-        S('ill_subtilis','Subtilis Speculator','Subtle Spy'),
-        S('ill_tacitum','Tacitum','Quiet'),
-        S('ill_verum','Verum Timor','True Fear'),
-      ]},
-      {label:'Savant Spells', tier:'savant', spells:[
-        S('ill_sv_intell','Intellectus Commotus','Mind Quake'),
-        S('ill_sv_sensus','Sensus Obrue','Overwhelm Senses'),
-        S('ill_sv_sympath','Sympatheticus Damnum','Sympathetic Damage'),
-      ]},
-      {label:'Oracle Spells', tier:'oracle', spells:[
-        S('ill_or_mundus','Falsus Mundus','False World'),
-        S('ill_or_mens','Mens Florens','Mind Bloom'),
-      ]},
-    ]
-  },
-  {
-    key:'phantasm', name:'Book of Phantasm', type:'neutral',
-    groups:[
-      {label:'All Ranks', tier:'main', spells:[
-        S('pha_armatura','Armatura Ectoplasmatia','Ecto Plasma Armor'),
-        S('pha_fulmen','Fulmen Phantasmalis','Phantom Bolt'),
-        S('pha_iter','Iter Spiritus','Ghost Walk'),
-        S('pha_manus_pha','Manus Phantasmalis','Phantasmal Hand'),
-        S('pha_medicina','Medicina Etherea','Ethereal Mend'),
-        S('pha_explorator','Spiritus Explorator','Spectral Reconnaissance'),
-        S('pha_lamina','Spiritus Lamina','Spirit blade'),
-        S('pha_loquere','Spiritus Loquere','Spirit speak'),
-        S('pha_magistri','Manus Magistri','Hands of the Master'),
-      ]},
-      {label:'Savant Spells', tier:'savant', spells:[
-        S('pha_sv_custos','Phantasma Custos','Spectral Guardian'),
-      ]},
-      {label:'Oracle Spells', tier:'oracle', spells:[
-        S('pha_or_nova','Nova Spectralis','Spectral Nova'),
-      ]},
-    ]
-  },
-  {
-    key:'spatial', name:'Book of Spatial', type:'neutral',
-    groups:[
-      {label:'All Ranks', tier:'main', spells:[
-        S('spa_contritio','Contritio Gravitas','Crushing Gravity'),
-        S('spa_ianuae','Ianuae','Teleport'),
-        S('spa_ostium_m','Magicae Ostium','Magic Door'),
-        S('spa_oculi','Oculi Veritatis','Eyes of Truth'),
-        S('spa_ostium','Ostium','Portal'),
-        S('spa_planum','Planum Ambula','Planes Walk'),
-        S('spa_resolvo','Resolvo','Dispell'),
-        S('spa_scutum','Scutum','Shield'),
-        S('spa_stella','Stella Mantellum','Star Mantle'),
-        S('spa_trabs','Trabs Astra','A Beam of Stars'),
-      ]},
-      {label:'Savant Spells', tier:'savant', spells:[
-        S('spa_sv_caeli','Caeli Portae',"Heaven's Gates"),
-        S('spa_sv_dimensio','Dimensio Vulnus','Dimension slash'),
-        S('spa_sv_eversio','Eversio Spatii','Spatial Collapse'),
-      ]},
-      {label:'Oracle Spells', tier:'oracle', spells:[
-        S('spa_or_pila','Pila Ex Spatio','Ball of Space'),
-      ]},
-    ]
-  },
-  {
-    key:'summoning', name:'Books of Summoning', type:'neutral',
-    groups:[
-      {label:'Lesser Summoning — All Ranks', tier:'main', spells:[
-        S('sum_angelus','Angelus Cadens','Fallen Angels'),
-        S('sum_ignis_ren','Ignis Renascens','Phoenix Rite'),
-        S('sum_aula','Aula Reginae',"The Queen's Court"),
-        S('sum_noctis','Noctis Volucris','Lord of the Night Swarm'),
-        S('sum_arbor_asc','Arbor Ascendens','Rising Wood'),
-        S('sum_mycelium','Mycelium Ascendens','Rising Fungus'),
-        S('sum_simia_sax','Simia Saxea','Stoneborne Apes'),
-        S('sum_torva_min','Torva Messor Minor','Aspect of the Reaper'),
-        S('sum_custos_min','Custos Magicae Minor','Aspect of the Guardian'),
-      ]},
-      {label:'Named Summoning — All Ranks', tier:'main', spells:[
-        S('sum_ortus','Ortus Phoenix','Rise of the Phoenix'),
-        S('sum_regina','Regina Fae','Queen of the Fae'),
-        S('sum_dominus','Dominus Lamia','Lord Dracula'),
-        S('sum_rex','Rex Simia','Mountain Kong'),
-        S('sum_torva','Torva Messor','The Grim Reaper'),
-        S('sum_custos','Custos Magicae','Guardian of Magic'),
-      ]},
-      {label:'Savants', tier:'savant', spells:[
-        S('sum_sv_lumen','Lumen Fractum','Lucifer, the Lightbearer'),
-        S('sum_sv_abyssus','Abyssus Kraken','Abyssal Kraken'),
-        S('sum_sv_vinculum','Vinculum Familiaris','Bound Familiar'),
-      ]},
-      {label:'Oracle-Savants', tier:'special', spells:[
-        S('sum_os_domina','Domina Draconum','Tiamat'),
-      ]},
-      {label:'Triumvirate', tier:'special', spells:[
-        S('sum_tri_nox','Nox Gargouille','Night of the Gargoyles'),
-      ]},
-    ]
-  },
-  {
-    key:'transmutation', name:'Book of Transmutation', type:'neutral',
-    groups:[
-      {label:'All Ranks', tier:'main', spells:[
-        S('tra_aetherius','Aetherius','Ethreal'),
-        S('tra_exscindo','Exscindo','Destroy'),
-        S('tra_festinatio','Festinatio','Haste'),
-        S('tra_figura_el','Figura Elementa','Shape Elements'),
-        S('tra_mutare_al','Mutare Alium','Change Another'),
-        S('tra_mutare_el','Mutare Elementa','Change The Elements'),
-        S('tra_muto_sese','Muto Sese','Change Self'),
-        S('tra_reformatio','Reformatio','Reform'),
-        S('tra_tardus','Tardus','Slow'),
-      ]},
-      {label:'Any Fae Race', tier:'main', excludeFromMastery:true, spells:[
-        S('tra_faerie','Faerie Fire','Faerie Fire'),
-      ]},
-      {label:'Savant Spells', tier:'savant', spells:[
-        S('tra_sv_aleratio','Aleratio Concretio','Matter Manipulation'),
-        S('tra_sv_figura','Figura Mutatio','Shape Change'),
-      ]},
-      {label:'Oracle Spells', tier:'oracle', spells:[
-        S('tra_or_tempus','Tempus Sistere','Time Stop'),
-      ]},
-      {label:'Keeper of Knowledge / Custodians', tier:'special', spells:[
-        S('tra_kk_commutate','Commutate Alicia','Transmute Spell'),
-      ]},
-    ]
-  },
-  {
-    key:'abjuration', name:'Book of Abjuration', type:'light',
-    groups:[
-      {label:'All Ranks', tier:'main', spells:[
-        S('abj_benedicite','Benedicite','Bless'),
-        S('abj_corporis','Corporis Nexum','Body Link'),
-        S('abj_custodiae','Custodiae','Protection'),
-        S('abj_dimensionem','Dimensionem Anchoram','Dimensional Anchor'),
-        S('abj_entropus','Entropus Scutum','Entropic Shield'),
-        S('abj_lituus','Lituus','Alarm'),
-        S('abj_murus','Murus Virium','Wall of Force'),
-        S('abj_non_vident','Non Vident','Non Detection'),
-        S('abj_rakaane','Rakaane Clostruum','Arcane Lock'),
-        S('abj_resistere','Resistere Vis','Resist Energy'),
-      ]},
-      {label:'Mastered Above Spells', tier:'main', spells:[
-        S('abj_exilium','Exilium','Banishment'),
-      ]},
-      {label:'Savant Spells', tier:'savant', spells:[
-        S('abj_sv_libertas','Libertas','Freedom'),
-      ]},
-      {label:'Oracle Spells', tier:'oracle', spells:[
-        S('abj_or_disiunctio','Disiunctio','Disjunction'),
-      ]},
-    ]
-  },
-  {
-    key:'healing', name:'Book of Healing', type:'light',
-    groups:[
-      {label:'All Ranks', tier:'main', spells:[
-        S('heal_essentia','Essentia Restiture','Restoration of the Essence'),
-        S('heal_exsercio','Exsercio','Exorcism'),
-        S('heal_pharus','Pharus de Lux','Aura of Healing'),
-        S('heal_purgo_anima','Purgo Anima','Purge Impurities of the Mind'),
-        S('heal_purgo_caro','Purgo Caro','Purge Impurities of the Flesh'),
-        S('heal_restiture_artus','Restiture Artus','Severe Restoration'),
-        S('heal_restiture_min','Restiture Minutia','Minor Restoration'),
-        S('heal_restituere_sui','Restituere Sui','Self Restoration'),
-        S('heal_sanatio','Sanatio Cercis','Wingspan of Healing'),
-        S('heal_vigilia','Vigilia Animae','Vigil over the Soul'),
-      ]},
-      {label:'Savant Spells', tier:'savant', spells:[
-        S('heal_sv_anastasis','Anastasis','Resurrection'),
-      ]},
-    ]
-  },
-  {
-    key:'holyfire', name:'Book of Holyfire', type:'light',
-    groups:[
-      {label:'All Ranks', tier:'main', spells:[
-        S('holy_daemonium','Daemonium Finis','Spear of Holyfire'),
-        S('holy_ignis_sanctus','Ignis Sanctus Captus','Holy Shackles'),
-        S('holy_sancta_flamma','Sancta Flamma','Holy Fireball'),
-        S('holy_sancta_unda','Sancta Unda','Holy Wave'),
-        S('holy_sancti_sigilli','Sancti Sigilli',"Saint's Seal"),
-        S('holy_purgatorium','Sanctum Purgatorium','Holy Purgatory'),
-        S('holy_eryx','Sanctus Eryx',"Saint's Gauntlets"),
-        S('holy_murus','Sanctus Murus','Holy Wall'),
-        S('holy_pluviae','Sanctus Pluviae',"Saint's Rain"),
-        S('holy_eruptio','Sanctum Eruptio','Holy Eruption'),
-      ]},
-      {label:'Savant Spells', tier:'savant', spells:[
-        S('holy_sv_flagrans','Flagrans Orbis','Flaming Orbs'),
-        S('holy_sv_sanctis','Sanctis Inspirare','Empower'),
-      ]},
-      {label:'Oracle Spells', tier:'oracle', spells:[
-        S('holy_or_sonet','Sonet Primus','Sound the First Trumpet'),
-      ]},
-    ]
-  },
-  {
-    key:'judgement', name:'Book of Judgement', type:'light',
-    groups:[
-      {label:'Low Judgements — All Ranks', tier:'main', spells:[
-        S('jud_aura_gratiae','Aura Gratiae','Aura of Grace'),
-        S('jud_dubium','Dubium Justicii','Judgment of doubt'),
-        S('jud_increpa','Increpa turpes','Rebuke the Vile'),
-        S('jud_iudicium_pugnam','Iudicium per Pugnam','Trial by Combat'),
-        S('jud_ultionis','Judicii Ultionis','Judgment of Retribution'),
-        S('jud_iustus','Iustus Ultor','Righteous Avenger'),
-        S('jud_percute','Percute Rios','smite the guilty'),
-      ]},
-      {label:'Low Savants', tier:'savant', spells:[
-        S('jud_sv_fortunae','Aura Fortunae','Aura of Luck'),
-        S('jud_sv_malleus','Malleus Iustitiae','Hammer of Justice'),
-      ]},
-      {label:'High Judgements — All Ranks', tier:'main', spells:[
-        S('jud_fortuna_adversa','Fortuna Adversa Judicii','Judgment of Ill Fortune'),
-        S('jud_servitutis','Iudicium Servitutis','Judgment of Servitude'),
-      ]},
-      {label:'High Savants', tier:'savant', spells:[
-        S('jud_sv_paenitentia','Paenitentia Judicii','Judgment of Penance'),
-        S('jud_sv_pestilentia','Pestilentia Judicii','Judgment of Pestilence'),
-      ]},
-      {label:'Oracle', tier:'oracle', spells:[
-        S('jud_or_pestis','Pestis Locustarum Judicii','Plague of Locusts Judgment'),
-      ]},
-    ]
-  },
-  {
-    key:'light', name:'Book of Light', type:'light',
-    groups:[
-      {label:'All Ranks', tier:'main', spells:[
-        S('lig_custos','Custos Luminis','Keeper of Light'),
-        S('lig_lamina','Lamina Lucis','Blades of Light'),
-        S('lig_caelorum','Lux Caelorum','Light of Heavens'),
-        S('lig_geminae','Lux Geminae','Light Twin'),
-        S('lig_perforans','Perforans Sagitta','Piercing Arrow'),
-        S('lig_trabem','Trabem Caeca','Blinding Beam'),
-      ]},
-      {label:'Angelics — All Ranks', tier:'main', excludeFromMastery:true, spells:[
-        S('lig_alis','Alis Lucis','Wings of Light'),
-      ]},
-      {label:'Savant Spells', tier:'savant', spells:[
-        S('lig_sv_columna','Columna Caeli','Column of Heaven'),
-      ]},
-      {label:'Oracle Spells', tier:'oracle', spells:[
-        S('lig_or_fulgur','Fulgur Percutiens','Lightning Strikes'),
-      ]},
-    ]
-  },
-  {
-    key:'martyrdom', name:'Book of Martyrdom', type:'light',
-    groups:[
-      {label:'All Ranks', tier:'main', spells:[
-        S('mar_connexum','Connexum','Bound Together'),
-        S('mar_immolare','Immolare','Immolate'),
-        S('mar_oblatio','Oblatio Doloris','Offering of Pain'),
-        S('mar_onus','Onus Culpae','Burden of Guilt'),
-        S('mar_sanguis_bene','Sanguis Benedictionis','Blood Blessing'),
-        S('mar_sanguis_dec','Sanguis Decimam','Blood Tithe'),
-        S('mar_scutum','Scutum Sanguinis','Blood Shield'),
-        S('mar_vexilliferum','Vexilliferum Doloris','Bearer of Pain'),
-      ]},
-      {label:'Savant Spells', tier:'savant', spells:[
-        S('mar_sv_agnus','Agnus Immolatus','Sacrificial Lamb'),
-        S('mar_sv_digrediens','Digrediens Donum','Parting Gift'),
-      ]},
-      {label:'Oracle Spells', tier:'oracle', spells:[
-        S('mar_or_sanguinis','Sanguinis Martyris','Blood of the Martyr'),
-      ]},
-    ]
-  },
-  {
-    key:'necromancy', name:'Book of Necromancy', type:'dark',
-    groups:[
-      {label:'All Ranks', tier:'main', spells:[
-        S('nec_animata','Animata Mortuus','Animate Dead'),
-        S('nec_imperium','Imperium Inmortuae','Control Undead'),
-        S('nec_infunde','Infunde Inmortuae','Infuse Undead'),
-        S('nec_macabe','Macabe Loquere','Death Speak'),
-        S('nec_manus','Manus Mortuorum','Hands of the Dead'),
-        S('nec_mors_lig','Mors Ligatus','Death Bound'),
-        S('nec_mors_tac','Mors Tactus','Death Touch'),
-        S('nec_mortuus','Mortuus Ambulatio','The Walking Dead'),
-        S('nec_pest_fulm','Pestilentia Fulmen','Plague Bolt'),
-        S('nec_pest_pluv','Pestilentia Pluviae','Plague Rain'),
-        S('nec_vita','Vita Furtum','Life Theft'),
-        S('nec_verutum','Verutum Osseum','Bone Javelin'),
-      ]},
-      {label:'Praetorians and Savants', tier:'savant', spells:[
-        S('nec_pr_equit','Equitum mortuorum','Cavalry of the Dead'),
-      ]},
-      {label:'Savant Spells', tier:'savant', spells:[
-        S('nec_sv_exerc','Exercitus Mortuorum','Army of the Dead'),
-      ]},
-      {label:'Oracle Spells', tier:'oracle', spells:[
-        S('nec_or_blight','Blightfire Dohereās','Summon Blightfire'),
-      ]},
-      {label:'Triumvirate Araton Only', tier:'special', spells:[
-        S('nec_tri_torm','Tormentis Immortuos','Undead Artillery'),
-      ]},
-    ]
-  },
-  {
-    key:'blood', name:'Book of Blood', type:'dark',
-    groups:[
-      {label:'All Ranks', tier:'main', spells:[
-        S('bld_acidum','Acidum Pro Sanguine','Acid for Blood'),
-        S('bld_corpus','Corpus Duplex','Blood Double'),
-        S('bld_gustus','Gustus Sanguinis','The Taste of Blood'),
-        S('bld_illimitata','Illimitata Infinita','Unlimited Power'),
-        S('bld_infusus','Infusus Sanguine','Infusion of Blood'),
-        S('bld_sang_ferv','Sanguis Fervo','Blood Boil'),
-        S('bld_sang_flag','Sanguis Flagellum','Blood Whip'),
-        S('bld_sang_furt','Sanguis Furtum','Blood Theft'),
-        S('bld_sang_iram','Sanguis Iram','Blood Rage'),
-        S('bld_sang_tel','Sanguis Telum','Blood Bolt'),
-        S('bld_venenum','Venenum Sanguinem','Venorous Blood'),
-      ]},
-      {label:'Savant Spells', tier:'savant', spells:[
-        S('bld_sv_vita','Sanguis vita Est','Blood is the Life'),
-        S('bld_sv_fervo','Sanginis Fervo','Blood Storm'),
-      ]},
-      {label:'Oracle Spells', tier:'oracle', spells:[
-        S('bld_or_dom','Sanguis Dominus','Blood Domination'),
-      ]},
-    ]
-  },
-  {
-    key:'hexes', name:'Hexes & True Curses', type:'dark',
-    groups:[
-      {label:'Hexes — All Ranks', tier:'main', spells:[
-        S('hex_ossium','Ossium Confractio','Bone Shatter'),
-        S('hex_ad_mortem','Ad Mortem Signatus','Marked for Death'),
-        S('hex_oculus','Oculus Malus','Evil Eye'),
-        S('hex_pestis','Pestis Murium','Plague of Rats'),
-        S('hex_lamentatio','Lamentatio Tristis','Baleful Keening'),
-        S('hex_miasma','Miasma Foetidum','Fetid Miasma'),
-        S('hex_ineptus','Ineptus Maledicta','Clumsy Curse'),
-      ]},
-      {label:'Hexes — Savants', tier:'savant', spells:[
-        S('hex_sv_dolor','Dolor Torquens','Writhing Pain'),
-      ]},
-      {label:'True Curses — All Ranks', tier:'main', spells:[
-        S('cur_duplicatum','Duplicatum Maleficum','Doppelganger'),
-        S('cur_incoherentiae','Incoherentiae Maledictio','curse of incoherence'),
-        S('cur_canis','Canis Mali Ominis','Hound of Ill Omen'),
-        S('cur_maledictio_corp','Maledictio Corporis Torti','Twisted Body'),
-      ]},
-      {label:'True Curses — Oracle', tier:'oracle', spells:[
-        S('cur_or_mortis','Maledictio Mortis Rubrae','Curse of the Red Death'),
-      ]},
-    ]
-  },
-  {
-    key:'fleshcrafting', name:'Book of Fleshcrafting', type:'dark',
-    groups:[
-      {label:'All Ranks', tier:'main', spells:[
-        S('fls_carnem','Carnem Calcaria','The Flesh of Spurs'),
-        S('fls_caro_put','Caro Putredo','Rotten Flesh'),
-        S('fls_dolor','Dolor ut Voluptas','Pain as Pleasure'),
-        S('fls_expurgate','Expurgate Carnem','Cleanse the Flesh'),
-        S('fls_forma','Forma Immanis','Monstrous Form'),
-        S('fls_interiorem','Interiorem Dominum','Inner Mastery'),
-        S('fls_mutare','Mutare Os','Alter Bone'),
-        S('fls_mutationem','Mutationem Sui','Change Self'),
-        S('fls_muto','Muto Corpus','Change Flesh'),
-        S('fls_caro_ad','Caro ad Os','Flesh to Bone'),
-        S('fls_lingua','Lingua Verberans','Lashing Tongue'),
-        S('fls_cutis','Cutis Lubrica','Slippery Skin'),
-        S('fls_membra','Membra Lacertae','Lizard Limbs'),
-      ]},
-      {label:'Savant Spells', tier:'savant', spells:[
-        S('fls_sv_corpus','Corpus Reformationis','The Body of Reformation'),
-        S('fls_sv_reditus','Reditus ad Formam','Return to Form'),
-        S('fls_sv_pupa','Pupa Carnis','Meat Puppet'),
-        S('fls_sv_nodus','Nodus Carcinis','Cancerous Knot'),
-      ]},
-      {label:'Savant Mutations', tier:'savant', spells:[
-        S('fls_sv_carnis','Carnis Alis','Fleshbound Wings'),
-        S('fls_sv_crurai','Crurai Abyssi','Abyssal Legs'),
-        S('fls_sv_proboskis','Proboskis Abyssi','Abyssal Proboscis'),
-        S('fls_sv_spina_car','Spina Carapace','Horned Carapace'),
-        S('fls_sv_stimulus','Stimulus Abyssi','Abyssal Stinger'),
-        S('fls_sv_ungues','Ungues Abyssi Cancri','Abyssal Crab Claws'),
-      ]},
-      {label:'Oracle Spells', tier:'oracle', spells:[
-        S('fls_or_spina','Spina Glomerorum','Spine Spores'),
-        S('fls_or_tolerare','Tolerare','Endure'),
-        S('fls_or_ars','Ars Contorta','Twisted Art'),
-      ]},
-    ]
-  },
-  {
-    key:'hellfire', name:'Book of Hellfire', type:'dark',
-    groups:[
-      {label:'All Ranks', tier:'main', spells:[
-        S('hel_aeternum','Aeternum Tormentum','Eternal Torment'),
-        S('hel_angelus','Angelus Finis','Spear of Hellfire'),
-        S('hel_gehennam_ir','Gehénnam Iracundia','Hellfire Pulse'),
-        S('hel_gehennam_mu','Gehénnam Murus','Wall of Hellfire'),
-        S('hel_ignis','Ignis Regnum','Hellfire Glyph'),
-        S('hel_imber','Imber Ignis','Hellfire Rain'),
-        S('hel_infurnum_ig','Infurnum Ignis','Ball of Hellfire'),
-        S('hel_infurnum_ma','Infurnum Manicae','Hellfire Gauntlets'),
-        S('hel_infurnum_vi','Infurnum Vinctum','Hellfire Shackles'),
-      ]},
-      {label:'Savant Spells', tier:'savant', spells:[
-        S('hel_sv_flagrans','Flagrans Calvaria','Screaming Hellfire Skulls'),
-      ]},
-      {label:'Oracle Spells', tier:'oracle', spells:[
-        S('hel_or_chorum','Chorum Damnatorum','Chorus of the Damned'),
-        S('hel_or_dominium','Ignis Dominum','Hellfire Domain'),
-      ]},
-    ]
-  },
-  {
-    key:'shadows', name:'Book of Shadows', type:'dark',
-    groups:[
-      {label:'All Ranks', tier:'main', spells:[
-        S('shd_imperium','Imperium Umbrae','Control Shadows'),
-        S('shd_mutatio','Mutatio Obscura','Dark Transformation'),
-        S('shd_umbra_amb','Umbra Ambulate','Shadow Walk'),
-        S('shd_umbra_did','Umbra Didimus','Shadow Twin'),
-        S('shd_umbra_ex','Umbra Exile','Shadow Exile'),
-        S('shd_umbra_ful','Umbra Fulmen','Shadow Lightning'),
-        S('shd_umbra_int','Umbra Integumentum','Shadow Cover'),
-        S('shd_umbra_vin','Umbra Vincla','Shadow Bind'),
-        S('shd_vis','Visus Tenebrosus','Shadow Sight'),
-      ]},
-      {label:'Savant Spells', tier:'savant', spells:[
-        S('shd_sv_tenebrae','Tenebrae Aeternae','Darkness Eternal'),
-      ]},
-      {label:'Oracle Spells', tier:'oracle', spells:[
-        S('shd_or_hirudo','Umbra Hirudo','Shadow Leech'),
-      ]},
-    ]
-  },
-  {
-    key:'legacy_curses', name:'Legacy Curses', type:'legacy-curse',
-    groups:[
-      {label:'All Ranks', tier:'main', spells:[
-        S('lgc_mentis','Mentis Maledictio','Mind Curse'),
-        S('lgc_infirmitas','Infirmitas Maledicta','Weakness Curse'),
-        S('lgc_tarda','Tarda Maledicta','Slow Curse'),
-        S('lgc_gracile','Gracile Maledictum','Slender Curse'),
-        S('lgc_mors','Mors Maledicta','Death Curse'),
-        S('lgc_pax','Pax Maledicta','Peace Curse'),
-        S('lgc_anchora','Anchora Maledicta','Anchor Curse'),
-        S('lgc_stypticus','Stypticus Maledicta','Paralyze Curse'),
-        S('lgc_occidere','Occidere Maledicta','Killing Curse'),
-      ]},
-    ]
-  },
-  {
-    key:'legacy_judgements', name:'Legacy Judgements', type:'legacy-judgement',
-    groups:[
-      {label:'All Ranks', tier:'main', spells:[
-        S('lgj_mentis','Mentis Judicii','Mind Judgement'),
-        S('lgj_infirmitas','Infirmitas Judicii','Weakness Judgement'),
-        S('lgj_tarda','Tarda Judicii','Slow Judgement'),
-        S('lgj_gracile','Gracile Judicii','Slender Judgement'),
-        S('lgj_mors','Mors Judicii','Death Judgement'),
-        S('lgj_fragilis','Fragilis Judicii','Fragile Judgement'),
-        S('lgj_pax','Pax Judicii','Peace Judgement'),
-        S('lgj_anchora','Anchora Judicii','Anchor Judgement'),
-        S('lgj_stypticus','Stypticus Judicii','Paralyze Judgement'),
-        S('lgj_occidere','Occidere Judicii','Killing Judgement'),
-      ]},
-    ]
-  },
-  {
-    key:'chaos_magic', name:'Chaos Magic', type:'chaos',
-    groups:[
-      {label:'All Ranks', tier:'main', spells:[
-        S('cha_missa','Missa Extinctio','Mass Extinction'),
-        S('cha_apoc','Apocalypsis','Apocalypse'),
-        S('cha_oblivio','Oblivio','Oblivion'),
-        S('cha_praetrunco','Praetrunco','Sever'),
-        S('cha_corruptus','Corruptus','Corrupt'),
-        S('cha_stamen','Stamen Veritas','Warp Reality'),
-        S('cha_turbatio','Turbatio','Discord'),
-        S('cha_retexo','Retexo','Unravel'),
-      ]},
-    ]
-  },
-  {
-    key:'order_magic', name:'Order Magic', type:'order',
-    groups:[
-      {label:'All Ranks', tier:'main', spells:[
-        S('ord_missa','Missa Restitutio','Mass Restoration'),
-        S('ord_miraculum','Miraculum','Miracle'),
-        S('ord_vigilantia','Vigilantia','Vigilance'),
-        S('ord_unitas','Unitas','Unity'),
-        S('ord_creatio','Creatio','Creation'),
-        S('ord_restituere','Restituere Veritas','Restore Reality'),
-        S('ord_concordia','Concordia','Harmony'),
-        S('ord_emendo','Emendo','Mend'),
-      ]},
-    ]
-  }
-];
+let SCHOOLS = [];
+// SCHOOLS, and every spell inside each school, now live in Supabase
+// (tables "schools" and "spells") instead of being hard-coded here. This
+// lets designated editors add new Schools of Magic and new spells directly
+// from the page, without ever touching this file. See loadSchoolsAndSpells()
+// further down for how this array gets populated on page load.
 
 const MAX_SAVANT = 3;
 const STORAGE_KEY = 'tracker-state-v2';
@@ -2103,9 +1588,83 @@ const STORAGE_KEY = 'tracker-state-v2';
    dashboard) are allowed to write changes; everyone else can read it. */
 let spellMeta = {};
 let isSpellEditor = false;
+/* Set of school "key"s the current user is manually allowed to edit as an
+   Oracle (table "school_oracle_editors", rows added by hand in Supabase —
+   never granted automatically by the in-app Oracle badge button). Inside
+   their own school(s) an Oracle editor has full rights: add spells, delete
+   spells, and change any spell's description/tags/cost/etc. */
+let oracleSchools = new Set();
 
 const SPELL_INDEX = {};
-SCHOOLS.forEach(sch => sch.groups.forEach(g => g.spells.forEach(sp => { SPELL_INDEX[sp.id] = sp; })));
+let DEFAULT_LEARNED = {};
+
+/* True if the current user may add brand-new Schools of Magic and assign
+   them a category (Light/Dark/Legacy/Deity), and may add/edit/delete spells
+   in ANY school. Only the global "spell_editors" role can do this. */
+function canManageSchools(){ return isSpellEditor; }
+
+/* True if the current user may add, edit, or delete spells (and their
+   metadata) within the given school. True for global editors everywhere,
+   and true for Oracle editors within their own assigned school(s). */
+function canEditSchool(schoolKey){ return isSpellEditor || oracleSchools.has(schoolKey); }
+
+/* ---------- SCHOOLS & SPELLS (loaded from Supabase) ---------- */
+async function loadSchoolsAndSpells(){
+  try{
+    const [{ data: schoolRows, error: schoolErr }, { data: spellRows, error: spellErr }] = await Promise.all([
+      supabaseClient.from('schools').select('*').order('sort_order', { ascending: true }),
+      supabaseClient.from('spells').select('*').order('sort_order', { ascending: true }),
+    ]);
+    if(schoolErr) throw schoolErr;
+    if(spellErr) throw spellErr;
+
+    const bySchool = {};
+    const order = [];
+    (schoolRows || []).forEach(row => {
+      bySchool[row.key] = { key: row.key, name: row.name, type: row.type, groups: [], _groupIndex: {} };
+      order.push(row.key);
+    });
+    (spellRows || []).forEach(row => {
+      const sch = bySchool[row.school_key];
+      if(!sch) return; // spell pointing at a school that no longer exists — skip defensively
+      let group = sch._groupIndex[row.group_label];
+      if(!group){
+        group = { label: row.group_label, tier: row.tier, spells: [] };
+        sch._groupIndex[row.group_label] = group;
+        sch.groups.push(group);
+      }
+      const sp = S(row.id, row.latin_name, row.english_name);
+      sp.schoolKey = row.school_key;
+      group.spells.push(sp);
+    });
+    SCHOOLS = order.map(key => { const s = bySchool[key]; delete s._groupIndex; return s; });
+    rebuildSpellIndexAndDefaults();
+  }catch(e){
+    console.error('Could not load schools/spells from cloud:', e);
+    alert('Could not load the spell schools from the cloud database. Please reload the page and check your connection.');
+  }
+}
+
+function rebuildSpellIndexAndDefaults(){
+  Object.keys(SPELL_INDEX).forEach(k => delete SPELL_INDEX[k]);
+  SCHOOLS.forEach(sch => sch.groups.forEach(g => g.spells.forEach(sp => { SPELL_INDEX[sp.id] = sp; })));
+  DEFAULT_LEARNED = buildDefaults();
+}
+
+function slugify(str){
+  return (str || '').toLowerCase()
+    .normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 40) || 'x';
+}
+
+function uniqueKey(base, existingSet){
+  let key = base;
+  let i = 2;
+  while(existingSet.has(key)){ key = `${base}_${i}`; i++; }
+  return key;
+}
 
 async function loadSpellMeta(){
   try{
@@ -2135,7 +1694,8 @@ async function loadSpellMeta(){
 
 async function checkSpellEditorStatus(){
   isSpellEditor = false;
-  if(!currentUser){ updateTagGroupsButtonVisibility(); return; }
+  oracleSchools = new Set();
+  if(!currentUser){ updateTagGroupsButtonVisibility(); updateSchoolAdminButtonVisibility(); return; }
   try{
     const { data, error } = await supabaseClient
       .from('spell_editors')
@@ -2144,7 +1704,16 @@ async function checkSpellEditorStatus(){
       .maybeSingle();
     if(!error && data) isSpellEditor = true;
   }catch(e){ console.error(e); }
+  try{
+    const { data, error } = await supabaseClient
+      .from('school_oracle_editors')
+      .select('school_key')
+      .eq('user_id', currentUser.id);
+    if(!error && data) oracleSchools = new Set(data.map(r => r.school_key));
+  }catch(e){ console.error(e); }
   updateTagGroupsButtonVisibility();
+  updateSchoolAdminButtonVisibility();
+  render();
 }
 
 async function saveSpellMetaRow(id, meta){
@@ -2361,13 +1930,15 @@ window.openSpellModal = function(evt, id){
     'modal-heal-upkeep-body','modal-heal-upkeep-mind','modal-heal-upkeep-spirit',
     'modal-buff-body','modal-buff-mind','modal-buff-spirit',
     'modal-buff-upkeep-body','modal-buff-upkeep-mind','modal-buff-upkeep-spirit','modal-desc'];
-  const canEditSpell = isSpellEditor && !editLocked;
+  const hasRights = canEditSchool(sp.schoolKey);
+  const canEditSpell = hasRights && !editLocked;
   editableIds.forEach(id => { document.getElementById(id).disabled = !canEditSpell; });
   document.getElementById('modal-save').style.display = canEditSpell ? '' : 'none';
+  document.getElementById('modal-delete').style.display = canEditSpell ? '' : 'none';
   document.getElementById('modal-readonly-hint').style.display = canEditSpell ? 'none' : 'block';
-  document.getElementById('modal-readonly-hint').textContent = isSpellEditor && editLocked
+  document.getElementById('modal-readonly-hint').textContent = hasRights && editLocked
     ? 'Editing is locked. Click the lock button in the toolbar to unlock it before editing spells.'
-    : "You don't have edit rights for the shared spell data. Ask the tracker owner to add you as an editor if you should be able to change this.";
+    : "You don't have edit rights for this School of Magic. Ask the tracker owner to add you as an editor (or Oracle of this school) if you should be able to change this.";
 
   document.getElementById('spell-modal-backdrop').classList.add('open');
   autosizeTextarea(document.getElementById('modal-desc'));
@@ -2379,7 +1950,8 @@ window.closeSpellModal = function(){
 };
 
 window.saveSpellModal = async function(){
-  if(!currentModalSpellId || !isSpellEditor || editLocked) return;
+  const sp = currentModalSpellId ? SPELL_INDEX[currentModalSpellId] : null;
+  if(!sp || !canEditSchool(sp.schoolKey) || editLocked) return;
   const tags = document.getElementById('modal-tags').value
     .split(',').map(t=>t.trim().toLowerCase()).filter(Boolean);
   const num = (elId) => { const v = parseFloat(document.getElementById(elId).value); return isNaN(v) ? 0 : v; };
@@ -2471,7 +2043,8 @@ function buildDefaults(){
   })));
   return defaults;
 }
-const DEFAULT_LEARNED = buildDefaults();
+// DEFAULT_LEARNED is (re)built by rebuildSpellIndexAndDefaults() once
+// SCHOOLS has been loaded from Supabase — see loadSchoolsAndSpells().
 
 function isLearned(id){
   return state.learned.hasOwnProperty(id) ? state.learned[id] : DEFAULT_LEARNED[id];
@@ -2873,6 +2446,13 @@ function updateTagGroupsButtonVisibility(){
   if(btn) btn.style.display = isSpellEditor ? '' : 'none';
 }
 
+function updateSchoolAdminButtonVisibility(){
+  const btn = document.getElementById('manage-schools-btn');
+  if(btn) btn.style.display = canManageSchools() ? '' : 'none';
+  const orderBtn = document.getElementById('manage-school-order-btn');
+  if(orderBtn) orderBtn.style.display = canManageSchools() ? '' : 'none';
+}
+
 /* Working copy edited while the modal is open — Cancel just discards it,
    only Save writes anything to the cloud. */
 let editingTagGroups = [];
@@ -3051,6 +2631,254 @@ window.saveTagGroupsModal = async function(){
     saveBtn.disabled = false;
   }
 };
+/* ---------- MANAGE SCHOOLS (global editors only) ---------- */
+window.openSchoolsModal = function(){
+  if(!canManageSchools()) return;
+  document.getElementById('new-school-name').value = '';
+  document.getElementById('new-school-type').selectedIndex = 0;
+  document.getElementById('schools-modal-status').textContent = '';
+  document.getElementById('schools-modal-backdrop').classList.add('open');
+};
+window.closeSchoolsModal = function(){
+  document.getElementById('schools-modal-backdrop').classList.remove('open');
+};
+window.createSchool = async function(){
+  if(!canManageSchools()) return;
+  const nameEl = document.getElementById('new-school-name');
+  const typeEl = document.getElementById('new-school-type');
+  const statusEl = document.getElementById('schools-modal-status');
+  const saveBtn = document.getElementById('schools-modal-save');
+  const name = nameEl.value.trim();
+  const type = typeEl.value;
+  if(!name){ statusEl.textContent = 'Please enter a name.'; return; }
+
+  const existingKeys = new Set(SCHOOLS.map(s => s.key));
+  const key = uniqueKey(slugify(name), existingKeys);
+
+  saveBtn.disabled = true;
+  statusEl.textContent = 'Saving...';
+  try{
+    const { error } = await supabaseClient.from('schools').insert({
+      key, name, type, sort_order: SCHOOLS.length, created_by: currentUser ? currentUser.id : null,
+    });
+    if(error) throw error;
+    await loadSchoolsAndSpells();
+    render();
+    closeSchoolsModal();
+  }catch(e){
+    console.error(e);
+    statusEl.textContent = 'Error: ' + (e.message || 'could not save.');
+  }finally{
+    saveBtn.disabled = false;
+  }
+};
+
+/* Deleting a school cascades to its spells automatically at the database
+   level (spells.school_key has ON DELETE CASCADE) — no separate spell
+   deletion step is needed here. */
+window.deleteSchool = async function(schoolKey){
+  if(!canManageSchools()) return;
+  const sch = SCHOOLS.find(s => s.key === schoolKey);
+  if(!sch) return;
+  const spellCount = sch.groups.reduce((sum, g) => sum + g.spells.length, 0);
+  const confirmMsg = `Delete "${sch.name}" permanently?\n\nThis will also permanently delete all ${spellCount} spell${spellCount === 1 ? '' : 's'} in this school for EVERYONE. This cannot be undone.`;
+  if(!confirm(confirmMsg)) return;
+  try{
+    const { error } = await supabaseClient.from('schools').delete().eq('key', schoolKey);
+    if(error) throw error;
+    await loadSchoolsAndSpells();
+    render();
+  }catch(e){
+    console.error(e);
+    alert('Could not delete this school: ' + (e.message || e));
+  }
+};
+
+/* ---------- MANAGE DEFAULT SCHOOL ORDER (global editors only) ---------- */
+/* This edits `sort_order` in the "schools" table — the order everyone gets
+   by default. Completely separate from each user's personal drag-and-drop
+   order (the `schoolOrder` / localStorage-only variable above), which
+   always takes priority for that user once they've set it. */
+let editingSchoolOrder = [];
+let dragOrderKey = null;
+
+window.openSchoolOrderModal = function(){
+  if(!canManageSchools()) return;
+  editingSchoolOrder = SCHOOLS.map(s => s.key);
+  renderSchoolOrderList();
+  document.getElementById('school-order-status').textContent = '';
+  document.getElementById('school-order-modal-backdrop').classList.add('open');
+};
+window.closeSchoolOrderModal = function(){
+  document.getElementById('school-order-modal-backdrop').classList.remove('open');
+};
+
+function renderSchoolOrderList(){
+  const list = document.getElementById('school-order-list');
+  list.innerHTML = editingSchoolOrder.map(key => {
+    const sch = SCHOOLS.find(s => s.key === key);
+    if(!sch) return '';
+    return `<li class="school-order-item" draggable="true" data-key="${key}"
+      ondragstart="handleOrderDragStart(event,'${key}')"
+      ondragend="handleOrderDragEnd()"
+      ondragover="handleOrderDragOver(event,'${key}')"
+      ondragleave="this.classList.remove('drag-over')"
+      ondrop="handleOrderDrop(event,'${key}')">
+      <span class="drag-handle">⠿</span><span>${escapeHtml(sch.name)}</span>
+    </li>`;
+  }).join('');
+}
+
+window.handleOrderDragStart = function(e, key){
+  dragOrderKey = key;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', key);
+  e.currentTarget.classList.add('dragging');
+};
+window.handleOrderDragEnd = function(){
+  document.querySelectorAll('.school-order-item.dragging').forEach(el => el.classList.remove('dragging'));
+  document.querySelectorAll('.school-order-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+  dragOrderKey = null;
+};
+window.handleOrderDragOver = function(e, key){
+  e.preventDefault();
+  if(key === dragOrderKey) return;
+  e.currentTarget.classList.add('drag-over');
+};
+window.handleOrderDrop = function(e, targetKey){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const draggedKey = (e.dataTransfer && e.dataTransfer.getData('text/plain')) || dragOrderKey;
+  if(!draggedKey || draggedKey === targetKey) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const before = (e.clientY - rect.top) < rect.height / 2;
+
+  const fromIdx = editingSchoolOrder.indexOf(draggedKey);
+  if(fromIdx === -1) return;
+  editingSchoolOrder.splice(fromIdx, 1);
+  let toIdx = editingSchoolOrder.indexOf(targetKey);
+  if(toIdx === -1) toIdx = editingSchoolOrder.length;
+  else if(!before) toIdx += 1;
+  editingSchoolOrder.splice(toIdx, 0, draggedKey);
+
+  renderSchoolOrderList();
+};
+
+window.saveSchoolOrder = async function(){
+  if(!canManageSchools()) return;
+  const statusEl = document.getElementById('school-order-status');
+  const saveBtn = document.getElementById('school-order-save');
+  saveBtn.disabled = true;
+  statusEl.textContent = 'Saving...';
+  try{
+    const results = await Promise.all(
+      editingSchoolOrder.map((key, i) =>
+        supabaseClient.from('schools').update({ sort_order: i }).eq('key', key)
+      )
+    );
+    const failed = results.find(r => r.error);
+    if(failed) throw failed.error;
+    await loadSchoolsAndSpells();
+    render();
+    closeSchoolOrderModal();
+  }catch(e){
+    console.error(e);
+    statusEl.textContent = 'Error: ' + (e.message || 'could not save.');
+  }finally{
+    saveBtn.disabled = false;
+  }
+};
+
+/* ---------- ADD SPELL (global editors everywhere, Oracles in their own school) ---------- */
+let addSpellTargetSchoolKey = null;
+
+window.openAddSpellModal = function(schoolKey){
+  if(!canEditSchool(schoolKey)) return;
+  const sch = SCHOOLS.find(s => s.key === schoolKey);
+  if(!sch) return;
+  addSpellTargetSchoolKey = schoolKey;
+  document.getElementById('add-spell-modal-title').textContent = `Add Spell — ${sch.name}`;
+  document.getElementById('add-spell-modal-subtitle').textContent = 'Visible to everyone immediately. You can add its description, tags, costs, etc. afterwards by clicking on the spell.';
+  document.getElementById('add-spell-modal-status').textContent = '';
+
+  const groupSel = document.getElementById('new-spell-group');
+  groupSel.innerHTML = sch.groups.map(g => `<option value="${escapeHtml(g.label)}">${escapeHtml(g.label)}</option>`).join('')
+    + `<option value="__new__">+ New group…</option>`;
+  document.getElementById('new-spell-group-custom').value = '';
+  document.getElementById('new-spell-tier').value = 'main';
+  document.getElementById('new-spell-latin').value = '';
+  document.getElementById('new-spell-en').value = '';
+  onNewSpellGroupChange();
+
+  document.getElementById('add-spell-modal-backdrop').classList.add('open');
+};
+window.closeAddSpellModal = function(){
+  document.getElementById('add-spell-modal-backdrop').classList.remove('open');
+  addSpellTargetSchoolKey = null;
+};
+window.onNewSpellGroupChange = function(){
+  const isNew = document.getElementById('new-spell-group').value === '__new__';
+  document.getElementById('new-spell-group-custom-wrap').style.display = isNew ? '' : 'none';
+};
+window.createSpell = async function(){
+  if(!addSpellTargetSchoolKey || !canEditSchool(addSpellTargetSchoolKey)) return;
+  const sch = SCHOOLS.find(s => s.key === addSpellTargetSchoolKey);
+  const statusEl = document.getElementById('add-spell-modal-status');
+  const saveBtn = document.getElementById('add-spell-modal-save');
+  const groupSel = document.getElementById('new-spell-group');
+  const latin = document.getElementById('new-spell-latin').value.trim();
+  const en = document.getElementById('new-spell-en').value.trim();
+  let groupLabel, tier;
+  if(groupSel.value === '__new__'){
+    groupLabel = document.getElementById('new-spell-group-custom').value.trim();
+    tier = document.getElementById('new-spell-tier').value;
+  } else {
+    groupLabel = groupSel.value;
+    const existingGroup = sch.groups.find(g => g.label === groupLabel);
+    tier = existingGroup ? existingGroup.tier : 'main';
+  }
+  if(!latin || !en){ statusEl.textContent = 'Please fill in both the Latin and English names.'; return; }
+  if(!groupLabel){ statusEl.textContent = 'Please enter a group name.'; return; }
+
+  const id = uniqueKey(`${sch.key}_${slugify(latin)}`, new Set(Object.keys(SPELL_INDEX)));
+
+  saveBtn.disabled = true;
+  statusEl.textContent = 'Saving...';
+  try{
+    const { error } = await supabaseClient.from('spells').insert({
+      id, school_key: sch.key, group_label: groupLabel, tier,
+      latin_name: latin, english_name: en, sort_order: 9999,
+      created_by: currentUser ? currentUser.id : null,
+    });
+    if(error) throw error;
+    await loadSchoolsAndSpells();
+    render();
+    closeAddSpellModal();
+  }catch(e){
+    console.error(e);
+    statusEl.textContent = 'Error: ' + (e.message || 'could not save.');
+  }finally{
+    saveBtn.disabled = false;
+  }
+};
+
+/* ---------- DELETE SPELL (global editors everywhere, Oracles in their own school) ---------- */
+window.deleteCurrentModalSpell = async function(){
+  if(!currentModalSpellId) return;
+  const sp = SPELL_INDEX[currentModalSpellId];
+  if(!sp || !canEditSchool(sp.schoolKey)) return;
+  if(!confirm(`Delete "${sp.latin}" (${sp.en}) for everyone? This cannot be undone.`)) return;
+  try{
+    const { error } = await supabaseClient.from('spells').delete().eq('id', currentModalSpellId);
+    if(error) throw error;
+    await loadSchoolsAndSpells();
+    closeSpellModal();
+    render();
+  }catch(e){
+    alert('Could not delete this spell: ' + (e.message || e));
+  }
+};
+
 const ROLLBUFF_TYPE_ORDER = ['dc','attack','defense'];
 
 function getBuffTypes(b){
@@ -3218,8 +3046,8 @@ function getVisibleSchools(){
     if(sch.type === 'neutral') return true;
     if(sch.type === 'light' && state.showLight) return true;
     if(sch.type === 'dark' && state.showDark) return true;
-    if((sch.type === 'legacy-curse' || sch.type === 'legacy-judgement') && state.showLegacy) return true;
-    if((sch.type === 'chaos' || sch.type === 'order') && state.showDeity) return true;
+    if(sch.type === 'legacy' && state.showLegacy) return true;
+    if(sch.type === 'deity' && state.showDeity) return true;
     return false;
   });
   if(!schoolOrder || !schoolOrder.length) return filtered;
@@ -3346,7 +3174,7 @@ function renderGroup(sch, g){
     </div>`;
 }
 
-const NO_SAVANT_ORACLE_TYPES = ['legacy-curse','legacy-judgement','chaos','order'];
+const NO_SAVANT_ORACLE_TYPES = ['legacy','deity'];
 
 function renderSchool(sch){
   const mainSpells = schoolMainSpells(sch);
@@ -3394,7 +3222,10 @@ function renderSchool(sch){
     <div class="school-body ${collapsed?'collapsed':''}">
       ${sch.groups.filter(g=>g.tier==='main').map(g => renderGroup(sch,g)).join('')}
       ${otherGroups.map(g => renderGroup(sch,g)).join('')}
-      <div class="school-foot"></div>
+      ${(canEditSchool(sch.key) || canManageSchools()) ? `<div class="school-foot" style="height:auto;padding:6px 0 10px;display:flex;gap:8px;flex-wrap:wrap;">
+        ${canEditSchool(sch.key) ? `<button type="button" class="manage-tag-groups-btn" onclick="event.stopPropagation(); openAddSpellModal('${sch.key}')">+ Add Spell</button>` : ''}
+        ${canManageSchools() ? `<button type="button" class="manage-tag-groups-btn" style="color:var(--danger);border-color:var(--danger);" onclick="event.stopPropagation(); deleteSchool('${sch.key}')">🗑 Delete School</button>` : ''}
+      </div>` : `<div class="school-foot"></div>`}
     </div>
   </section>`;
 }
@@ -3710,6 +3541,7 @@ document.getElementById('cloud-reload').addEventListener('click', () => {
 });
 
 (async function boot(){
+  await loadSchoolsAndSpells(); // fetch Schools of Magic + their spells from the cloud
   await loadSpellMeta();     // fetch shared spell data (desc/tags/cost/damage) from the cloud
   await loadTagGroups();     // fetch shared tag-group organization from the cloud
   renderTagFilters();
