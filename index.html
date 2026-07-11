@@ -37,6 +37,30 @@
     --radius-sm: 7px;
   }
   *{box-sizing:border-box;}
+  /* AUTOGROW TEXTAREAS — a textarea can't size itself to its content with CSS
+     alone, so each growing textarea is wrapped in a .grow-wrap div containing
+     an invisible ::after "mirror" that holds the same text. Both the real
+     textarea and the mirror occupy the same CSS grid cell; the grid cell's
+     height is driven by the taller of the two (the mirror, since it has no
+     fixed height and grows with its text), and grid's default stretch
+     alignment makes the real textarea fill that same height. This means the
+     box height is recalculated by the browser's normal layout pass — on
+     every resize, zoom, DPI change, font swap, or parent-scrollbar toggle —
+     with no JavaScript measurement/timing involved at all.
+     JS only needs to keep data-replicated-value on the wrapper in sync with
+     the textarea's actual value (see syncGrowWrap in the script). */
+  .grow-wrap{display:grid;width:100%;}
+  .grow-wrap::after{
+    content: attr(data-replicated-value) " ";
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    visibility: hidden;
+  }
+  .grow-wrap > textarea{resize:none;overflow:hidden;}
+  .grow-wrap > textarea, .grow-wrap::after{
+    grid-area: 1 / 1 / 2 / 2;
+    box-sizing: border-box;
+  }
   html{color-scheme:dark;}
   body{
     margin:0;
@@ -514,7 +538,7 @@
   .modal-section{margin-bottom:16px;}
   .modal-label{display:block;font-size:15.5px;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:6px;}
   .modal-hint{text-transform:none;letter-spacing:0;color:var(--parchment-dim);font-size:15px;}
-  .modal-section input[type=text], .modal-section textarea{
+  .modal-section input[type=text], .modal-section textarea, .modal-section .grow-wrap::after{
     width:100%;
     background:var(--ink);
     border:1px solid var(--hairline);
@@ -526,7 +550,7 @@
     transition:border-color .15s, box-shadow .15s;
   }
   .modal-section input[type=text]:focus, .modal-section textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,160,84,0.15);}
-  .modal-section textarea{resize:none;overflow:hidden;line-height:1.5;min-height:120px;}
+  .modal-section textarea, .modal-section .grow-wrap::after{resize:none;overflow:hidden;line-height:1.5;min-height:120px;}
   .modal-cost-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
   .effect-type-picker{display:flex;gap:16px;flex-wrap:wrap;}
   .effect-type-option{
@@ -574,7 +598,8 @@
   #spell-modal-backdrop .modal-subtitle{font-size:20px;margin-bottom:22px;}
   #spell-modal-backdrop .modal-label{font-size:16.5px;}
   #spell-modal-backdrop .modal-section input[type=text]{font-size:19.5px;padding:11px 13px;}
-  #spell-modal-backdrop .modal-section textarea{
+  #spell-modal-backdrop .modal-section textarea,
+  #spell-modal-backdrop .modal-section .grow-wrap::after{
     font-size:21px;
     line-height:1.65;
     min-height:220px;
@@ -862,7 +887,8 @@
     color:var(--parchment-dim);
   }
   .charsheet-field input[type=text],
-  .charsheet-field textarea{
+  .charsheet-field textarea,
+  .charsheet-field .grow-wrap::after{
     background:rgba(0,0,0,0.25);
     border:1px solid var(--hairline);
     color:var(--parchment);
@@ -873,7 +899,8 @@
     resize:vertical;
     transition:border-color .15s, box-shadow .15s;
   }
-  .charsheet-field textarea{min-height:72px;line-height:1.5;resize:none;overflow:hidden;}
+  .charsheet-field textarea,
+  .charsheet-field .grow-wrap::after{min-height:72px;line-height:1.5;resize:none;overflow:hidden;}
   .charsheet-field input[type=text]:focus,
   .charsheet-field textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,160,84,0.15);}
   .charsheet-field input[type=text]:hover,
@@ -1043,7 +1070,7 @@
     color:var(--parchment-dim);
     margin-bottom:4px;
   }
-  .rollbuff-row-fields input, .rollbuff-field-desc textarea{
+  .rollbuff-row-fields input, .rollbuff-field-desc textarea, .rollbuff-field-desc .grow-wrap::after{
     width:100%;
     background:var(--ink);
     border:1px solid var(--hairline);
@@ -1053,7 +1080,7 @@
     font-family:'Crimson Pro',serif;
     font-size:18.5px;
   }
-  .rollbuff-field-desc textarea{resize:none;overflow:hidden;min-height:64px;line-height:1.5;}
+  .rollbuff-field-desc textarea, .rollbuff-field-desc .grow-wrap::after{resize:none;overflow:hidden;min-height:64px;line-height:1.5;}
   .rollbuff-list-empty{font-size:17px;font-style:italic;color:var(--parchment-dim);margin-bottom:14px;}
   .rollbuff-field-abbr{margin-bottom:10px;padding-right:20px;}
   .rollbuff-field-abbr label{display:block;font-size:14px;letter-spacing:0.08em;text-transform:uppercase;color:var(--parchment-dim);margin-bottom:4px;}
@@ -1312,25 +1339,25 @@
       </div>
       <div class="charsheet-field wide">
         <label for="ci-abilities">Special Abilities</label>
-        <textarea id="ci-abilities" data-ci="abilities" oninput="onCharInfoChange()"></textarea>
+        <div class="grow-wrap"><textarea id="ci-abilities" data-ci="abilities" oninput="onCharInfoChange(); syncGrowWrap(this)"></textarea></div>
       </div>
       <div class="charsheet-field wide">
         <label for="ci-weakness">Weakness</label>
-        <textarea id="ci-weakness" data-ci="weakness" oninput="onCharInfoChange()"></textarea>
+        <div class="grow-wrap"><textarea id="ci-weakness" data-ci="weakness" oninput="onCharInfoChange(); syncGrowWrap(this)"></textarea></div>
       </div>
       <div class="charsheet-field wide">
         <label for="ci-inventory">Inventory</label>
-        <textarea id="ci-inventory" data-ci="inventory" oninput="onCharInfoChange()"></textarea>
+        <div class="grow-wrap"><textarea id="ci-inventory" data-ci="inventory" oninput="onCharInfoChange(); syncGrowWrap(this)"></textarea></div>
       </div>
       <div class="charsheet-field wide">
         <label for="ci-weapons">Weapons / Weapon Skills</label>
-        <textarea id="ci-weapons" data-ci="weapons" oninput="onCharInfoChange()"></textarea>
+        <div class="grow-wrap"><textarea id="ci-weapons" data-ci="weapons" oninput="onCharInfoChange(); syncGrowWrap(this)"></textarea></div>
       </div>
 
       <!-- PRECAST ACTIONS FIELDS BENEATH WEAPONS -->
       <div class="charsheet-field wide">
         <label for="ci-precast-actions">Precast Actions</label>
-        <textarea id="ci-precast-actions" data-ci="precast_actions" oninput="onCharInfoChange()" placeholder="List your active buff setups, rituals, or temporary transformations..."></textarea>
+        <div class="grow-wrap"><textarea id="ci-precast-actions" data-ci="precast_actions" oninput="onCharInfoChange(); syncGrowWrap(this)" placeholder="List your active buff setups, rituals, or temporary transformations..."></textarea></div>
       </div>
       <div class="charsheet-field wide">
         <label>Stats After Precast</label>
@@ -1522,7 +1549,7 @@
 
     <div class="modal-section">
       <label class="modal-label">Description</label>
-      <textarea id="modal-desc" rows="5" placeholder="What does this spell do?"></textarea>
+      <div class="grow-wrap"><textarea id="modal-desc" rows="5" placeholder="What does this spell do?"></textarea></div>
     </div>
 
     <p id="modal-readonly-hint" class="modal-hint" style="display:none;color:var(--danger);">
@@ -2028,7 +2055,7 @@ window.openSpellModal = function(evt, id){
     : "You don't have edit rights for this School of Magic. Ask the tracker owner to add you as an editor (or Oracle of this school) if you should be able to change this.";
 
   document.getElementById('spell-modal-backdrop').classList.add('open');
-  autosizeTextarea(document.getElementById('modal-desc'));
+  syncGrowWrap(document.getElementById('modal-desc'));
 };
 
 window.closeSpellModal = function(){
@@ -2076,7 +2103,7 @@ document.addEventListener('keydown', (e) => {
   if(e.key === 'Escape'){ closeSpellModal(); closeRollBuffModal(); }
 });
 
-document.getElementById('modal-desc').addEventListener('input', function(){ autosizeTextarea(this); });
+document.getElementById('modal-desc').addEventListener('input', function(){ syncGrowWrap(this); });
 
 /* ---------- CLOUD SYNC (Supabase Auth) ---------- */
 const SUPABASE_URL = 'https://jrtnlfqjwxdnlqcibciv.supabase.co';
@@ -2494,24 +2521,31 @@ function populateCharInfoFields(){
   autosizeAllTextareas();
 }
 
-/* ---------- AUTOSIZE TEXTAREAS ---------- */
-function autosizeTextarea(el){
-  el.style.height = 'auto';
-  el.style.height = el.scrollHeight + 'px';
+/* ---------- AUTOGROW TEXTAREAS ----------
+   Sizing itself is handled entirely by CSS (see the .grow-wrap rules) — the
+   textarea's grid cell height is driven by an invisible ::after mirror that
+   holds the same text, so the browser's normal layout engine recalculates
+   the correct height on every resize, zoom, DPI change, or parent-scrollbar
+   toggle, with no JS measurement or timing races involved.
+   The only job left for JS is keeping the mirror's text (data-replicated-
+   value) in sync with the textarea's actual value. */
+const AUTOSIZE_TEXTAREA_SELECTOR = '.charsheet-field textarea, .rollbuff-field-desc textarea, #modal-desc';
+
+function syncGrowWrap(el){
+  const wrap = el && el.closest ? el.closest('.grow-wrap') : null;
+  if(wrap) wrap.dataset.replicatedValue = el.value;
 }
 
 function autosizeAllTextareas(){
-  document.querySelectorAll('.charsheet-field textarea').forEach(autosizeTextarea);
+  document.querySelectorAll(AUTOSIZE_TEXTAREA_SELECTOR).forEach(syncGrowWrap);
 }
 
 function initAutosizeTextareas(){
   document.querySelectorAll('.charsheet-field textarea').forEach(el => {
-    el.addEventListener('input', () => autosizeTextarea(el));
-    autosizeTextarea(el);
+    el.addEventListener('input', () => syncGrowWrap(el));
+    syncGrowWrap(el);
   });
 }
-
-window.addEventListener('resize', autosizeAllTextareas);
 
 window.onCharInfoChange = function(){
   if (isViewingOther) return;
@@ -3120,12 +3154,12 @@ function renderRollBuffList(){
       </div>
       <div class="rollbuff-field-desc">
         <label for="rb-desc-${b.id}">Description <span class="modal-hint">(only visible in this menu)</span></label>
-        <textarea id="rb-desc-${b.id}" placeholder="What triggers it, how it stacks, source, duration..." oninput="updateRollBuff('${b.id}','desc',this.value); autosizeTextarea(this)">${escapeHtml(b.desc)}</textarea>
+        <div class="grow-wrap" data-replicated-value="${escapeHtml(b.desc)}"><textarea id="rb-desc-${b.id}" placeholder="What triggers it, how it stacks, source, duration..." oninput="updateRollBuff('${b.id}','desc',this.value); syncGrowWrap(this)">${escapeHtml(b.desc)}</textarea></div>
       </div>
     </div>
   `;
   }).join('');
-  listEl.querySelectorAll('.rollbuff-field-desc textarea').forEach(autosizeTextarea);
+  listEl.querySelectorAll('.rollbuff-field-desc textarea').forEach(syncGrowWrap);
 }
 
 function makeRollBuffId(){
@@ -3170,8 +3204,8 @@ window.updateRollBuff = function(id, field, value){
 
 window.openRollBuffModal = function(){
   if (isViewingOther || editLocked) return;
-  renderRollBuffList();
   document.getElementById('rollbuff-modal-backdrop').classList.add('open');
+  renderRollBuffList();
 };
 
 window.closeRollBuffModal = function(){
