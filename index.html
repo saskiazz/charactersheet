@@ -486,6 +486,11 @@
   .spell-damage{font-size:15px;color:var(--dark-accent);margin-left:7px;}
   .spell-heal{font-size:15px;color:var(--ok);margin-left:7px;}
   .spell-buff{font-size:15px;color:var(--neutral-accent);margin-left:7px;}
+  .spell-shield{font-size:15px;color:var(--gold-bright);margin-left:7px;}
+  .spell-rollmod{font-size:15px;color:var(--legacy-accent);margin-left:7px;}
+  .spell-aoe{font-size:15px;color:var(--deity-accent);margin-left:7px;}
+  .spell-special{font-size:15px;color:var(--parchment-dim);margin-left:7px;font-style:italic;}
+  .spell-duration{font-size:15px;color:var(--parchment-dim);margin-left:7px;}
   .spell-tags{margin-left:7px;display:inline-flex;gap:4px;flex-wrap:wrap;vertical-align:middle;}
   .mini-tag{
     font-size:12.5px;
@@ -608,6 +613,70 @@
   #spell-modal-backdrop .modal-cost-grid input{font-size:15.5px;padding:6px 8px;}
   #spell-modal-backdrop .modal-cost-grid label{font-size:15.5px;}
   #spell-modal-backdrop .effect-type-option{font-size:18.5px;}
+
+  /* FLAVOR FIELDS (Incantation / Movements / Auto Hit / Friendly Fire / Duration) */
+  .flavor-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;}
+  .flavor-grid .flavor-field-wide{grid-column:1 / -1;}
+  .flavor-grid label{display:block;font-size:14.5px;color:var(--parchment-dim);margin-bottom:4px;}
+  .flavor-grid input[type=text], .flavor-grid textarea, .flavor-grid .grow-wrap::after{
+    width:100%;background:var(--panel);border:1px solid var(--hairline);color:var(--parchment);
+    padding:8px 10px;border-radius:var(--radius-sm);font-family:'Crimson Pro',Georgia,serif;font-size:16px;
+  }
+  .flavor-grid textarea, .flavor-grid .grow-wrap::after{resize:none;overflow:hidden;line-height:1.4;min-height:38px;}
+  /* The #spell-modal-backdrop .modal-section textarea rule above (min-height:220px,
+     font-size:21px) outranks the .flavor-grid rule by specificity since it's ID-scoped
+     — without this override every flavor field would inherit that oversized minimum
+     even for a one-line value. */
+  #spell-modal-backdrop .flavor-grid textarea, #spell-modal-backdrop .flavor-grid .grow-wrap::after{
+    min-height:38px;font-size:16px;line-height:1.4;padding:8px 10px;
+  }
+  .flavor-parse-btn{
+    background:var(--panel-3);border:1px solid var(--hairline);color:var(--parchment-dim);
+    border-radius:var(--radius-sm);padding:6px 12px;font-size:13.5px;cursor:pointer;margin-bottom:10px;
+  }
+  .flavor-parse-btn:hover:not(:disabled){border-color:var(--gold);color:var(--light-accent);}
+  .flavor-parse-btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+  /* EXTRA EFFECTS BUILDER (Shield / Roll Modifier / AOE / Special) */
+  .extra-effects-list{display:flex;flex-direction:column;gap:10px;margin-bottom:10px;}
+  .extra-effect-row{
+    background:var(--panel-2);border:1px solid var(--hairline-soft);border-radius:var(--radius-sm);
+    padding:10px 12px;display:flex;flex-wrap:wrap;gap:8px 10px;align-items:flex-end;position:relative;
+  }
+  .extra-effect-row .ee-kind-label{
+    font-family:'Cinzel',Garamond,serif;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;
+    color:var(--gold);width:100%;margin-bottom:2px;
+  }
+  .extra-effect-row label{display:block;font-size:13px;color:var(--parchment-dim);margin-bottom:3px;}
+  .extra-effect-row input[type=text], .extra-effect-row input[type=number], .extra-effect-row select{
+    background:var(--panel);border:1px solid var(--hairline);color:var(--parchment);
+    padding:6px 8px;border-radius:6px;font-family:'Crimson Pro',Georgia,serif;font-size:15px;
+  }
+  .extra-effect-row input[type=number]{width:70px;}
+  .extra-effect-row input[type=text].ee-note{width:100%;}
+  .extra-effect-row textarea.ee-note, .extra-effect-row .grow-wrap.ee-note-wrap::after{
+    width:100%;background:var(--panel);border:1px solid var(--hairline);color:var(--parchment);
+    padding:6px 8px;border-radius:6px;font-family:'Crimson Pro',Georgia,serif;font-size:15px;
+    resize:none;overflow:hidden;line-height:1.4;min-height:32px;
+  }
+  .extra-effect-row .grow-wrap.ee-note-wrap{flex:1 1 100%;}
+  #spell-modal-backdrop .extra-effect-row textarea.ee-note, #spell-modal-backdrop .extra-effect-row .grow-wrap.ee-note-wrap::after{
+    min-height:32px;font-size:15px;line-height:1.4;padding:6px 8px;
+  }
+  .ee-field{display:flex;flex-direction:column;}
+  .ee-remove-btn{
+    background:transparent;border:1px solid var(--hairline);color:var(--danger);
+    border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px;line-height:1;margin-left:auto;
+  }
+  .ee-remove-btn:hover{border-color:var(--danger);}
+  .extra-effects-empty{font-size:14.5px;color:var(--parchment-dim);font-style:italic;margin-bottom:10px;}
+  .extra-effects-add-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
+  .ee-add-btn{
+    background:var(--panel-3);border:1px solid var(--hairline);color:var(--parchment);
+    border-radius:var(--radius-sm);padding:7px 13px;font-size:14px;cursor:pointer;
+  }
+  .ee-add-btn:hover:not(:disabled){border-color:var(--gold);color:var(--light-accent);}
+  .ee-add-btn:disabled{opacity:0.4;cursor:not-allowed;}
 
   /* SCHOOL GRID */
   .grid{
@@ -1467,6 +1536,18 @@
     </div>
 
     <div class="modal-section">
+      <label class="modal-label">Casting Details <span class="modal-hint">(Incantation / Movements / Auto Hit / Friendly Fire / Duration)</span></label>
+      <button type="button" class="flavor-parse-btn" id="flavor-parse-btn" onclick="parseFlavorFromDescription()">⟳ Auto-fill from description text</button>
+      <div class="flavor-grid">
+        <div><label>Incantation</label><div class="grow-wrap"><textarea id="modal-flavor-incantation" rows="1" placeholder="e.g. Must say &quot;Custodiae&quot;" oninput="syncGrowWrap(this)"></textarea></div></div>
+        <div><label>Movements</label><div class="grow-wrap"><textarea id="modal-flavor-movements" rows="1" placeholder="e.g. Point casting hand at target" oninput="syncGrowWrap(this)"></textarea></div></div>
+        <div><label>Auto Hit</label><div class="grow-wrap"><textarea id="modal-flavor-autohit" rows="1" placeholder="e.g. N/A" oninput="syncGrowWrap(this)"></textarea></div></div>
+        <div><label>Friendly Fire</label><div class="grow-wrap"><textarea id="modal-flavor-friendlyfire" rows="1" placeholder="e.g. N/A" oninput="syncGrowWrap(this)"></textarea></div></div>
+        <div class="flavor-field-wide"><label>Duration</label><div class="grow-wrap"><textarea id="modal-flavor-duration" rows="1" placeholder="e.g. End of Scene" oninput="syncGrowWrap(this)"></textarea></div></div>
+      </div>
+    </div>
+
+    <div class="modal-section">
       <label class="modal-label">Cost to Cast</label>
       <div class="modal-cost-grid">
         <div><label>Body</label><input type="number" id="modal-cost-body" min="0" step="1"></div>
@@ -1544,6 +1625,18 @@
         <div><label>Body</label><input type="number" id="modal-buff-upkeep-body" min="0" step="1"></div>
         <div><label>Mind</label><input type="number" id="modal-buff-upkeep-mind" min="0" step="1"></div>
         <div><label>Spirit</label><input type="number" id="modal-buff-upkeep-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <label class="modal-label">Other Effects <span class="modal-hint">(shields, roll bonuses/penalties, area shape, or anything else that doesn't fit the fields above)</span></label>
+      <div class="extra-effects-list" id="extra-effects-list"></div>
+      <p class="extra-effects-empty" id="extra-effects-empty" style="display:none;">No extra effects added.</p>
+      <div class="extra-effects-add-row">
+        <button type="button" class="ee-add-btn" id="ee-add-shield" onclick="addExtraEffect('shield')">+ Shield / Absorption</button>
+        <button type="button" class="ee-add-btn" id="ee-add-rollmod" onclick="addExtraEffect('rollmod')">+ Roll Modifier</button>
+        <button type="button" class="ee-add-btn" id="ee-add-aoe" onclick="addExtraEffect('aoe')">+ Area (AOE)</button>
+        <button type="button" class="ee-add-btn" id="ee-add-special" onclick="addExtraEffect('special')">+ Special Effect</button>
       </div>
     </div>
 
@@ -1798,6 +1891,8 @@ async function loadSpellMeta(){
         healUpkeep: row.heal_upkeep || {body:0, mind:0, spirit:0},
         buff: row.buff || {body:0, mind:0, spirit:0},
         buffUpkeep: row.buff_upkeep || {body:0, mind:0, spirit:0},
+        flavor: row.flavor || {},
+        extraEffects: row.extra_effects || [],
       };
     });
     spellMeta = next;
@@ -1844,6 +1939,8 @@ async function saveSpellMetaRow(id, meta){
     heal_upkeep: meta.healUpkeep,
     buff: meta.buff,
     buff_upkeep: meta.buffUpkeep,
+    flavor: meta.flavor,
+    extra_effects: meta.extraEffects,
     updated_by: currentUser ? currentUser.id : null,
     updated_at: new Date().toISOString(),
   };
@@ -1866,7 +1963,54 @@ function getMeta(id){
     healUpkeep: (m && m.healUpkeep) || {body:0, mind:0, spirit:0},
     buff: (m && m.buff) || {body:0, mind:0, spirit:0},
     buffUpkeep: (m && m.buffUpkeep) || {body:0, mind:0, spirit:0},
+    flavor: (m && m.flavor) || {},
+    extraEffects: (m && m.extraEffects) || [],
   };
+}
+
+/* Many older spell descriptions already follow an informal template
+   ("Incantation: ... / Movements: ... / Auto Hit: ... / Friendly Fire: ... /
+   Duration: ...") typed straight into the free-text description. Rather than
+   requiring every spell to be re-saved by hand, this pulls those labelled
+   lines out of the raw text on the fly so they can be shown as their own
+   badges/fields even before an editor has explicitly filled in the
+   structured `flavor` data (which, once saved, always takes priority — see
+   getDisplayFlavor below). */
+const FLAVOR_LABELS = [
+  { key: 'incantation', re: /incantation\s*:/i },
+  { key: 'movements', re: /movements?\s*:/i },
+  { key: 'spellDescription', re: /spell\s*description\s*:/i },
+  { key: 'autoHit', re: /auto\s*hit\s*:/i },
+  { key: 'friendlyFire', re: /friendly\s*fire\s*:/i },
+  { key: 'duration', re: /duration\s*:/i },
+];
+function parseFlavorFromText(desc){
+  const text = desc || '';
+  const hits = [];
+  FLAVOR_LABELS.forEach(({key, re}) => {
+    const m = re.exec(text);
+    if(m) hits.push({ key, start: m.index, valueStart: m.index + m[0].length });
+  });
+  hits.sort((a,b) => a.start - b.start);
+  const out = {};
+  hits.forEach((h, i) => {
+    const end = (i + 1 < hits.length) ? hits[i+1].start : text.length;
+    out[h.key] = text.slice(h.valueStart, end).trim();
+  });
+  delete out.spellDescription; // that's just the main description, not a flavor field
+  return out;
+}
+
+/* Merges explicitly-saved flavor fields (always wins) with anything that can
+   still be auto-detected from the raw description text (fallback only). */
+function getDisplayFlavor(meta){
+  const parsed = parseFlavorFromText(meta.desc);
+  const saved = meta.flavor || {};
+  const out = {};
+  ['incantation','movements','autoHit','friendlyFire','duration'].forEach(k => {
+    out[k] = (saved[k] !== undefined && saved[k] !== '') ? saved[k] : (parsed[k] || '');
+  });
+  return out;
 }
 
 function capitalize(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
@@ -1988,6 +2132,125 @@ window.toggleTagFilter = function(btn){
 
 let currentModalSpellId = null;
 
+/* ---------- EXTRA EFFECTS BUILDER (Shield / Roll Modifier / AOE / Special) ----------
+   Working copy of the currently-open spell's extra_effects array. Edited in
+   place by the row inputs below, then read back out in saveSpellModal(). */
+let modalExtraEffects = [];
+
+const EE_DEFAULTS = {
+  shield:  () => ({ kind:'shield', amount:0, damageType:'body', trigger:'until-depleted', note:'' }),
+  rollmod: () => ({ kind:'rollmod', target:'attack', amount:1, note:'' }),
+  aoe:     () => ({ kind:'aoe', shape:'burst', size:'' }),
+  special: () => ({ kind:'special', label:'', text:'' }),
+};
+const EE_KIND_LABEL = { shield:'Shield / Absorption', rollmod:'Roll Modifier', aoe:'Area (AOE)', special:'Special Effect' };
+
+function addExtraEffect(kind){
+  modalExtraEffects.push(EE_DEFAULTS[kind]());
+  renderExtraEffectsList();
+}
+function removeExtraEffect(idx){
+  modalExtraEffects.splice(idx, 1);
+  renderExtraEffectsList();
+}
+function updateExtraEffectField(idx, field, value){
+  if(!modalExtraEffects[idx]) return;
+  modalExtraEffects[idx][field] = value;
+}
+function updateExtraEffectNumberField(idx, field, value){
+  const v = parseFloat(value);
+  updateExtraEffectField(idx, field, isNaN(v) ? 0 : v);
+}
+
+function eeNoteField(idx, field, value, placeholder, dis){
+  const v = escapeHtml(value || '');
+  return `<div class="grow-wrap ee-note-wrap" data-replicated-value="${v}"><textarea class="ee-note" rows="1" ${dis} oninput="updateExtraEffectField(${idx},'${field}',this.value); syncGrowWrap(this)" placeholder="${placeholder}">${v}</textarea></div>`;
+}
+
+function extraEffectRowHtml(ee, idx, disabled){
+  const dis = disabled ? 'disabled' : '';
+  let fields = '';
+  if(ee.kind === 'shield'){
+    fields = `
+      <div class="ee-field"><label>Amount</label><input type="number" ${dis} value="${ee.amount||0}" oninput="updateExtraEffectNumberField(${idx},'amount',this.value)"></div>
+      <div class="ee-field"><label>Damage Type</label>
+        <select ${dis} onchange="updateExtraEffectField(${idx},'damageType',this.value)">
+          ${Object.entries(SHIELD_DAMAGE_TYPE_LABELS).map(([k,l])=>`<option value="${k}" ${ee.damageType===k?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+      <div class="ee-field"><label>Trigger</label>
+        <select ${dis} onchange="updateExtraEffectField(${idx},'trigger',this.value)">
+          ${Object.entries(SHIELD_TRIGGER_LABELS).map(([k,l])=>`<option value="${k}" ${(ee.trigger||'until-depleted')===k?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+      <div style="flex:1 1 100%;"><label style="display:block;font-size:13px;color:var(--parchment-dim);margin-bottom:3px;">Note (optional)</label>${eeNoteField(idx,'note',ee.note,"e.g. min 0, doesn't stack",dis)}</div>`;
+  } else if(ee.kind === 'rollmod'){
+    fields = `
+      <div class="ee-field"><label>Applies To</label>
+        <select ${dis} onchange="updateExtraEffectField(${idx},'target',this.value)">
+          ${Object.entries(ROLLMOD_TARGET_LABELS).map(([k,l])=>`<option value="${k}" ${ee.target===k?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+      <div class="ee-field"><label>Amount</label><input type="number" ${dis} value="${ee.amount||0}" oninput="updateExtraEffectNumberField(${idx},'amount',this.value)" placeholder="+1 or -1"></div>
+      <div style="flex:1 1 100%;"><label style="display:block;font-size:13px;color:var(--parchment-dim);margin-bottom:3px;">Note (optional)</label>${eeNoteField(idx,'note',ee.note,"e.g. cannot stack",dis)}</div>`;
+  } else if(ee.kind === 'aoe'){
+    fields = `
+      <div class="ee-field"><label>Shape</label>
+        <select ${dis} onchange="updateExtraEffectField(${idx},'shape',this.value)">
+          ${Object.entries(AOE_SHAPE_LABELS).map(([k,l])=>`<option value="${k}" ${ee.shape===k?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+      <div class="ee-field" style="flex:1 1 auto;"><label>Size / Range</label><input type="text" ${dis} value="${escapeHtml(ee.size||'')}" oninput="updateExtraEffectField(${idx},'size',this.value)" placeholder="e.g. 10ft radius, local vicinity"></div>`;
+  } else if(ee.kind === 'special'){
+    fields = `
+      <div class="ee-field" style="flex:1 1 220px;"><label>Label</label><input type="text" ${dis} value="${escapeHtml(ee.label||'')}" oninput="updateExtraEffectField(${idx},'label',this.value)" placeholder="e.g. Revive, Cleanse, Redirect"></div>
+      <div style="flex:1 1 100%;"><label style="display:block;font-size:13px;color:var(--parchment-dim);margin-bottom:3px;">Details</label>${eeNoteField(idx,'text',ee.text,"Short description of the effect",dis)}</div>`;
+  }
+  return `<div class="extra-effect-row">
+    <span class="ee-kind-label">${EE_KIND_LABEL[ee.kind] || ee.kind}</span>
+    ${fields}
+    ${disabled ? '' : `<button type="button" class="ee-remove-btn" title="Remove" onclick="removeExtraEffect(${idx})">✕</button>`}
+  </div>`;
+}
+
+function renderExtraEffectsList(disabled){
+  const container = document.getElementById('extra-effects-list');
+  const empty = document.getElementById('extra-effects-empty');
+  if(!container) return;
+  if(!modalExtraEffects.length){
+    container.innerHTML = '';
+    if(empty) empty.style.display = 'block';
+  } else {
+    if(empty) empty.style.display = 'none';
+    container.innerHTML = modalExtraEffects.map((ee, idx) => extraEffectRowHtml(ee, idx, disabled)).join('');
+    container.querySelectorAll('.ee-note').forEach(syncGrowWrap);
+  }
+}
+
+
+const FLAVOR_FIELD_IDS = ['modal-flavor-incantation','modal-flavor-movements','modal-flavor-autohit','modal-flavor-friendlyfire','modal-flavor-duration'];
+function syncFlavorGrowWraps(){
+  FLAVOR_FIELD_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) syncGrowWrap(el);
+  });
+}
+
+/* Pulls Incantation/Movements/Auto Hit/Friendly Fire/Duration out of the
+   current description textarea and drops them into the flavor fields —
+   handy for the ~100 existing spells whose casting details are only in the
+   free-text description so far. Editors can review/adjust before saving. */
+function parseFlavorFromDescription(){
+  const desc = document.getElementById('modal-desc').value;
+  const parsed = parseFlavorFromText(desc);
+  document.getElementById('modal-flavor-incantation').value = parsed.incantation || '';
+  document.getElementById('modal-flavor-movements').value = parsed.movements || '';
+  document.getElementById('modal-flavor-autohit').value = parsed.autoHit || '';
+  document.getElementById('modal-flavor-friendlyfire').value = parsed.friendlyFire || '';
+  document.getElementById('modal-flavor-duration').value = parsed.duration || '';
+  syncFlavorGrowWraps();
+}
+
 function updateEffectSectionVisibility(){
   const activeEffects = Array.from(document.querySelectorAll('.effect-type-option input:checked')).map(el => el.dataset.effect);
   document.querySelectorAll('[data-effect-section]').forEach(section => {
@@ -2030,6 +2293,16 @@ window.openSpellModal = function(evt, id){
   document.getElementById('modal-buff-upkeep-spirit').value = meta.buffUpkeep.spirit || '';
   document.getElementById('modal-desc').value = meta.desc;
 
+  const flavor = getDisplayFlavor(meta);
+  document.getElementById('modal-flavor-incantation').value = flavor.incantation || '';
+  document.getElementById('modal-flavor-movements').value = flavor.movements || '';
+  document.getElementById('modal-flavor-autohit').value = flavor.autoHit || '';
+  document.getElementById('modal-flavor-friendlyfire').value = flavor.friendlyFire || '';
+  document.getElementById('modal-flavor-duration').value = flavor.duration || '';
+  syncFlavorGrowWraps();
+
+  modalExtraEffects = (meta.extraEffects || []).map(ee => ({...ee}));
+
   document.getElementById('modal-effect-damage').checked = meta.effectTypes.includes('damage');
   document.getElementById('modal-effect-heal').checked = meta.effectTypes.includes('heal');
   document.getElementById('modal-effect-buff').checked = meta.effectTypes.includes('buff');
@@ -2043,7 +2316,10 @@ window.openSpellModal = function(evt, id){
     'modal-heal-body','modal-heal-mind','modal-heal-spirit',
     'modal-heal-upkeep-body','modal-heal-upkeep-mind','modal-heal-upkeep-spirit',
     'modal-buff-body','modal-buff-mind','modal-buff-spirit',
-    'modal-buff-upkeep-body','modal-buff-upkeep-mind','modal-buff-upkeep-spirit','modal-desc'];
+    'modal-buff-upkeep-body','modal-buff-upkeep-mind','modal-buff-upkeep-spirit','modal-desc',
+    'modal-flavor-incantation','modal-flavor-movements','modal-flavor-autohit',
+    'modal-flavor-friendlyfire','modal-flavor-duration','flavor-parse-btn',
+    'ee-add-shield','ee-add-rollmod','ee-add-aoe','ee-add-special'];
   const hasRights = canEditSchool(sp.schoolKey);
   const canEditSpell = hasRights && !editLocked;
   editableIds.forEach(id => { document.getElementById(id).disabled = !canEditSpell; });
@@ -2053,6 +2329,8 @@ window.openSpellModal = function(evt, id){
   document.getElementById('modal-readonly-hint').textContent = hasRights && editLocked
     ? 'Editing is locked. Click the lock button in the toolbar to unlock it before editing spells.'
     : "You don't have edit rights for this School of Magic. Ask the tracker owner to add you as an editor (or Oracle of this school) if you should be able to change this.";
+
+  renderExtraEffectsList(!canEditSpell);
 
   document.getElementById('spell-modal-backdrop').classList.add('open');
   syncGrowWrap(document.getElementById('modal-desc'));
@@ -2082,6 +2360,14 @@ window.saveSpellModal = async function(){
     healUpkeep: { body: num('modal-heal-upkeep-body'), mind: num('modal-heal-upkeep-mind'), spirit: num('modal-heal-upkeep-spirit') },
     buff: { body: num('modal-buff-body'), mind: num('modal-buff-mind'), spirit: num('modal-buff-spirit') },
     buffUpkeep: { body: num('modal-buff-upkeep-body'), mind: num('modal-buff-upkeep-mind'), spirit: num('modal-buff-upkeep-spirit') },
+    flavor: {
+      incantation: document.getElementById('modal-flavor-incantation').value.trim(),
+      movements: document.getElementById('modal-flavor-movements').value.trim(),
+      autoHit: document.getElementById('modal-flavor-autohit').value.trim(),
+      friendlyFire: document.getElementById('modal-flavor-friendlyfire').value.trim(),
+      duration: document.getElementById('modal-flavor-duration').value.trim(),
+    },
+    extraEffects: modalExtraEffects.filter(ee => formatExtraEffect(ee) !== ''),
   };
   const saveBtn = document.getElementById('modal-save');
   saveBtn.disabled = true;
@@ -3326,6 +3612,43 @@ const EFFECT_TYPE_META = {
   buff:   { icon: '✦', cls: 'spell-buff' },
 };
 
+const ROLLMOD_TARGET_LABELS = { attack: 'Attack', defense: 'Defense', dc: 'DC', all: 'All Rolls' };
+const SHIELD_DAMAGE_TYPE_LABELS = { body: 'Body', mind: 'Mind', spirit: 'Spirit', any: 'Any' };
+const SHIELD_TRIGGER_LABELS = { 'until-depleted': 'until depleted', 'one-hit': 'one hit', 'one-round': '1 round' };
+const AOE_SHAPE_LABELS = { burst: 'Burst', cone: 'Cone', line: 'Line', aura: 'Aura', other: 'Area' };
+
+/* Renders a single extra_effects entry (see EXTRA EFFECTS BUILDER below) as
+   a short human-readable string for both the compact spell-list badge and
+   the spell modal. Unknown/malformed entries are skipped rather than
+   throwing, since this reads shared cloud data anyone could have edited. */
+function formatExtraEffect(ee){
+  if(!ee || !ee.kind) return '';
+  if(ee.kind === 'shield'){
+    const amt = Number(ee.amount) || 0;
+    if(!amt) return '';
+    const type = SHIELD_DAMAGE_TYPE_LABELS[ee.damageType] || 'Body';
+    const trig = SHIELD_TRIGGER_LABELS[ee.trigger] || SHIELD_TRIGGER_LABELS['until-depleted'];
+    return `🛡 Absorbs ${amt} ${type} dmg (${trig})${ee.note ? ' — ' + ee.note : ''}`;
+  }
+  if(ee.kind === 'rollmod'){
+    const amt = Number(ee.amount) || 0;
+    if(!amt) return '';
+    const target = ROLLMOD_TARGET_LABELS[ee.target] || 'All Rolls';
+    return `🎲 ${amt > 0 ? '+' : ''}${amt} to ${target}${ee.note ? ' — ' + ee.note : ''}`;
+  }
+  if(ee.kind === 'aoe'){
+    const shape = AOE_SHAPE_LABELS[ee.shape] || 'Area';
+    if(!ee.size && ee.shape === undefined) return '';
+    return `⭘ ${shape}${ee.size ? ' · ' + ee.size : ''}`;
+  }
+  if(ee.kind === 'special'){
+    if(!ee.label && !ee.text) return '';
+    return `✧ ${ee.label || 'Effect'}${ee.text ? ' — ' + ee.text : ''}`;
+  }
+  return '';
+}
+const EXTRA_EFFECT_CLASS = { shield: 'spell-shield', rollmod: 'spell-rollmod', aoe: 'spell-aoe', special: 'spell-special' };
+
 function renderSpellItem(sp){
   const checked = isLearned(sp.id) ? 'checked' : '';
   const meta = getMeta(sp.id);
@@ -3338,11 +3661,14 @@ function renderSpellItem(sp){
     const em = EFFECT_TYPE_META[type];
     return `<span class="${em.cls}">${em.icon} ${str}</span>`;
   }).join('');
+  const extraHtml = ''; // extra effects (shield/roll-mod/aoe/special) are modal-only now — see openSpellModal
+  const flavor = getDisplayFlavor(meta);
+  const durationHtml = ''; // duration is modal-only now too, to keep the list from getting crowded
   const tagsHtml = meta.tags.length ? `<span class="spell-tags">${meta.tags.map(t=>`<span class="mini-tag">${escapeHtml(t)}</span>`).join('')}</span>` : '';
   return `
     <li class="spell-item" data-name="${(sp.latin+' '+sp.en).toLowerCase()}" data-id="${sp.id}">
       <input type="checkbox" id="cb_${sp.id}" ${checked} onchange="onToggleSpell('${sp.id}', this.checked)">
-      <label for="cb_${sp.id}"><span class="spell-name" onclick="openSpellModal(event,'${sp.id}')">${sp.latin}</span><span class="spell-latin">(${sp.en})</span>${costStr ? `<span class="spell-cost">${costStr}</span>` : ''}${effectHtml}${tagsHtml}</label>
+      <label for="cb_${sp.id}"><span class="spell-name" onclick="openSpellModal(event,'${sp.id}')">${sp.latin}</span><span class="spell-latin">(${sp.en})</span>${costStr ? `<span class="spell-cost">${costStr}</span>` : ''}${effectHtml}${extraHtml}${durationHtml}${tagsHtml}</label>
     </li>`;
 }
 
