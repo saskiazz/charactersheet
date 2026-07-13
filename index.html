@@ -885,6 +885,50 @@
 
   .school-foot{height:14px;}
 
+  /* VIEW TOGGLE (Spells <-> Warrior Skills) */
+  .view-toggle{
+    display:flex;justify-content:center;gap:0;margin:0 auto 6px;width:fit-content;
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--hairline);border-radius:var(--radius-md);
+    padding:5px;box-shadow:var(--shadow-soft);
+  }
+  .view-toggle-btn{
+    font-family:'Cinzel', Garamond, serif;font-size:15.5px;letter-spacing:0.05em;
+    padding:9px 20px;border-radius:7px;border:none;background:transparent;
+    color:var(--parchment-dim);cursor:pointer;font-weight:600;transition:all .15s;
+  }
+  .view-toggle-btn:hover{color:var(--light-accent);}
+  .view-toggle-btn.active{background:linear-gradient(90deg,var(--gold),var(--gold-bright));color:#1a1408;}
+
+  /* WARRIOR SKILL PROGRESS INPUT — replaces the spell checkbox with a numeric
+     "passed rolls so far" counter. Learned state is derived (progress >=
+     required), not stored as a separate boolean. */
+  .ws-progress{display:flex;align-items:center;gap:5px;flex-shrink:0;}
+  .ws-progress input[type=number]{
+    width:44px;background:var(--panel);border:1px solid var(--hairline);
+    color:var(--parchment);border-radius:6px;padding:4px 5px;font-family:'Crimson Pro',serif;
+    font-size:16px;text-align:center;
+  }
+  .ws-progress input[type=number]:focus{outline:none;border-color:var(--gold);}
+  .ws-progress .ws-req{font-size:14.5px;color:var(--parchment-dim);}
+  .ws-item.ws-learned .ws-progress .ws-req{color:var(--ok);}
+  .ws-item.ws-learned .spell-name{color:var(--gold-bright);text-shadow:0 0 10px var(--light-glow);}
+  .ws-item .spell-name{font-weight:600;color:var(--parchment);font-size:19px;cursor:pointer;}
+  .ws-item .spell-name:hover{text-decoration:underline;color:var(--gold-bright);}
+  .ws-learned-tag{font-size:13px;color:var(--ok);margin-left:6px;font-style:italic;}
+  .ws-prereq-tag{font-size:14px;margin-left:8px;padding:1px 8px;border-radius:5px;display:inline-block;}
+  .ws-prereq-tag.unmet{color:var(--danger);background:rgba(194,104,95,0.12);border:1px solid rgba(194,104,95,0.35);}
+  .ws-prereq-tag.met{color:var(--ok);background:rgba(127,159,111,0.12);border:1px solid rgba(127,159,111,0.3);}
+  .ws-prereq-tag.unknown{color:var(--parchment-dim);background:rgba(169,162,141,0.1);border:1px solid var(--hairline);}
+  .ws-prereq-picker{max-height:220px;overflow-y:auto;background:var(--panel);border:1px solid var(--hairline);border-radius:8px;padding:10px 12px;}
+  .ws-prereq-picker-group{margin-bottom:10px;}
+  .ws-prereq-picker-group:last-child{margin-bottom:0;}
+  .ws-prereq-picker-group-title{font-size:13.5px;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold);margin-bottom:5px;}
+  .ws-prereq-option{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:16.5px;}
+  .ws-prereq-option input{cursor:pointer;accent-color:var(--gold);}
+  .ws-prereq-option label{cursor:pointer;}
+  .ws-prereq-empty{font-size:15px;color:var(--parchment-dim);font-style:italic;}
+
   footer{
     text-align:center;
     margin-top:44px;
@@ -1336,8 +1380,8 @@
 
   <header>
     <div class="eyebrow">Fallen Gate</div>
-    <h1>Spellbook Tracker</h1>
-    <p class="sub">Track what you know, what you're missing, and where you stand as Savant or Oracle</p>
+    <h1 id="page-title">Spellbook Tracker</h1>
+    <p class="sub" id="page-subtitle">Track what you know, what you're missing, and where you stand as Savant or Oracle</p>
   </header>
 
   <!-- BROWSE OTHER CHARACTERS BAR -->
@@ -1448,6 +1492,12 @@
     </div>
   </div>
 
+  <div class="view-toggle">
+    <button type="button" class="view-toggle-btn active" id="view-toggle-spells" onclick="switchView('spells')">📖 Spells</button>
+    <button type="button" class="view-toggle-btn" id="view-toggle-warrior" onclick="switchView('warrior')">⚔ Warrior Skills</button>
+  </div>
+
+  <div id="spell-view">
   <div class="alignment-box">
     <label class="alignment-label" style="color: var(--light-accent)">
       <input type="checkbox" id="filter-light" checked onchange="onFilterChange()"> Light Magic Allowed
@@ -1519,6 +1569,42 @@
   </div>
 
   <div class="grid" id="grid"></div>
+  </div><!-- /#spell-view -->
+
+  <div id="warrior-view" style="display:none;">
+    <div class="statbar">
+      <div class="stat-pill"><span class="num" id="ws-stat-learned">0</span><span class="lbl">Skills Learned</span></div>
+      <div class="stat-pill warn"><span class="num" id="ws-stat-missing">0</span><span class="lbl">Skills Missing</span></div>
+      <div class="stat-pill mastered"><span class="num" id="ws-stat-mastered">0 / 0</span><span class="lbl">Disciplines Mastered</span></div>
+    </div>
+
+    <div class="toolbar">
+      <input type="text" id="ws-search" placeholder="Search a warrior skill or discipline...">
+      <button id="ws-reset-all">Reset all rolls</button>
+
+      <div class="toolbar-sep"></div>
+
+      <button id="ws-expand-all" onclick="setAllDisciplinesCollapsed(false)">Expand all disciplines</button>
+      <button id="ws-collapse-all" onclick="setAllDisciplinesCollapsed(true)">Collapse all disciplines</button>
+
+      <div class="toolbar-sep"></div>
+
+      <button type="button" id="manage-disciplines-btn" class="manage-tag-groups-btn" style="display:none;" onclick="openDisciplinesModal()" title="Add a new Discipline (global editors only)">⚙ Manage Disciplines</button>
+
+      <span id="ws-save-note"></span>
+    </div>
+
+    <div class="spell-filter-bar">
+      <div class="filter-row-tags-wrap">
+        <div class="filter-row-tags-header">
+          <span class="filter-row-label">Tags:</span>
+        </div>
+        <div id="ws-tag-filters" class="tag-filters" style="flex-wrap:wrap;"></div>
+      </div>
+    </div>
+
+    <div class="grid" id="ws-grid"></div>
+  </div><!-- /#warrior-view -->
 
   <footer>Progress saves automatically to your local storage. Cloud saving of your character sheet only happens when you click "Save to Cloud Now" while logged in. Spell descriptions, tags, costs and damage are shared reference data stored centrally in the cloud for everyone using this tracker; only designated editors can change them (click a spell name to view or, if you're an editor, edit it).</footer>
 
@@ -1772,6 +1858,179 @@
   </div>
 </div>
 
+<div id="ws-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeWsModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeWsModal()">✕</button>
+    <h2 id="ws-modal-title">Skill Name</h2>
+    <p class="modal-subtitle" id="ws-modal-subtitle"></p>
+
+    <div class="modal-section">
+      <label class="modal-label">Tags <span class="modal-hint">(comma separated)</span></label>
+      <input type="text" id="ws-modal-tags" placeholder="e.g. melee, stance, execute">
+    </div>
+
+    <div class="modal-section">
+      <label class="modal-label">Learning Rolls Required <span class="modal-hint">(passed rolls needed before this skill counts as learned)</span></label>
+      <input type="number" id="ws-modal-rolls-required" min="1" step="1" style="width:90px;">
+    </div>
+
+    <div class="modal-section">
+      <label class="modal-label">Prerequisites <span class="modal-hint">(other warrior skills that must be learned first — informational only, doesn't block entering rolls)</span></label>
+      <div class="ws-prereq-picker" id="ws-modal-prereq-picker"></div>
+    </div>
+
+    <div class="modal-section">
+      <label class="modal-label">Stat Requirements <span class="modal-hint">(minimum stat needed — leave blank for none)</span></label>
+      <div class="modal-cost-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div><label>Rank</label><input type="number" id="ws-modal-req-rank" min="0" step="1"></div>
+        <div><label>Body</label><input type="number" id="ws-modal-req-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="ws-modal-req-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="ws-modal-req-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <label class="modal-label">Effect Type</label>
+      <div class="effect-type-picker">
+        <label class="effect-type-option"><input type="checkbox" id="ws-modal-effect-damage" data-effect="damage" onchange="updateWsEffectSectionVisibility()"> Damage</label>
+        <label class="effect-type-option"><input type="checkbox" id="ws-modal-effect-heal" data-effect="heal" onchange="updateWsEffectSectionVisibility()"> Heal</label>
+        <label class="effect-type-option"><input type="checkbox" id="ws-modal-effect-buff" data-effect="buff" onchange="updateWsEffectSectionVisibility()"> Buff</label>
+      </div>
+    </div>
+
+    <div class="modal-section" data-ws-effect-section="damage">
+      <label class="modal-label">Damage on Use</label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><input type="number" id="ws-modal-damage-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="ws-modal-damage-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="ws-modal-damage-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+    <div class="modal-section" data-ws-effect-section="damage">
+      <label class="modal-label">Damage per Round</label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><input type="number" id="ws-modal-damage-upkeep-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="ws-modal-damage-upkeep-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="ws-modal-damage-upkeep-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+
+    <div class="modal-section" data-ws-effect-section="heal">
+      <label class="modal-label">Healing on Use</label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><input type="number" id="ws-modal-heal-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="ws-modal-heal-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="ws-modal-heal-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+    <div class="modal-section" data-ws-effect-section="heal">
+      <label class="modal-label">Healing per Round</label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><input type="number" id="ws-modal-heal-upkeep-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="ws-modal-heal-upkeep-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="ws-modal-heal-upkeep-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+
+    <div class="modal-section" data-ws-effect-section="buff">
+      <label class="modal-label">Buff on Use</label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><input type="number" id="ws-modal-buff-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="ws-modal-buff-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="ws-modal-buff-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+    <div class="modal-section" data-ws-effect-section="buff">
+      <label class="modal-label">Buff per Round</label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><input type="number" id="ws-modal-buff-upkeep-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="ws-modal-buff-upkeep-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="ws-modal-buff-upkeep-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <label class="modal-label">Other Effects <span class="modal-hint">(roll bonuses/penalties, shields, area shape, or anything else that doesn't fit the fields above)</span></label>
+      <div class="extra-effects-list" id="ws-extra-effects-list"></div>
+      <p class="extra-effects-empty" id="ws-extra-effects-empty" style="display:none;">No extra effects added.</p>
+      <div class="extra-effects-add-row">
+        <button type="button" class="ee-add-btn" id="ws-ee-add-shield" onclick="wsAddExtraEffect('shield')">+ Shield / Absorption</button>
+        <button type="button" class="ee-add-btn" id="ws-ee-add-rollmod" onclick="wsAddExtraEffect('rollmod')">+ Roll Modifier</button>
+        <button type="button" class="ee-add-btn" id="ws-ee-add-aoe" onclick="wsAddExtraEffect('aoe')">+ Area (AOE)</button>
+        <button type="button" class="ee-add-btn" id="ws-ee-add-special" onclick="wsAddExtraEffect('special')">+ Special Effect</button>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <label class="modal-label">Description</label>
+      <div class="grow-wrap"><textarea id="ws-modal-desc" rows="5" placeholder="What does this skill do?"></textarea></div>
+    </div>
+
+    <p id="ws-modal-readonly-hint" class="modal-hint" style="display:none;color:var(--danger);">
+      You don't have edit rights for the shared warrior skill data. Ask the tracker owner to add you as an editor if you should be able to change this.
+    </p>
+
+    <div class="modal-actions">
+      <button id="ws-modal-delete" onclick="deleteCurrentModalWs()" style="background:var(--danger);border-color:var(--danger);color:#1a0d0b;display:none;">Delete Skill</button>
+      <button onclick="closeWsModal()">Close</button>
+      <button id="ws-modal-save" onclick="saveWsModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="disciplines-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeDisciplinesModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeDisciplinesModal()">✕</button>
+    <h2>Manage Disciplines</h2>
+    <p class="modal-subtitle">Add a new Discipline. It appears for everyone immediately — no code changes needed. Warrior skills are added afterwards from the "+ Add Skill" button inside the discipline itself.</p>
+
+    <label style="display:block;margin-top:14px;">Discipline name
+      <input type="text" id="new-discipline-name" placeholder="e.g. Blade Mastery" style="width:100%;margin-top:6px;">
+    </label>
+    <p id="disciplines-modal-status" style="font-size:13px;color:var(--parchment-dim);font-style:italic;min-height:1.2em;margin-top:10px;"></p>
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button type="button" onclick="closeDisciplinesModal()">Cancel</button>
+      <button type="button" id="disciplines-modal-save" onclick="createDiscipline()">Add Discipline</button>
+    </div>
+  </div>
+</div>
+
+<div id="add-ws-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeAddWsModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeAddWsModal()">✕</button>
+    <h2 id="add-ws-modal-title">Add Warrior Skill</h2>
+    <p class="modal-subtitle" id="add-ws-modal-subtitle"></p>
+
+    <label style="display:block;margin-top:14px;">Group
+      <select id="new-ws-group" style="width:100%;margin-top:6px;" onchange="onNewWsGroupChange()"></select>
+    </label>
+    <div id="new-ws-group-custom-wrap" style="display:none;">
+      <label style="display:block;margin-top:14px;">New group name
+        <input type="text" id="new-ws-group-custom" placeholder="e.g. All Ranks" style="width:100%;margin-top:6px;">
+      </label>
+      <label style="display:block;margin-top:14px;">Tier
+        <select id="new-ws-tier" style="width:100%;margin-top:6px;">
+          <option value="main">Main</option>
+          <option value="special">Special</option>
+        </select>
+      </label>
+    </div>
+    <label style="display:block;margin-top:14px;">Skill name
+      <input type="text" id="new-ws-name" placeholder="e.g. Riposte" style="width:100%;margin-top:6px;">
+    </label>
+    <label style="display:block;margin-top:14px;">Learning Rolls Required
+      <input type="number" id="new-ws-rolls-required" min="1" step="1" value="5" style="width:100%;margin-top:6px;">
+    </label>
+    <p id="add-ws-modal-status" style="font-size:13px;color:var(--parchment-dim);font-style:italic;min-height:1.2em;margin-top:10px;"></p>
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button type="button" onclick="closeAddWsModal()">Cancel</button>
+      <button type="button" id="add-ws-modal-save" onclick="createWarriorSkill()">Add Skill</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ---------- DATA ---------- */
@@ -1904,7 +2163,7 @@ async function loadSpellMeta(){
 async function checkSpellEditorStatus(){
   isSpellEditor = false;
   oracleSchools = new Set();
-  if(!currentUser){ updateTagGroupsButtonVisibility(); updateSchoolAdminButtonVisibility(); return; }
+  if(!currentUser){ updateTagGroupsButtonVisibility(); updateSchoolAdminButtonVisibility(); updateDisciplineAdminButtonVisibility(); return; }
   try{
     const { data, error } = await supabaseClient
       .from('spell_editors')
@@ -1922,7 +2181,9 @@ async function checkSpellEditorStatus(){
   }catch(e){ console.error(e); }
   updateTagGroupsButtonVisibility();
   updateSchoolAdminButtonVisibility();
+  updateDisciplineAdminButtonVisibility();
   render();
+  if(currentView === 'warrior') renderWarrior();
 }
 
 async function saveSpellMetaRow(id, meta){
@@ -2014,6 +2275,31 @@ function getDisplayFlavor(meta){
 }
 
 function capitalize(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+
+/* ---------- WARRIOR SKILL REQUIREMENTS (min. Rank / Body / Mind / Spirit) ----------
+   Compared against the character sheet's CURRENT stats (the same free-text
+   fields as the "Current Stats" row). Those fields aren't strictly numeric
+   (players sometimes type things like "12 (+2)"), so a value that doesn't
+   parse as a number is treated as "unknown" rather than "not met". */
+const REQUIREMENT_STAT_LABELS = { rank: 'Rank', body: 'Body', mind: 'Mind', spirit: 'Spirit' };
+const REQUIREMENT_STAT_CHARINFO_KEY = { rank: 'rank_stat_current', body: 'body_current', mind: 'mind_current', spirit: 'spirit_current' };
+
+function getWsRequirementStatus(meta){
+  const req = meta.requirements || {};
+  const parts = [];
+  let anyUnmet = false, anyUnknown = false;
+  Object.keys(REQUIREMENT_STAT_LABELS).forEach(key => {
+    const reqVal = Number(req[key]);
+    if(!reqVal || reqVal <= 0) return;
+    const curRaw = state.charInfo[REQUIREMENT_STAT_CHARINFO_KEY[key]];
+    const cur = parseFloat(curRaw);
+    let met = null;
+    if(isNaN(cur)) anyUnknown = true;
+    else { met = cur >= reqVal; if(!met) anyUnmet = true; }
+    parts.push({ key, label: REQUIREMENT_STAT_LABELS[key], reqVal, met });
+  });
+  return { parts, hasAny: parts.length > 0, anyUnmet, anyUnknown };
+}
 
 function formatCost(meta){
   const castParts = [];
@@ -2385,8 +2671,784 @@ window.saveSpellModal = async function(){
   }
 };
 
+/* =========================================================================
+   WARRIOR SKILLS / DISCIPLINES
+   A separate parallel system to the Schools of Magic / Spells above. Same
+   overall shape (Discipline -> groups -> skills), but its own Supabase
+   tables ("disciplines", "warrior_skills", "warrior_skill_meta") and its
+   own "learned" mechanic: instead of a plain checkbox, each skill tracks a
+   running count of passed learning rolls (state.wsProgress[id]) against a
+   per-skill "learning rolls required" value stored in its meta. A skill
+   counts as learned once progress >= required.
+   ========================================================================= */
+
+let DISCIPLINES = [];
+let wsMeta = {};
+const WS_INDEX = {};
+let currentView = 'spells';
+
+/* Disciplines are flat (no light/dark/legacy/deity-style category) and, for
+   now, managed by the same global "spell_editors" role used for Schools of
+   Magic — there's no separate per-discipline Oracle-style role yet. */
+function canManageDisciplines(){ return isSpellEditor; }
+function canEditDiscipline(){ return isSpellEditor; }
+
+async function loadDisciplinesAndSkills(){
+  try{
+    const [{ data: discRows, error: discErr }, { data: skillRows, error: skillErr }] = await Promise.all([
+      supabaseClient.from('disciplines').select('*').order('sort_order', { ascending: true }),
+      supabaseClient.from('warrior_skills').select('*').order('sort_order', { ascending: true }),
+    ]);
+    if(discErr) throw discErr;
+    if(skillErr) throw skillErr;
+
+    const byDiscipline = {};
+    const order = [];
+    (discRows || []).forEach(row => {
+      byDiscipline[row.key] = { key: row.key, name: row.name, groups: [], _groupIndex: {} };
+      order.push(row.key);
+    });
+    (skillRows || []).forEach(row => {
+      const disc = byDiscipline[row.discipline_key];
+      if(!disc) return;
+      let group = disc._groupIndex[row.group_label];
+      if(!group){
+        group = { label: row.group_label, tier: row.tier, skills: [] };
+        disc._groupIndex[row.group_label] = group;
+        disc.groups.push(group);
+      }
+      group.skills.push({ id: row.id, name: row.name, disciplineKey: row.discipline_key });
+    });
+    DISCIPLINES = order.map(key => { const d = byDiscipline[key]; delete d._groupIndex; return d; });
+    rebuildWsIndex();
+  }catch(e){
+    console.error('Could not load disciplines/warrior skills from cloud:', e);
+    // Non-fatal — the tables may not exist yet if this is a fresh setup.
+  }
+}
+
+function rebuildWsIndex(){
+  Object.keys(WS_INDEX).forEach(k => delete WS_INDEX[k]);
+  DISCIPLINES.forEach(d => d.groups.forEach(g => g.skills.forEach(sk => { WS_INDEX[sk.id] = sk; })));
+}
+
+async function loadWarriorSkillMeta(){
+  try{
+    const { data, error } = await supabaseClient.from('warrior_skill_meta').select('*');
+    if(error) throw error;
+    const next = {};
+    (data || []).forEach(row => {
+      next[row.id] = {
+        desc: row.description || '',
+        tags: row.tags || [],
+        effectTypes: row.effect_types || [],
+        damage: row.damage || {body:0, mind:0, spirit:0},
+        damageUpkeep: row.damage_upkeep || {body:0, mind:0, spirit:0},
+        heal: row.heal || {body:0, mind:0, spirit:0},
+        healUpkeep: row.heal_upkeep || {body:0, mind:0, spirit:0},
+        buff: row.buff || {body:0, mind:0, spirit:0},
+        buffUpkeep: row.buff_upkeep || {body:0, mind:0, spirit:0},
+        extraEffects: row.extra_effects || [],
+        rollsRequired: row.learning_rolls_required || 5,
+        prerequisites: row.prerequisites || [],
+        requirements: row.requirements || {},
+      };
+    });
+    wsMeta = next;
+  }catch(e){
+    console.error('Could not load warrior skill metadata from cloud:', e);
+  }
+}
+
+async function saveWarriorSkillMetaRow(id, meta){
+  const payload = {
+    id,
+    description: meta.desc,
+    tags: meta.tags,
+    effect_types: meta.effectTypes,
+    damage: meta.damage,
+    damage_upkeep: meta.damageUpkeep,
+    heal: meta.heal,
+    heal_upkeep: meta.healUpkeep,
+    buff: meta.buff,
+    buff_upkeep: meta.buffUpkeep,
+    extra_effects: meta.extraEffects,
+    learning_rolls_required: meta.rollsRequired,
+    prerequisites: meta.prerequisites || [],
+    requirements: meta.requirements || {},
+    updated_by: currentUser ? currentUser.id : null,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabaseClient.from('warrior_skill_meta').upsert(payload, { onConflict: 'id' });
+  if(error) throw error;
+  wsMeta[id] = meta;
+}
+
+function getWsMeta(id){
+  const m = wsMeta[id];
+  return {
+    desc: (m && m.desc) || '',
+    tags: (m && m.tags) || [],
+    effectTypes: (m && m.effectTypes) || [],
+    damage: (m && m.damage) || {body:0, mind:0, spirit:0},
+    damageUpkeep: (m && m.damageUpkeep) || {body:0, mind:0, spirit:0},
+    heal: (m && m.heal) || {body:0, mind:0, spirit:0},
+    healUpkeep: (m && m.healUpkeep) || {body:0, mind:0, spirit:0},
+    buff: (m && m.buff) || {body:0, mind:0, spirit:0},
+    buffUpkeep: (m && m.buffUpkeep) || {body:0, mind:0, spirit:0},
+    extraEffects: (m && m.extraEffects) || [],
+    rollsRequired: (m && m.rollsRequired) || 5,
+    prerequisites: (m && m.prerequisites) || [],
+    requirements: (m && m.requirements) || {},
+  };
+}
+
+/* ---------- LEARNING PROGRESS (passed rolls, not a plain checkbox) ---------- */
+function getWsProgress(id){
+  return state.wsProgress.hasOwnProperty(id) ? (Number(state.wsProgress[id]) || 0) : 0;
+}
+function setWsProgress(id, val){
+  const required = getWsMeta(id).rollsRequired;
+  let n = parseInt(val, 10);
+  if(isNaN(n) || n < 0) n = 0;
+  if(n > required) n = required;
+  state.wsProgress[id] = n;
+  persist();
+}
+function isWsLearned(id){
+  return getWsProgress(id) >= getWsMeta(id).rollsRequired;
+}
+
+/* ---------- PREREQUISITES ---------- */
+/* A skill can list any number of other warrior skills (by id, across any
+   discipline) as prerequisites. Purely informational for now — entering
+   rolls is never blocked by unmet prerequisites, it's just shown so you
+   know what's expected before a skill "should" be trained. */
+function getWsPrereqs(id){
+  const meta = getWsMeta(id);
+  return (meta.prerequisites || []).map(pid => WS_INDEX[pid]).filter(Boolean);
+}
+function unmetWsPrereqs(id){
+  return getWsPrereqs(id).filter(p => !isWsLearned(p.id));
+}
+
+function countWsGroup(skills){
+  let learned = 0;
+  skills.forEach(sk => { if(isWsLearned(sk.id)) learned++; });
+  return {learned, total: skills.length, missing: skills.length - learned};
+}
+function disciplineMainSkills(disc){
+  return disc.groups.filter(g => g.tier === 'main').flatMap(g => g.skills);
+}
+
+function renderWsItem(sk){
+  const meta = getWsMeta(sk.id);
+  const progress = getWsProgress(sk.id);
+  const learned = progress >= meta.rollsRequired;
+  const effectHtml = meta.effectTypes.map(type => {
+    const onUse = type === 'damage' ? meta.damage : (type === 'heal' ? meta.heal : meta.buff);
+    const perRound = type === 'damage' ? meta.damageUpkeep : (type === 'heal' ? meta.healUpkeep : meta.buffUpkeep);
+    const str = formatEffect(onUse, perRound);
+    if(!str) return '';
+    const em = EFFECT_TYPE_META[type];
+    return `<span class="${em.cls}">${em.icon} ${str}</span>`;
+  }).join('');
+  const tagsHtml = meta.tags.length ? `<span class="spell-tags">${meta.tags.map(t=>`<span class="mini-tag">${escapeHtml(t)}</span>`).join('')}</span>` : '';
+  const prereqs = getWsPrereqs(sk.id);
+  let prereqHtml = '';
+  if(prereqs.length){
+    const unmet = unmetWsPrereqs(sk.id);
+    const cls = unmet.length ? 'ws-prereq-tag unmet' : 'ws-prereq-tag met';
+    const icon = unmet.length ? '🔒' : '🔓';
+    prereqHtml = `<span class="${cls}" title="Prerequisite skills">${icon} Requires: ${prereqs.map(p=>escapeHtml(p.name)).join(', ')}</span>`;
+  }
+  const reqStatus = getWsRequirementStatus(meta);
+  let reqHtml = '';
+  if(reqStatus.hasAny){
+    const cls = reqStatus.anyUnmet ? 'ws-prereq-tag unmet' : (reqStatus.anyUnknown ? 'ws-prereq-tag unknown' : 'ws-prereq-tag met');
+    const icon = reqStatus.anyUnmet ? '🔒' : (reqStatus.anyUnknown ? '❔' : '🔓');
+    const reqText = reqStatus.parts.map(p => `${p.label} ${p.reqVal}`).join(', ');
+    reqHtml = `<span class="${cls}" title="Minimum stats required for this skill">${icon} Requires: ${reqText}</span>`;
+  }
+  return `
+    <li class="spell-item ws-item ${learned ? 'ws-learned' : ''}" data-name="${sk.name.toLowerCase()}" data-id="${sk.id}">
+      <div class="ws-progress">
+        <input type="number" min="0" max="${meta.rollsRequired}" step="1" value="${progress}"
+          onchange="onWsProgressChange('${sk.id}', this.value)" title="Passed learning rolls so far">
+        <span class="ws-req">/ ${meta.rollsRequired}</span>
+      </div>
+      <label style="cursor:default;"><span class="spell-name" onclick="openWsModal(event,'${sk.id}')">${sk.name}</span>${learned ? '<span class="ws-learned-tag">✓ learned</span>' : ''}${effectHtml}${prereqHtml}${reqHtml}${tagsHtml}</label>
+    </li>`;
+}
+
+function renderWsGroup(disc, g){
+  const c = countWsGroup(g.skills);
+  return `
+    <div class="group">
+      <div class="group-label"><span>${g.label}</span><span class="group-count">${c.learned}/${c.total} learned</span></div>
+      <ul class="spell-list">${g.skills.map(renderWsItem).join('')}</ul>
+    </div>`;
+}
+
+function renderDiscipline(disc){
+  const mainSkills = disciplineMainSkills(disc);
+  const mainCount = countWsGroup(mainSkills);
+  const pct = mainCount.total ? Math.round(100*mainCount.learned/mainCount.total) : 0;
+  const otherGroups = disc.groups.filter(g => g.tier !== 'main');
+  const mastered = mainCount.total > 0 && mainCount.missing === 0;
+  const collapsed = isDisciplineCollapsed(disc.key);
+
+  return `
+  <section class="school type-neutral ${mastered?'is-mastered':''}" data-discipline="${disc.key}" data-discipline-name="${disc.name.toLowerCase()}">
+    <div class="school-head" onclick="toggleDisciplineCollapse('${disc.key}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleDisciplineCollapse('${disc.key}')}">
+      <div class="school-title-row">
+        <div class="school-title-main">
+          <span class="school-chevron ${collapsed?'':'open'}">▸</span>
+          <div>
+            <div class="school-title">${disc.name}</div>
+          </div>
+        </div>
+      </div>
+      <div class="school-progress">
+        <div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div>
+        <div class="progress-text"><b>${mainCount.learned}/${mainCount.total}</b> learned · <span class="missing-count">${mainCount.missing} missing</span></div>
+      </div>
+      ${mastered ? `<div class="mastered-ribbon">✦ Mastered</div>` : ''}
+    </div>
+    <div class="school-body ${collapsed?'collapsed':''}">
+      ${disc.groups.filter(g=>g.tier==='main').map(g => renderWsGroup(disc,g)).join('')}
+      ${otherGroups.map(g => renderWsGroup(disc,g)).join('')}
+      ${canEditDiscipline() ? `<div class="school-foot" style="height:auto;padding:6px 0 10px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button type="button" class="manage-tag-groups-btn" onclick="event.stopPropagation(); openAddWsModal('${disc.key}')">+ Add Skill</button>
+        <button type="button" class="manage-tag-groups-btn" style="color:var(--danger);border-color:var(--danger);" onclick="event.stopPropagation(); deleteDiscipline('${disc.key}')">🗑 Delete Discipline</button>
+      </div>` : `<div class="school-foot"></div>`}
+    </div>
+  </section>`;
+}
+
+function isDisciplineCollapsed(key){
+  return state.wsCollapsed[key] !== false;
+}
+window.toggleDisciplineCollapse = function(key){
+  state.wsCollapsed[key] = isDisciplineCollapsed(key) ? false : true;
+  persist(false);
+  renderWarrior();
+};
+window.setAllDisciplinesCollapsed = function(collapse){
+  DISCIPLINES.forEach(d => { state.wsCollapsed[d.key] = collapse; });
+  persist(false);
+  renderWarrior();
+};
+
+window.onWsProgressChange = function(id, val){
+  if (isViewingOther) return;
+  setWsProgress(id, val);
+  renderWarrior();
+};
+
+function renderWsGlobalStats(){
+  let totalLearned = 0, totalMain = 0, masteredCount = 0;
+  DISCIPLINES.forEach(disc => {
+    const c = countWsGroup(disciplineMainSkills(disc));
+    totalLearned += c.learned;
+    totalMain += c.total;
+    if(c.total > 0 && c.missing === 0) masteredCount++;
+  });
+  document.getElementById('ws-stat-learned').textContent = totalLearned;
+  document.getElementById('ws-stat-missing').textContent = totalMain - totalLearned;
+  document.getElementById('ws-stat-mastered').textContent = `${masteredCount} / ${DISCIPLINES.length}`;
+}
+
+function renderWarrior(){
+  document.getElementById('ws-grid').innerHTML = DISCIPLINES.map(renderDiscipline).join('');
+  renderWsGlobalStats();
+  applyWsFilters();
+  applyGridLockState();
+}
+
+/* ---------- SEARCH + TAG FILTER (flat tag list, no groups — kept simpler
+   than the spell side's grouped tag system for now) ---------- */
+function getAllWsTags(){
+  const tagSet = new Set();
+  Object.values(wsMeta).forEach(m => (m.tags||[]).forEach(t => tagSet.add(t)));
+  return Array.from(tagSet).sort();
+}
+function renderWsTagFilters(){
+  const container = document.getElementById('ws-tag-filters');
+  if(!container) return;
+  const activeTags = Array.from(container.querySelectorAll('.tag-filter-btn.active')).map(b=>b.dataset.tag);
+  const tags = getAllWsTags();
+  if(!tags.length){
+    container.innerHTML = `<span class="filter-hint">No tags yet — click a warrior skill name to add some.</span>`;
+    return;
+  }
+  container.innerHTML = tags.map(t => `<button type="button" class="tag-filter-btn ${activeTags.includes(t)?'active':''}" data-tag="${escapeHtml(t)}" onclick="toggleWsTagFilter(this)">${escapeHtml(t)}</button>`).join('');
+}
+window.toggleWsTagFilter = function(btn){
+  btn.classList.toggle('active');
+  applyWsFilters();
+};
+
+function applyWsFilters(){
+  const q = document.getElementById('ws-search').value.trim().toLowerCase();
+  const activeTags = Array.from(document.querySelectorAll('#ws-tag-filters .tag-filter-btn.active')).map(b => b.dataset.tag);
+
+  const matchedDisciplines = new Set();
+  if(q){
+    document.querySelectorAll('[data-discipline]').forEach(disc => {
+      const name = disc.getAttribute('data-discipline-name') || '';
+      if(name.includes(q)) matchedDisciplines.add(disc);
+    });
+  }
+
+  document.querySelectorAll('.ws-item').forEach(li => {
+    const name = li.getAttribute('data-name') || '';
+    const id = li.getAttribute('data-id');
+    const meta = getWsMeta(id);
+    let visible = true;
+    if(q){
+      const inMatchedDiscipline = matchedDisciplines.has(li.closest('[data-discipline]'));
+      if(!inMatchedDiscipline && !name.includes(q)) visible = false;
+    }
+    if(visible && activeTags.length){
+      if(!activeTags.some(t => meta.tags.includes(t))) visible = false;
+    }
+    li.classList.toggle('hidden', !visible);
+  });
+
+  const filtersActive = !!q || activeTags.length > 0;
+  document.querySelectorAll('#ws-grid .group').forEach(group => {
+    const hasVisible = group.querySelectorAll('.ws-item:not(.hidden)').length > 0;
+    group.classList.toggle('hidden', filtersActive && !hasVisible);
+  });
+  document.querySelectorAll('[data-discipline]').forEach(disc => {
+    const hasVisible = disc.querySelectorAll('.ws-item:not(.hidden)').length > 0;
+    disc.classList.toggle('hidden', filtersActive && !hasVisible);
+    const body = disc.querySelector('.school-body');
+    if(body) body.classList.toggle('filter-open', filtersActive && hasVisible);
+    const chevron = disc.querySelector('.school-chevron');
+    if(chevron) chevron.classList.toggle('open', (filtersActive && hasVisible) || !body?.classList.contains('collapsed'));
+  });
+}
+
+/* ---------- VIEW TOGGLE ---------- */
+window.switchView = function(view){
+  currentView = view;
+  localStorage.setItem('spellbook_active_view', view);
+  const isSpells = view === 'spells';
+  document.getElementById('spell-view').style.display = isSpells ? '' : 'none';
+  document.getElementById('warrior-view').style.display = isSpells ? 'none' : '';
+  document.getElementById('view-toggle-spells').classList.toggle('active', isSpells);
+  document.getElementById('view-toggle-warrior').classList.toggle('active', !isSpells);
+  document.getElementById('page-title').textContent = isSpells ? 'Spellbook Tracker' : 'Warrior Skills Tracker';
+  document.getElementById('page-subtitle').textContent = isSpells
+    ? "Track what you know, what you're missing, and where you stand as Savant or Oracle"
+    : 'Track passed learning rolls toward each warrior skill, discipline by discipline';
+  if(!isSpells) renderWarrior();
+};
+
+/* ---------- EXTRA EFFECTS BUILDER (warrior skill modal copy) ----------
+   Same shape/behavior as the spell version above, kept as its own small set
+   of functions + its own working array so both modals can't stomp on each
+   other if a user somehow had both open (they can't, but this stays safe). */
+let wsModalExtraEffects = [];
+window.wsAddExtraEffect = function(kind){
+  wsModalExtraEffects.push(EE_DEFAULTS[kind]());
+  wsRenderExtraEffectsList();
+};
+window.wsRemoveExtraEffect = function(idx){
+  wsModalExtraEffects.splice(idx, 1);
+  wsRenderExtraEffectsList();
+};
+window.wsUpdateExtraEffectField = function(idx, field, value){
+  if(!wsModalExtraEffects[idx]) return;
+  wsModalExtraEffects[idx][field] = value;
+};
+window.wsUpdateExtraEffectNumberField = function(idx, field, value){
+  const v = parseFloat(value);
+  wsUpdateExtraEffectField(idx, field, isNaN(v) ? 0 : v);
+};
+function wsEeNoteField(idx, field, value, placeholder, dis){
+  const v = escapeHtml(value || '');
+  return `<div class="grow-wrap ee-note-wrap" data-replicated-value="${v}"><textarea class="ee-note" rows="1" ${dis} oninput="wsUpdateExtraEffectField(${idx},'${field}',this.value); syncGrowWrap(this)" placeholder="${placeholder}">${v}</textarea></div>`;
+}
+function wsExtraEffectRowHtml(ee, idx, disabled){
+  const dis = disabled ? 'disabled' : '';
+  let fields = '';
+  if(ee.kind === 'shield'){
+    fields = `
+      <div class="ee-field"><label>Amount</label><input type="number" ${dis} value="${ee.amount||0}" oninput="wsUpdateExtraEffectNumberField(${idx},'amount',this.value)"></div>
+      <div class="ee-field"><label>Damage Type</label>
+        <select ${dis} onchange="wsUpdateExtraEffectField(${idx},'damageType',this.value)">
+          ${Object.entries(SHIELD_DAMAGE_TYPE_LABELS).map(([k,l])=>`<option value="${k}" ${ee.damageType===k?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+      <div class="ee-field"><label>Trigger</label>
+        <select ${dis} onchange="wsUpdateExtraEffectField(${idx},'trigger',this.value)">
+          ${Object.entries(SHIELD_TRIGGER_LABELS).map(([k,l])=>`<option value="${k}" ${(ee.trigger||'until-depleted')===k?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+      <div style="flex:1 1 100%;"><label style="display:block;font-size:13px;color:var(--parchment-dim);margin-bottom:3px;">Note (optional)</label>${wsEeNoteField(idx,'note',ee.note,"e.g. min 0, doesn't stack",dis)}</div>`;
+  } else if(ee.kind === 'rollmod'){
+    fields = `
+      <div class="ee-field"><label>Applies To</label>
+        <select ${dis} onchange="wsUpdateExtraEffectField(${idx},'target',this.value)">
+          ${Object.entries(ROLLMOD_TARGET_LABELS).map(([k,l])=>`<option value="${k}" ${ee.target===k?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+      <div class="ee-field"><label>Amount</label><input type="number" ${dis} value="${ee.amount||0}" oninput="wsUpdateExtraEffectNumberField(${idx},'amount',this.value)" placeholder="+1 or -1"></div>
+      <div style="flex:1 1 100%;"><label style="display:block;font-size:13px;color:var(--parchment-dim);margin-bottom:3px;">Note (optional)</label>${wsEeNoteField(idx,'note',ee.note,"e.g. cannot stack",dis)}</div>`;
+  } else if(ee.kind === 'aoe'){
+    fields = `
+      <div class="ee-field"><label>Shape</label>
+        <select ${dis} onchange="wsUpdateExtraEffectField(${idx},'shape',this.value)">
+          ${Object.entries(AOE_SHAPE_LABELS).map(([k,l])=>`<option value="${k}" ${ee.shape===k?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+      <div class="ee-field" style="flex:1 1 auto;"><label>Size / Range</label><input type="text" ${dis} value="${escapeHtml(ee.size||'')}" oninput="wsUpdateExtraEffectField(${idx},'size',this.value)" placeholder="e.g. 10ft radius, local vicinity"></div>`;
+  } else if(ee.kind === 'special'){
+    fields = `
+      <div class="ee-field" style="flex:1 1 220px;"><label>Label</label><input type="text" ${dis} value="${escapeHtml(ee.label||'')}" oninput="wsUpdateExtraEffectField(${idx},'label',this.value)" placeholder="e.g. Stagger, Rally, Redirect"></div>
+      <div style="flex:1 1 100%;"><label style="display:block;font-size:13px;color:var(--parchment-dim);margin-bottom:3px;">Details</label>${wsEeNoteField(idx,'text',ee.text,"Short description of the effect",dis)}</div>`;
+  }
+  return `<div class="extra-effect-row">
+    <span class="ee-kind-label">${EE_KIND_LABEL[ee.kind] || ee.kind}</span>
+    ${fields}
+    ${disabled ? '' : `<button type="button" class="ee-remove-btn" title="Remove" onclick="wsRemoveExtraEffect(${idx})">✕</button>`}
+  </div>`;
+}
+function wsRenderExtraEffectsList(disabled){
+  const container = document.getElementById('ws-extra-effects-list');
+  const empty = document.getElementById('ws-extra-effects-empty');
+  if(!container) return;
+  if(!wsModalExtraEffects.length){
+    container.innerHTML = '';
+    if(empty) empty.style.display = 'block';
+  } else {
+    if(empty) empty.style.display = 'none';
+    container.innerHTML = wsModalExtraEffects.map((ee, idx) => wsExtraEffectRowHtml(ee, idx, disabled)).join('');
+    container.querySelectorAll('.ee-note').forEach(syncGrowWrap);
+  }
+}
+
+window.updateWsEffectSectionVisibility = function(){
+  const activeEffects = Array.from(document.querySelectorAll('#ws-modal-backdrop .effect-type-option input:checked')).map(el => el.dataset.effect);
+  document.querySelectorAll('[data-ws-effect-section]').forEach(section => {
+    section.style.display = activeEffects.includes(section.dataset.wsEffectSection) ? '' : 'none';
+  });
+};
+
+/* ---------- WARRIOR SKILL DETAIL / EDIT MODAL ---------- */
+let currentModalWsId = null;
+
+/* Builds the checkbox list of every other warrior skill (grouped by
+   discipline), for picking prerequisites in the skill modal. */
+function renderWsPrereqPicker(currentId, selected, disabled){
+  const container = document.getElementById('ws-modal-prereq-picker');
+  if(!container) return;
+  const selectedSet = new Set(selected || []);
+  const groupsHtml = DISCIPLINES.map(disc => {
+    const skills = disc.groups.flatMap(g => g.skills).filter(sk => sk.id !== currentId);
+    if(!skills.length) return '';
+    const optsHtml = skills.map(sk => `
+      <div class="ws-prereq-option">
+        <input type="checkbox" id="ws-prereq-${sk.id}" data-prereq-id="${sk.id}" ${selectedSet.has(sk.id)?'checked':''} ${disabled?'disabled':''}>
+        <label for="ws-prereq-${sk.id}">${escapeHtml(sk.name)}</label>
+      </div>`).join('');
+    return `<div class="ws-prereq-picker-group"><div class="ws-prereq-picker-group-title">${escapeHtml(disc.name)}</div>${optsHtml}</div>`;
+  }).join('');
+  container.innerHTML = groupsHtml || `<span class="ws-prereq-empty">No other warrior skills yet.</span>`;
+}
+function getCheckedWsPrereqs(){
+  return Array.from(document.querySelectorAll('#ws-modal-prereq-picker input[data-prereq-id]:checked')).map(el => el.dataset.prereqId);
+}
+
+window.openWsModal = function(evt, id){
+  if(evt){ evt.preventDefault(); evt.stopPropagation(); }
+  const sk = WS_INDEX[id];
+  if(!sk) return;
+  currentModalWsId = id;
+  const meta = getWsMeta(id);
+  document.getElementById('ws-modal-title').textContent = sk.name;
+  document.getElementById('ws-modal-subtitle').textContent = `Passed rolls: ${getWsProgress(id)} / ${meta.rollsRequired}`;
+  document.getElementById('ws-modal-tags').value = meta.tags.join(', ');
+  document.getElementById('ws-modal-rolls-required').value = meta.rollsRequired;
+  document.getElementById('ws-modal-req-rank').value = meta.requirements.rank || '';
+  document.getElementById('ws-modal-req-body').value = meta.requirements.body || '';
+  document.getElementById('ws-modal-req-mind').value = meta.requirements.mind || '';
+  document.getElementById('ws-modal-req-spirit').value = meta.requirements.spirit || '';
+  document.getElementById('ws-modal-damage-body').value = meta.damage.body || '';
+  document.getElementById('ws-modal-damage-mind').value = meta.damage.mind || '';
+  document.getElementById('ws-modal-damage-spirit').value = meta.damage.spirit || '';
+  document.getElementById('ws-modal-damage-upkeep-body').value = meta.damageUpkeep.body || '';
+  document.getElementById('ws-modal-damage-upkeep-mind').value = meta.damageUpkeep.mind || '';
+  document.getElementById('ws-modal-damage-upkeep-spirit').value = meta.damageUpkeep.spirit || '';
+  document.getElementById('ws-modal-heal-body').value = meta.heal.body || '';
+  document.getElementById('ws-modal-heal-mind').value = meta.heal.mind || '';
+  document.getElementById('ws-modal-heal-spirit').value = meta.heal.spirit || '';
+  document.getElementById('ws-modal-heal-upkeep-body').value = meta.healUpkeep.body || '';
+  document.getElementById('ws-modal-heal-upkeep-mind').value = meta.healUpkeep.mind || '';
+  document.getElementById('ws-modal-heal-upkeep-spirit').value = meta.healUpkeep.spirit || '';
+  document.getElementById('ws-modal-buff-body').value = meta.buff.body || '';
+  document.getElementById('ws-modal-buff-mind').value = meta.buff.mind || '';
+  document.getElementById('ws-modal-buff-spirit').value = meta.buff.spirit || '';
+  document.getElementById('ws-modal-buff-upkeep-body').value = meta.buffUpkeep.body || '';
+  document.getElementById('ws-modal-buff-upkeep-mind').value = meta.buffUpkeep.mind || '';
+  document.getElementById('ws-modal-buff-upkeep-spirit').value = meta.buffUpkeep.spirit || '';
+  document.getElementById('ws-modal-desc').value = meta.desc;
+
+  wsModalExtraEffects = (meta.extraEffects || []).map(ee => ({...ee}));
+
+  document.getElementById('ws-modal-effect-damage').checked = meta.effectTypes.includes('damage');
+  document.getElementById('ws-modal-effect-heal').checked = meta.effectTypes.includes('heal');
+  document.getElementById('ws-modal-effect-buff').checked = meta.effectTypes.includes('buff');
+  updateWsEffectSectionVisibility();
+
+  const editableIds = ['ws-modal-tags','ws-modal-rolls-required','ws-modal-req-rank','ws-modal-req-body','ws-modal-req-mind','ws-modal-req-spirit',
+    'ws-modal-effect-damage','ws-modal-effect-heal','ws-modal-effect-buff',
+    'ws-modal-damage-body','ws-modal-damage-mind','ws-modal-damage-spirit',
+    'ws-modal-damage-upkeep-body','ws-modal-damage-upkeep-mind','ws-modal-damage-upkeep-spirit',
+    'ws-modal-heal-body','ws-modal-heal-mind','ws-modal-heal-spirit',
+    'ws-modal-heal-upkeep-body','ws-modal-heal-upkeep-mind','ws-modal-heal-upkeep-spirit',
+    'ws-modal-buff-body','ws-modal-buff-mind','ws-modal-buff-spirit',
+    'ws-modal-buff-upkeep-body','ws-modal-buff-upkeep-mind','ws-modal-buff-upkeep-spirit','ws-modal-desc',
+    'ws-ee-add-shield','ws-ee-add-rollmod','ws-ee-add-aoe','ws-ee-add-special'];
+  const hasRights = canEditDiscipline();
+  const canEditWs = hasRights && !editLocked;
+  editableIds.forEach(id => { document.getElementById(id).disabled = !canEditWs; });
+  document.getElementById('ws-modal-save').style.display = canEditWs ? '' : 'none';
+  document.getElementById('ws-modal-delete').style.display = canEditWs ? '' : 'none';
+  document.getElementById('ws-modal-readonly-hint').style.display = canEditWs ? 'none' : 'block';
+  document.getElementById('ws-modal-readonly-hint').textContent = hasRights && editLocked
+    ? 'Editing is locked. Click the lock button in the toolbar to unlock it before editing warrior skills.'
+    : "You don't have edit rights for the shared warrior skill data. Ask the tracker owner to add you as an editor if you should be able to change this.";
+
+  wsRenderExtraEffectsList(!canEditWs);
+  renderWsPrereqPicker(id, meta.prerequisites, !canEditWs);
+
+  document.getElementById('ws-modal-backdrop').classList.add('open');
+  syncGrowWrap(document.getElementById('ws-modal-desc'));
+};
+
+window.closeWsModal = function(){
+  document.getElementById('ws-modal-backdrop').classList.remove('open');
+  currentModalWsId = null;
+};
+
+window.saveWsModal = async function(){
+  const sk = currentModalWsId ? WS_INDEX[currentModalWsId] : null;
+  if(!sk || !canEditDiscipline() || editLocked) return;
+  const tags = document.getElementById('ws-modal-tags').value
+    .split(',').map(t=>t.trim().toLowerCase()).filter(Boolean);
+  const num = (elId) => { const v = parseFloat(document.getElementById(elId).value); return isNaN(v) ? 0 : v; };
+  const effectTypes = ['damage','heal','buff'].filter(t => document.getElementById(`ws-modal-effect-${t}`).checked);
+  let rollsRequired = parseInt(document.getElementById('ws-modal-rolls-required').value, 10);
+  if(isNaN(rollsRequired) || rollsRequired < 1) rollsRequired = 1;
+  const prerequisites = getCheckedWsPrereqs();
+  const requirements = { rank: num('ws-modal-req-rank'), body: num('ws-modal-req-body'), mind: num('ws-modal-req-mind'), spirit: num('ws-modal-req-spirit') };
+  const meta = {
+    desc: document.getElementById('ws-modal-desc').value,
+    tags,
+    effectTypes,
+    rollsRequired,
+    prerequisites,
+    requirements,
+    damage: { body: num('ws-modal-damage-body'), mind: num('ws-modal-damage-mind'), spirit: num('ws-modal-damage-spirit') },
+    damageUpkeep: { body: num('ws-modal-damage-upkeep-body'), mind: num('ws-modal-damage-upkeep-mind'), spirit: num('ws-modal-damage-upkeep-spirit') },
+    heal: { body: num('ws-modal-heal-body'), mind: num('ws-modal-heal-mind'), spirit: num('ws-modal-heal-spirit') },
+    healUpkeep: { body: num('ws-modal-heal-upkeep-body'), mind: num('ws-modal-heal-upkeep-mind'), spirit: num('ws-modal-heal-upkeep-spirit') },
+    buff: { body: num('ws-modal-buff-body'), mind: num('ws-modal-buff-mind'), spirit: num('ws-modal-buff-spirit') },
+    buffUpkeep: { body: num('ws-modal-buff-upkeep-body'), mind: num('ws-modal-buff-upkeep-mind'), spirit: num('ws-modal-buff-upkeep-spirit') },
+    extraEffects: wsModalExtraEffects.filter(ee => formatExtraEffect(ee) !== ''),
+  };
+  const saveBtn = document.getElementById('ws-modal-save');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving...';
+  try{
+    await saveWarriorSkillMetaRow(currentModalWsId, meta);
+    // Existing progress may now exceed a lowered requirement — clamp it.
+    if(state.wsProgress.hasOwnProperty(currentModalWsId)){
+      setWsProgress(currentModalWsId, state.wsProgress[currentModalWsId]);
+    }
+    renderWsTagFilters();
+    renderWarrior();
+    closeWsModal();
+  }catch(e){
+    alert('Could not save to the shared warrior skill database: ' + (e.message || e));
+  }finally{
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save';
+  }
+};
+
+window.deleteCurrentModalWs = async function(){
+  if(!currentModalWsId) return;
+  const sk = WS_INDEX[currentModalWsId];
+  if(!sk || !canEditDiscipline()) return;
+  if(!confirm(`Delete "${sk.name}" for everyone? This cannot be undone.`)) return;
+  try{
+    const { error } = await supabaseClient.from('warrior_skills').delete().eq('id', currentModalWsId);
+    if(error) throw error;
+    await loadDisciplinesAndSkills();
+    closeWsModal();
+    renderWarrior();
+  }catch(e){
+    alert('Could not delete this warrior skill: ' + (e.message || e));
+  }
+};
+
+/* ---------- MANAGE DISCIPLINES (global editors only) ---------- */
+window.openDisciplinesModal = function(){
+  if(!canManageDisciplines()) return;
+  document.getElementById('new-discipline-name').value = '';
+  document.getElementById('disciplines-modal-status').textContent = '';
+  document.getElementById('disciplines-modal-backdrop').classList.add('open');
+};
+window.closeDisciplinesModal = function(){
+  document.getElementById('disciplines-modal-backdrop').classList.remove('open');
+};
+window.createDiscipline = async function(){
+  if(!canManageDisciplines()) return;
+  const nameEl = document.getElementById('new-discipline-name');
+  const statusEl = document.getElementById('disciplines-modal-status');
+  const saveBtn = document.getElementById('disciplines-modal-save');
+  const name = nameEl.value.trim();
+  if(!name){ statusEl.textContent = 'Please enter a name.'; return; }
+
+  const existingKeys = new Set(DISCIPLINES.map(d => d.key));
+  const key = uniqueKey(slugify(name), existingKeys);
+
+  saveBtn.disabled = true;
+  statusEl.textContent = 'Saving...';
+  try{
+    const { error } = await supabaseClient.from('disciplines').insert({
+      key, name, sort_order: DISCIPLINES.length, created_by: currentUser ? currentUser.id : null,
+    });
+    if(error) throw error;
+    await loadDisciplinesAndSkills();
+    renderWarrior();
+    closeDisciplinesModal();
+  }catch(e){
+    console.error(e);
+    statusEl.textContent = 'Error: ' + (e.message || 'could not save.');
+  }finally{
+    saveBtn.disabled = false;
+  }
+};
+
+window.deleteDiscipline = async function(key){
+  if(!canManageDisciplines()) return;
+  const disc = DISCIPLINES.find(d => d.key === key);
+  if(!disc) return;
+  const skillCount = disc.groups.reduce((sum, g) => sum + g.skills.length, 0);
+  const confirmMsg = `Delete "${disc.name}" permanently?\n\nThis will also permanently delete all ${skillCount} skill${skillCount === 1 ? '' : 's'} in this discipline for EVERYONE. This cannot be undone.`;
+  if(!confirm(confirmMsg)) return;
+  try{
+    const { error } = await supabaseClient.from('disciplines').delete().eq('key', key);
+    if(error) throw error;
+    await loadDisciplinesAndSkills();
+    renderWarrior();
+  }catch(e){
+    console.error(e);
+    alert('Could not delete this discipline: ' + (e.message || e));
+  }
+};
+
+/* ---------- ADD WARRIOR SKILL (global editors only) ---------- */
+let addWsTargetDisciplineKey = null;
+
+window.openAddWsModal = function(disciplineKey){
+  if(!canEditDiscipline()) return;
+  const disc = DISCIPLINES.find(d => d.key === disciplineKey);
+  if(!disc) return;
+  addWsTargetDisciplineKey = disciplineKey;
+  document.getElementById('add-ws-modal-title').textContent = `Add Warrior Skill — ${disc.name}`;
+  document.getElementById('add-ws-modal-subtitle').textContent = 'Visible to everyone immediately. You can add its description, tags, damage/heal/buff, etc. afterwards by clicking on the skill.';
+  document.getElementById('add-ws-modal-status').textContent = '';
+
+  const groupSel = document.getElementById('new-ws-group');
+  groupSel.innerHTML = disc.groups.map(g => `<option value="${escapeHtml(g.label)}">${escapeHtml(g.label)}</option>`).join('')
+    + `<option value="__new__">+ New group…</option>`;
+  document.getElementById('new-ws-group-custom').value = '';
+  document.getElementById('new-ws-tier').value = 'main';
+  document.getElementById('new-ws-name').value = '';
+  document.getElementById('new-ws-rolls-required').value = 5;
+  onNewWsGroupChange();
+
+  document.getElementById('add-ws-modal-backdrop').classList.add('open');
+};
+window.closeAddWsModal = function(){
+  document.getElementById('add-ws-modal-backdrop').classList.remove('open');
+  addWsTargetDisciplineKey = null;
+};
+window.onNewWsGroupChange = function(){
+  const isNew = document.getElementById('new-ws-group').value === '__new__';
+  document.getElementById('new-ws-group-custom-wrap').style.display = isNew ? '' : 'none';
+};
+window.createWarriorSkill = async function(){
+  if(!addWsTargetDisciplineKey || !canEditDiscipline()) return;
+  const disc = DISCIPLINES.find(d => d.key === addWsTargetDisciplineKey);
+  const statusEl = document.getElementById('add-ws-modal-status');
+  const saveBtn = document.getElementById('add-ws-modal-save');
+  const groupSel = document.getElementById('new-ws-group');
+  const name = document.getElementById('new-ws-name').value.trim();
+  let rollsRequired = parseInt(document.getElementById('new-ws-rolls-required').value, 10);
+  if(isNaN(rollsRequired) || rollsRequired < 1) rollsRequired = 1;
+  let groupLabel, tier;
+  if(groupSel.value === '__new__'){
+    groupLabel = document.getElementById('new-ws-group-custom').value.trim();
+    tier = document.getElementById('new-ws-tier').value;
+  } else {
+    groupLabel = groupSel.value;
+    const existingGroup = disc.groups.find(g => g.label === groupLabel);
+    tier = existingGroup ? existingGroup.tier : 'main';
+  }
+  if(!name){ statusEl.textContent = 'Please enter a skill name.'; return; }
+  if(!groupLabel){ statusEl.textContent = 'Please enter a group name.'; return; }
+
+  const id = uniqueKey(`${disc.key}_${slugify(name)}`, new Set(Object.keys(WS_INDEX)));
+
+  saveBtn.disabled = true;
+  statusEl.textContent = 'Saving...';
+  try{
+    const { error } = await supabaseClient.from('warrior_skills').insert({
+      id, discipline_key: disc.key, group_label: groupLabel, tier,
+      name, sort_order: 9999,
+      created_by: currentUser ? currentUser.id : null,
+    });
+    if(error) throw error;
+    await saveWarriorSkillMetaRow(id, { desc:'', tags:[], effectTypes:[], rollsRequired,
+      damage:{body:0,mind:0,spirit:0}, damageUpkeep:{body:0,mind:0,spirit:0},
+      heal:{body:0,mind:0,spirit:0}, healUpkeep:{body:0,mind:0,spirit:0},
+      buff:{body:0,mind:0,spirit:0}, buffUpkeep:{body:0,mind:0,spirit:0}, extraEffects:[], prerequisites:[], requirements:{} });
+    await loadDisciplinesAndSkills();
+    await loadWarriorSkillMeta();
+    renderWarrior();
+    closeAddWsModal();
+  }catch(e){
+    console.error(e);
+    statusEl.textContent = 'Error: ' + (e.message || 'could not save.');
+  }finally{
+    saveBtn.disabled = false;
+  }
+};
+
+function updateDisciplineAdminButtonVisibility(){
+  const btn = document.getElementById('manage-disciplines-btn');
+  if(btn) btn.style.display = canManageDisciplines() ? '' : 'none';
+}
+
+document.getElementById('ws-search').addEventListener('input', applyWsFilters);
+document.getElementById('ws-reset-all').addEventListener('click', async () => {
+  if (isViewingOther) return;
+  if(!confirm('Reset ALL passed learning rolls for warrior skills back to 0? This cannot be undone.')) return;
+  state.wsProgress = {};
+  await persist();
+  renderWarrior();
+});
+
 document.addEventListener('keydown', (e) => {
-  if(e.key === 'Escape'){ closeSpellModal(); closeRollBuffModal(); }
+  if(e.key === 'Escape'){ closeSpellModal(); closeRollBuffModal(); closeWsModal(); closeDisciplinesModal(); closeAddWsModal(); }
 });
 
 document.getElementById('modal-desc').addEventListener('input', function(){ syncGrowWrap(this); });
@@ -2417,7 +3479,9 @@ let state = {
   showLegacy: false,
   showDeity: false,
   charInfo: {},
-  rollBuffs: []
+  rollBuffs: [],
+  wsProgress: {},  // warrior skill id -> number of passed learning rolls so far
+  wsCollapsed: {}  // discipline key -> collapsed state (same idea as `collapsed` for schools)
 };
 
 /* ---------- BROWSING STATE VARIABLES ---------- */
@@ -2537,6 +3601,8 @@ async function loadFromCloud(){
     state = data.data || state;
     if(!state.charInfo) state.charInfo = {};
     if(!Array.isArray(state.rollBuffs)) state.rollBuffs = [];
+    if(!state.wsProgress) state.wsProgress = {};
+    if(!state.wsCollapsed) state.wsCollapsed = {};
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     document.getElementById('filter-light').checked = !!state.showLight;
     document.getElementById('filter-dark').checked = !!state.showDark;
@@ -2545,6 +3611,7 @@ async function loadFromCloud(){
     populateCharInfoFields();
     renderRollBuffDisplay();
     render();
+    if(currentView === 'warrior') renderWarrior();
     setCloudDirty(false);
     setCloudStatus('Loaded from cloud ✓');
   }catch(e){
@@ -2684,6 +3751,8 @@ function switchToAlternativeSheet(targetUserId) {
     state = JSON.parse(JSON.stringify(foundRow.data));
     if(!state.charInfo) state.charInfo = {};
     if(!Array.isArray(state.rollBuffs)) state.rollBuffs = [];
+    if(!state.wsProgress) state.wsProgress = {};
+    if(!state.wsCollapsed) state.wsCollapsed = {};
     
     document.getElementById('filter-light').checked = !!state.showLight;
     document.getElementById('filter-dark').checked = !!state.showDark;
@@ -2693,6 +3762,7 @@ function switchToAlternativeSheet(targetUserId) {
     populateCharInfoFields();
     renderRollBuffDisplay();
     render();
+    if(currentView === 'warrior') renderWarrior();
     applyEditLockState(); 
   }
 }
@@ -2707,6 +3777,8 @@ function returnToOwnSheet() {
     myStoredState = null;
   }
   if(!Array.isArray(state.rollBuffs)) state.rollBuffs = [];
+  if(!state.wsProgress) state.wsProgress = {};
+  if(!state.wsCollapsed) state.wsCollapsed = {};
   
   document.getElementById('filter-light').checked = !!state.showLight;
   document.getElementById('filter-dark').checked = !!state.showDark;
@@ -2716,6 +3788,7 @@ function returnToOwnSheet() {
   populateCharInfoFields();
   renderRollBuffDisplay();
   render();
+  if(currentView === 'warrior') renderWarrior();
   applyEditLockState(); 
   saveState(false); 
 }
@@ -2788,6 +3861,8 @@ function load(){
       if(parsed.hasOwnProperty('showDeity')) state.showDeity = parsed.showDeity;
       state.charInfo = parsed.charInfo || {};
       state.rollBuffs = Array.isArray(parsed.rollBuffs) ? parsed.rollBuffs : [];
+      state.wsProgress = parsed.wsProgress || {};
+      state.wsCollapsed = parsed.wsCollapsed || {};
     }catch(e){console.error(e);}
   }
   document.getElementById('filter-light').checked = state.showLight;
@@ -2833,13 +3908,23 @@ function initAutosizeTextareas(){
   });
 }
 
+const REQUIREMENT_RELEVANT_CI_KEYS = ['rank_stat_current','body_current','mind_current','spirit_current'];
 window.onCharInfoChange = function(){
   if (isViewingOther) return;
+  let relevantChanged = false;
   CHAR_INFO_FIELDS.forEach(key => {
     const el = document.querySelector(`[data-ci="${key}"]`);
-    if(el) state.charInfo[key] = el.value;
+    if(el){
+      if(REQUIREMENT_RELEVANT_CI_KEYS.includes(key) && state.charInfo[key] !== el.value) relevantChanged = true;
+      state.charInfo[key] = el.value;
+    }
   });
   persist();
+  // Rank/Body/Mind/Spirit feed the warrior skill "Stat Requirements"
+  // comparison (met/unmet tags) — only re-render when one of those actually
+  // changed, so typing in unrelated fields (inventory, weapons, ...) stays
+  // snappy. renderWarrior() is cheap even while the Spells view is showing.
+  if(relevantChanged) renderWarrior();
 };
 
 /* ---------- ROLL BUFFS / DEBUFFS ---------- */
@@ -3823,7 +4908,7 @@ function render(){
    recursion — it only touches the grid's own inputs/buttons.) */
 function applyGridLockState(){
   const locked = isViewingOther || editLocked;
-  document.querySelectorAll('#grid input, #grid button').forEach(el => {
+  document.querySelectorAll('#grid input, #grid button, #ws-grid input, #ws-grid button').forEach(el => {
     if (locked) el.setAttribute('disabled', 'true');
     else el.removeAttribute('disabled');
   });
@@ -3851,8 +4936,11 @@ function importCharacter() {
       state = parsed;
       if(!state.charInfo) state.charInfo = {};
       if(!Array.isArray(state.rollBuffs)) state.rollBuffs = [];
+      if(!state.wsProgress) state.wsProgress = {};
+      if(!state.wsCollapsed) state.wsCollapsed = {};
       persist();
       render();
+      if(currentView === 'warrior') renderWarrior();
       
       document.getElementById('filter-light').checked = !!state.showLight;
       document.getElementById('filter-dark').checked = !!state.showDark;
@@ -3886,8 +4974,13 @@ function readThresholdFilters(checkSelector, inputSelector){
 }
 
 function applyFilters(){
+  // Everything below is scoped to #grid (the Spells view). #ws-grid (Warrior
+  // Skills) intentionally reuses the same .school/.group/.spell-item CSS
+  // classes for visual parity, so every selector here must stay scoped —
+  // otherwise this would also filter/hide warrior skills. See applyWsFilters
+  // for the equivalent logic scoped to #ws-grid.
   const q = document.getElementById('search').value.trim().toLowerCase();
-  const activeTags = Array.from(document.querySelectorAll('.tag-filter-btn.active')).map(b => b.dataset.tag);
+  const activeTags = Array.from(document.querySelectorAll('#tag-filters .tag-filter-btn.active')).map(b => b.dataset.tag);
   const costFilters = readThresholdFilters('.cost-filter-check', '.cost-filter-max');
 
   // Schools whose own name matches the search text — spells inside them are
@@ -3895,13 +4988,13 @@ function applyFilters(){
   // so searching e.g. "pyromancy" surfaces the whole school.
   const matchedSchools = new Set();
   if(q){
-    document.querySelectorAll('.school').forEach(school => {
+    document.querySelectorAll('#grid .school').forEach(school => {
       const schoolName = school.getAttribute('data-school-name') || '';
       if(schoolName.includes(q)) matchedSchools.add(school);
     });
   }
 
-  document.querySelectorAll('.spell-item').forEach(li => {
+  document.querySelectorAll('#grid .spell-item').forEach(li => {
     const name = li.getAttribute('data-name') || '';
     const id = li.getAttribute('data-id');
     const meta = getMeta(id);
@@ -3938,12 +5031,12 @@ function applyFilters(){
 
   const filtersActive = !!q || activeTags.length > 0 || costFilters.length > 0;
 
-  document.querySelectorAll('.group').forEach(group => {
+  document.querySelectorAll('#grid .group').forEach(group => {
     const hasVisible = group.querySelectorAll('.spell-item:not(.hidden)').length > 0;
     group.classList.toggle('hidden', filtersActive && !hasVisible);
   });
 
-  document.querySelectorAll('.school').forEach(school => {
+  document.querySelectorAll('#grid .school').forEach(school => {
     const hasVisible = school.querySelectorAll('.spell-item:not(.hidden)').length > 0;
     school.classList.toggle('hidden', filtersActive && !hasVisible);
 
@@ -3958,13 +5051,15 @@ function applyFilters(){
 }
 
 function toggleReadOnly(readOnly) {
-  const inputs = document.querySelectorAll('.charsheet input, .charsheet textarea, .charsheet button, .alignment-box input, #grid input, #grid button');
+  const inputs = document.querySelectorAll('.charsheet input, .charsheet textarea, .charsheet button, .alignment-box input, #grid input, #grid button, #ws-grid input, #ws-grid button');
   const cloudSaveBtn = document.getElementById('cloud-save');
   const resetBtn = document.getElementById('reset-all');
+  const wsResetBtn = document.getElementById('ws-reset-all');
   const importBtn = document.getElementById('import-char');
   
   if (cloudSaveBtn) cloudSaveBtn.disabled = readOnly;
   if (resetBtn) resetBtn.disabled = readOnly;
+  if (wsResetBtn) wsResetBtn.disabled = readOnly;
   if (importBtn) importBtn.disabled = readOnly;
 
   inputs.forEach(el => {
@@ -3975,7 +5070,7 @@ function toggleReadOnly(readOnly) {
     }
   });
   
-  if (!readOnly) render(); 
+  if (!readOnly) { render(); if(currentView === 'warrior') renderWarrior(); }
 }
 
 /* The edit lock is a manual on/off switch (persisted in localStorage) that
@@ -4034,7 +5129,10 @@ document.getElementById('reset-all').addEventListener('click', async () => {
     });
   });
 
-  state = { learned: resetLearned, savant:{}, oracle:{}, collapsed:{}, showLight: state.showLight, showDark: state.showDark, showLegacy: state.showLegacy, showDeity: state.showDeity, charInfo: {}, rollBuffs: [] };
+  state = { learned: resetLearned, savant:{}, oracle:{}, collapsed:{}, showLight: state.showLight, showDark: state.showDark, showLegacy: state.showLegacy, showDeity: state.showDeity, charInfo: {}, rollBuffs: [],
+    // Warrior skills are a separate tracking system — "Reset all checks" only
+    // resets spells, so their progress/collapsed state is carried over as-is.
+    wsProgress: state.wsProgress, wsCollapsed: state.wsCollapsed };
   await persist();
   populateCharInfoFields();
   renderRollBuffDisplay();
@@ -4064,11 +5162,16 @@ window.addEventListener('beforeunload', function(e){
   await loadSchoolsAndSpells(); // fetch Schools of Magic + their spells from the cloud
   await loadSpellMeta();     // fetch shared spell data (desc/tags/cost/damage) from the cloud
   await loadTagGroups();     // fetch shared tag-group organization from the cloud
+  await loadDisciplinesAndSkills(); // fetch Disciplines + their warrior skills from the cloud
+  await loadWarriorSkillMeta();     // fetch shared warrior skill data (desc/tags/damage/etc.) from the cloud
   renderTagFilters();
+  renderWsTagFilters();
   load();                    // renders the grid with the loaded spell metadata
   applyEditLockState();      // apply saved lock preference before anything can be touched
   await initAuth();          // also determines isSpellEditor
   initAutosizeTextareas();
+  const savedView = localStorage.getItem('spellbook_active_view');
+  if(savedView === 'warrior') switchView('warrior');
   requestAnimationFrame(alignEditLockWithAuthBar);
 })();
 window.addEventListener('load', () => requestAnimationFrame(alignEditLockWithAuthBar));
