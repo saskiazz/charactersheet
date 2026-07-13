@@ -236,6 +236,20 @@
     transition:color .15s, border-color .15s, background .15s;
   }
   .toolbar button:hover{color:var(--light-accent);border-color:var(--gold);background:var(--panel-3);}
+  .toolbar select{
+    background:var(--panel);
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    padding:10px 14px;
+    border-radius:var(--radius-sm);
+    font-family:'Crimson Pro',serif;
+    font-size:17.5px;
+    cursor:pointer;
+    max-width:230px;
+    transition:border-color .15s;
+  }
+  .toolbar select:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,160,84,0.15);}
+  .spell-filter-bar.collapsed{display:none;}
   /* EDIT LOCK BUTTON — fixed to the left edge of the viewport, matched in height
      and top position to the sticky login/save bar so the two read as a matching
      pair of bars at the top of the site. Because it's fixed it never takes up
@@ -979,11 +993,27 @@
     margin-bottom:18px;
     padding-bottom:12px;
     border-bottom:1px solid var(--hairline);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    cursor:pointer;
+    user-select:none;
   }
+  .charsheet-title:hover{color:var(--gold);}
+  .charsheet-title:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+  .charsheet-chevron{
+    font-size:16px;
+    color:var(--parchment-dim);
+    transition:transform .18s;
+    flex-shrink:0;
+  }
+  .charsheet-chevron.open{transform:rotate(90deg);}
   .charsheet-grid{
     column-count:2;
     column-gap:28px;
   }
+  .charsheet-grid.collapsed{display:none;}
   .charsheet-field{
     display:flex;
     flex-direction:column;
@@ -1411,8 +1441,11 @@
   </div>
 
   <div class="charsheet">
-    <div class="charsheet-title">Character Sheet</div>
-    <div class="charsheet-grid">
+    <div class="charsheet-title" onclick="toggleCharsheetCollapsed()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCharsheetCollapsed()}">
+      <span>Character Sheet</span>
+      <span class="charsheet-chevron" id="charsheet-chevron">▸</span>
+    </div>
+    <div class="charsheet-grid" id="charsheet-grid">
       <div class="charsheet-field">
         <label for="ci-name">Name</label>
         <input type="text" id="ci-name" data-ci="name" oninput="onCharInfoChange()">
@@ -1536,6 +1569,13 @@
 
     <div class="toolbar-sep"></div>
 
+    <button type="button" id="toggle-filters-btn" onclick="toggleFilterBar()" title="Show/hide the cost and tag filters">▸ Filters</button>
+    <select id="jump-school-select" onchange="jumpToSchool(this.value)" title="Jump straight to a school">
+      <option value="">Jump to school…</option>
+    </select>
+
+    <div class="toolbar-sep"></div>
+
     <button id="export-char" onclick="exportCharacter()">Copy Export Code</button>
     <button id="import-char" onclick="importCharacter()">Import Character</button>
 
@@ -1547,7 +1587,7 @@
     <span id="save-note"></span>
   </div>
 
-  <div class="spell-filter-bar">
+  <div class="spell-filter-bar" id="spell-filter-bar">
     <div class="filter-row">
       <span class="filter-row-label">Cost ≤:</span>
       <label class="threshold-filter"><input type="checkbox" class="cost-filter-check" data-stat="body" onchange="applyFilters()"> Body <input type="number" class="cost-filter-max" data-stat="body" min="0" step="1" placeholder="any" oninput="applyFilters()"></label>
@@ -1589,12 +1629,19 @@
 
       <div class="toolbar-sep"></div>
 
+      <button type="button" id="ws-toggle-filters-btn" onclick="toggleWsFilterBar()" title="Show/hide the tag filters">▸ Filters</button>
+      <select id="jump-discipline-select" onchange="jumpToDiscipline(this.value)" title="Jump straight to a discipline">
+        <option value="">Jump to discipline…</option>
+      </select>
+
+      <div class="toolbar-sep"></div>
+
       <button type="button" id="manage-disciplines-btn" class="manage-tag-groups-btn" style="display:none;" onclick="openDisciplinesModal()" title="Add a new Discipline (global editors only)">⚙ Manage Disciplines</button>
 
       <span id="ws-save-note"></span>
     </div>
 
-    <div class="spell-filter-bar">
+    <div class="spell-filter-bar" id="ws-filter-bar">
       <div class="filter-row-tags-wrap">
         <div class="filter-row-tags-header">
           <span class="filter-row-label">Tags:</span>
@@ -2943,6 +2990,7 @@ function renderDiscipline(disc){
 }
 
 function isDisciplineCollapsed(key){
+  // Same default-collapsed-until-explicitly-opened behavior as isSchoolCollapsed.
   return state.wsCollapsed[key] !== false;
 }
 window.toggleDisciplineCollapse = function(key){
@@ -2980,7 +3028,35 @@ function renderWarrior(){
   renderWsGlobalStats();
   applyWsFilters();
   applyGridLockState();
+  renderWsJumpNav();
 }
+
+/* Keeps the "Jump to discipline…" dropdown in the warrior toolbar in sync
+   with whatever disciplines currently exist, so picking one scrolls straight
+   to it instead of having to scroll the whole grid to find it. */
+function renderWsJumpNav(){
+  const sel = document.getElementById('jump-discipline-select');
+  if(!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Jump to discipline…</option>' +
+    DISCIPLINES.map(d => `<option value="${escapeHtml(d.key)}">${escapeHtml(d.name)}</option>`).join('');
+  sel.value = (current && DISCIPLINES.some(d => d.key === current)) ? current : '';
+}
+
+window.jumpToDiscipline = function(key){
+  if(!key) return;
+  if(isDisciplineCollapsed(key)){
+    state.wsCollapsed[key] = false;
+    persist(false);
+    renderWarrior();
+  }
+  requestAnimationFrame(() => {
+    const el = Array.from(document.querySelectorAll('#ws-grid [data-discipline]')).find(d => d.dataset.discipline === key);
+    if(el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+    const sel = document.getElementById('jump-discipline-select');
+    if(sel) sel.value = '';
+  });
+};
 
 /* ---------- SEARCH + TAG FILTER (flat tag list, no groups — kept simpler
    than the spell side's grouped tag system for now) ---------- */
@@ -4840,9 +4916,10 @@ function renderSchool(sch){
 }
 
 function isSchoolCollapsed(key){
-  // Schools default to collapsed (compact button-style) unless the user
-  // has explicitly opened them before — keeps the 24-school grid from
-  // overwhelming the screen while still remembering what you opened.
+  // Schools default to collapsed (compact button-style) the first time a
+  // device visits — keeps the school grid from overwhelming the screen —
+  // while the Character Sheet and filter bars default to expanded instead.
+  // After that, a school stays however the user last left it.
   return state.collapsed[key] !== false;
 }
 
@@ -4913,7 +4990,36 @@ function render(){
   renderGlobalStats();
   applyFilters();
   applyGridLockState();
+  renderJumpNav(visible);
 }
+
+/* Keeps the "Jump to school…" dropdown in the spells toolbar in sync with
+   whichever schools are currently visible (i.e. allowed by the alignment
+   checkboxes), so picking one scrolls straight to it — and opens it if it
+   was collapsed — instead of scrolling the whole grid to find it. */
+function renderJumpNav(visibleSchools){
+  const sel = document.getElementById('jump-school-select');
+  if(!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Jump to school…</option>' +
+    visibleSchools.map(s => `<option value="${escapeHtml(s.key)}">${escapeHtml(s.name)}</option>`).join('');
+  sel.value = (current && visibleSchools.some(s => s.key === current)) ? current : '';
+}
+
+window.jumpToSchool = function(key){
+  if(!key) return;
+  if(isSchoolCollapsed(key)){
+    state.collapsed[key] = false;
+    persist(false);
+    render();
+  }
+  requestAnimationFrame(() => {
+    const el = Array.from(document.querySelectorAll('#grid .school')).find(s => s.dataset.school === key);
+    if(el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+    const sel = document.getElementById('jump-school-select');
+    if(sel) sel.value = '';
+  });
+};
 
 /* render() rebuilds #grid from scratch every time (e.g. opening/closing a
    school, ticking a spell, changing filters), which wipes any `disabled`
@@ -5119,6 +5225,52 @@ function toggleEditLock(){
   applyEditLockState();
 }
 
+/* ---------- COLLAPSIBLE CHROME (character sheet + filter bars) ----------
+   Purely a display preference, stored per-device in localStorage (not synced
+   to the character's own state/cloud data). All three default to EXPANDED
+   the very first time the site is opened, so a new visitor can see
+   everything the site does; after that they simply remember whatever the
+   user last left them as (only becoming collapsed once explicitly toggled). */
+let charsheetCollapsed = localStorage.getItem('spellbook_charsheet_collapsed') === 'true';
+let filtersCollapsed = localStorage.getItem('spellbook_filters_collapsed') === 'true';
+let wsFiltersCollapsed = localStorage.getItem('spellbook_ws_filters_collapsed') === 'true';
+
+function applyCharsheetCollapsedState(){
+  const grid = document.getElementById('charsheet-grid');
+  const chevron = document.getElementById('charsheet-chevron');
+  if(grid) grid.classList.toggle('collapsed', charsheetCollapsed);
+  if(chevron) chevron.classList.toggle('open', !charsheetCollapsed);
+}
+window.toggleCharsheetCollapsed = function(){
+  charsheetCollapsed = !charsheetCollapsed;
+  localStorage.setItem('spellbook_charsheet_collapsed', charsheetCollapsed ? 'true' : 'false');
+  applyCharsheetCollapsedState();
+};
+
+function applyFilterBarCollapsedState(){
+  const bar = document.getElementById('spell-filter-bar');
+  const btn = document.getElementById('toggle-filters-btn');
+  if(bar) bar.classList.toggle('collapsed', filtersCollapsed);
+  if(btn) btn.textContent = (filtersCollapsed ? '▸' : '▾') + ' Filters';
+}
+window.toggleFilterBar = function(){
+  filtersCollapsed = !filtersCollapsed;
+  localStorage.setItem('spellbook_filters_collapsed', filtersCollapsed ? 'true' : 'false');
+  applyFilterBarCollapsedState();
+};
+
+function applyWsFilterBarCollapsedState(){
+  const bar = document.getElementById('ws-filter-bar');
+  const btn = document.getElementById('ws-toggle-filters-btn');
+  if(bar) bar.classList.toggle('collapsed', wsFiltersCollapsed);
+  if(btn) btn.textContent = (wsFiltersCollapsed ? '▸' : '▾') + ' Filters';
+}
+window.toggleWsFilterBar = function(){
+  wsFiltersCollapsed = !wsFiltersCollapsed;
+  localStorage.setItem('spellbook_ws_filters_collapsed', wsFiltersCollapsed ? 'true' : 'false');
+  applyWsFilterBarCollapsedState();
+};
+
 document.getElementById('btn-toggle-list-view').addEventListener('click', () => {
   const dir = document.getElementById('other-chars-directory');
   dir.style.display = dir.style.display === 'none' ? 'block' : 'none';
@@ -5184,6 +5336,9 @@ window.addEventListener('beforeunload', function(e){
   renderWsTagFilters();
   load();                    // renders the grid with the loaded spell metadata
   applyEditLockState();      // apply saved lock preference before anything can be touched
+  applyCharsheetCollapsedState();
+  applyFilterBarCollapsedState();
+  applyWsFilterBarCollapsedState();
   await initAuth();          // also determines isSpellEditor
   initAutosizeTextareas();
   const savedView = localStorage.getItem('spellbook_active_view');
