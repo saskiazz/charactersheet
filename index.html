@@ -2054,6 +2054,13 @@ const STORAGE_KEY = 'tracker-state-v2';
    dashboard) are allowed to write changes; everyone else can read it. */
 let spellMeta = {};
 let isSpellEditor = false;
+/* Separate "warrior skill editor" role — grants full add/edit/delete rights
+   for disciplines/warrior skills ONLY, independent of the spell_editors
+   role. A global spell_editors member still also has full warrior skill
+   rights (see canManageDisciplines/canEditDiscipline below), this just adds
+   a way to grant someone warrior-skill-only access without also making them
+   a spell editor. */
+let isWsEditor = false;
 /* Set of school "key"s the current user is manually allowed to edit as an
    Oracle (table "school_oracle_editors", rows added by hand in Supabase —
    never granted automatically by the in-app Oracle badge button). Inside
@@ -2162,6 +2169,7 @@ async function loadSpellMeta(){
 
 async function checkSpellEditorStatus(){
   isSpellEditor = false;
+  isWsEditor = false;
   oracleSchools = new Set();
   if(!currentUser){ updateTagGroupsButtonVisibility(); updateSchoolAdminButtonVisibility(); updateDisciplineAdminButtonVisibility(); return; }
   try{
@@ -2171,6 +2179,14 @@ async function checkSpellEditorStatus(){
       .eq('user_id', currentUser.id)
       .maybeSingle();
     if(!error && data) isSpellEditor = true;
+  }catch(e){ console.error(e); }
+  try{
+    const { data, error } = await supabaseClient
+      .from('warrior_skill_editors')
+      .select('user_id')
+      .eq('user_id', currentUser.id)
+      .maybeSingle();
+    if(!error && data) isWsEditor = true;
   }catch(e){ console.error(e); }
   try{
     const { data, error } = await supabaseClient
@@ -2690,8 +2706,8 @@ let currentView = 'spells';
 /* Disciplines are flat (no light/dark/legacy/deity-style category) and, for
    now, managed by the same global "spell_editors" role used for Schools of
    Magic — there's no separate per-discipline Oracle-style role yet. */
-function canManageDisciplines(){ return isSpellEditor; }
-function canEditDiscipline(){ return isSpellEditor; }
+function canManageDisciplines(){ return isSpellEditor || isWsEditor; }
+function canEditDiscipline(){ return isSpellEditor || isWsEditor; }
 
 async function loadDisciplinesAndSkills(){
   try{
