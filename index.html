@@ -1102,7 +1102,8 @@
   }
   .pregnancy-field-check label{text-transform:none;font-size:18px;color:var(--parchment);letter-spacing:0;}
   .pregnancy-field input[type=number],
-  .pregnancy-field input[type=date]{
+  .pregnancy-field input[type=date],
+  .pregnancy-field input[type=time]{
     background:var(--panel-3);
     border:1px solid var(--hairline);
     border-radius:var(--radius-sm);
@@ -1114,6 +1115,16 @@
   .pregnancy-field input[type=number]{width:90px;}
   .pregnancy-field input:disabled{opacity:0.7;cursor:not-allowed;}
   .pregnancy-field input[type=checkbox]{width:20px;height:20px;accent-color:var(--secret-accent);cursor:pointer;}
+  .pregnancy-due-display{
+    margin-top:14px;
+    padding:10px 14px;
+    border:1px dashed var(--secret-accent);
+    border-radius:var(--radius-sm);
+    background:rgba(0,0,0,0.15);
+  }
+  .pregnancy-due-label{font-size:14px;letter-spacing:0.06em;text-transform:uppercase;color:var(--parchment-dim);margin-bottom:2px;}
+  .pregnancy-due-date{font-size:18px;color:var(--parchment);margin-bottom:4px;}
+  .pregnancy-countdown{font-family:'Cinzel',Garamond,serif;font-size:20px;color:var(--secret-accent);letter-spacing:0.02em;font-variant-numeric:tabular-nums;}
   .pregnancy-panel-note{font-size:14px;color:var(--parchment-dim);margin-top:8px;min-height:1em;}
 
   .stat-row{
@@ -1610,10 +1621,19 @@
           <label for="preg-baby-count"># of Babies</label>
           <input type="number" id="preg-baby-count" min="1" max="20" step="1" value="1" onchange="onPregnancyFieldChange()">
         </div>
-        <div class="pregnancy-field" id="preg-duedate-wrap">
-          <label for="preg-due-date">Due Date</label>
-          <input type="date" id="preg-due-date" onchange="onPregnancyFieldChange()">
+        <div class="pregnancy-field" id="preg-conception-wrap">
+          <label for="preg-conception-date">Conception Date</label>
+          <input type="date" id="preg-conception-date" onchange="onPregnancyFieldChange()">
         </div>
+        <div class="pregnancy-field" id="preg-conception-time-wrap">
+          <label for="preg-conception-time">Conception Time (sec.)</label>
+          <input type="time" id="preg-conception-time" step="1" onchange="onPregnancyFieldChange()">
+        </div>
+      </div>
+      <div class="pregnancy-due-display" id="preg-due-display" style="display:none;">
+        <div class="pregnancy-due-label">Due (conception + exactly 9 days)</div>
+        <div class="pregnancy-due-date" id="preg-due-date-text">—</div>
+        <div class="pregnancy-countdown" id="preg-countdown-text">—</div>
       </div>
       <div class="pregnancy-panel-note" id="pregnancy-panel-note"></div>
     </div>
@@ -2219,8 +2239,10 @@ let oracleSchools = new Set();
    list gets no rows back at all when they query pregnancy_data, so hiding
    the panel client-side is a UX nicety, not the actual security boundary. */
 let isPregnancyViewer = false;
-let pregnancyData = { is_pregnant: false, baby_count: 1, due_date: '' };
+let pregnancyData = { is_pregnant: false, baby_count: 1, conception_at: '' };
 let pregnancyShownForUserId = null; // whose row is currently loaded into the panel
+let pregnancyCountdownTimer = null; // setInterval handle for the live due-date countdown
+const GESTATION_MS = 9 * 24 * 60 * 60 * 1000; // exactly 9 days
 
 const SPELL_INDEX = {};
 let DEFAULT_LEARNED = {};
@@ -2369,11 +2391,18 @@ async function checkSpellEditorStatus(){
        user_id uuid primary key references auth.users(id),
        is_pregnant boolean not null default false,
        baby_count integer not null default 1,
-       due_date date,
+       conception_at timestamptz,
        updated_at timestamptz not null default now()
      );
      alter table pregnancy_viewers enable row level security;
      alter table pregnancy_data enable row level security;
+     grant select, insert, update on public.pregnancy_viewers to authenticated;
+     grant select, insert, update on public.pregnancy_data to authenticated;
+
+     -- If you already created this table with a `due_date date` column from
+     -- an earlier version, migrate it instead of recreating:
+     --   alter table pregnancy_data drop column due_date;
+     --   alter table pregnancy_data add column conception_at timestamptz;
 
      -- only the site owner (via the dashboard) adds/removes rows here, so no
      -- policies are needed for pregnancy_viewers beyond letting a member
@@ -2416,6 +2445,7 @@ async function checkPregnancyViewerStatus(){
 function updatePregnancyPanelVisibility(){
   const panel = document.getElementById('pregnancy-panel');
   if(panel) panel.style.display = isPregnancyViewer ? '' : 'none';
+  if(!isPregnancyViewer) stopPregnancyCountdown();
 }
 
 /* Loads the pregnancy_data row for the given user_id and populates the
@@ -2429,13 +2459,13 @@ async function loadPregnancyData(userId){
   try{
     const { data, error } = await supabaseClient
       .from('pregnancy_data')
-      .select('is_pregnant, baby_count, due_date')
+      .select('is_pregnant, baby_count, conception_at')
       .eq('user_id', userId)
       .maybeSingle();
     if(error){ if(note) note.textContent = 'Could not load: ' + error.message; return; }
     pregnancyData = data
-      ? { is_pregnant: !!data.is_pregnant, baby_count: data.baby_count || 1, due_date: data.due_date || '' }
-      : { is_pregnant: false, baby_count: 1, due_date: '' };
+      ? { is_pregnant: !!data.is_pregnant, baby_count: data.baby_count || 1, conception_at: data.conception_at || '' }
+      : { is_pregnant: false, baby_count: 1, conception_at: '' };
     populatePregnancyFields();
     if(note) note.textContent = '';
   }catch(e){
@@ -2448,20 +2478,100 @@ function pregnancyFieldsEditable(){
     && !!currentUser && pregnancyShownForUserId === currentUser.id;
 }
 
+/* Conception is captured as a separate date input and a time input (with
+   step="1" so seconds are entered/shown reliably — some browsers silently
+   drop the seconds slot on datetime-local even with step="1", but type=
+   "time" with step="1" is well supported everywhere). We combine the two
+   into one Date object built from local wall-clock time, then store it as
+   a UTC ISO timestamp. Loading back does the reverse split. */
+function isoToDateAndTimeValues(iso){
+  if(!iso) return { date: '', time: '' };
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return { date: '', time: '' };
+  const pad = n => String(n).padStart(2, '0');
+  return {
+    date: `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`,
+    time: `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  };
+}
+function dateAndTimeValuesToIso(dateValue, timeValue){
+  if(!dateValue) return null;
+  const time = timeValue || '00:00:00';
+  const d = new Date(`${dateValue}T${time}`); // no trailing "Z" → parsed as local time
+  if(isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
 function populatePregnancyFields(){
   const editable = pregnancyFieldsEditable();
   const cb = document.getElementById('preg-is-pregnant');
   const count = document.getElementById('preg-baby-count');
-  const due = document.getElementById('preg-due-date');
-  if(!cb || !count || !due) return;
+  const dateEl = document.getElementById('preg-conception-date');
+  const timeEl = document.getElementById('preg-conception-time');
+  if(!cb || !count || !dateEl || !timeEl) return;
   cb.checked = pregnancyData.is_pregnant;
   count.value = pregnancyData.baby_count;
-  due.value = pregnancyData.due_date || '';
-  [cb, count, due].forEach(el => el.disabled = !editable);
+  const { date, time } = isoToDateAndTimeValues(pregnancyData.conception_at);
+  dateEl.value = date;
+  timeEl.value = time;
+  [cb, count, dateEl, timeEl].forEach(el => el.disabled = !editable);
   document.getElementById('preg-babies-wrap').style.display = pregnancyData.is_pregnant ? '' : 'none';
-  document.getElementById('preg-duedate-wrap').style.display = pregnancyData.is_pregnant ? '' : 'none';
+  document.getElementById('preg-conception-wrap').style.display = pregnancyData.is_pregnant ? '' : 'none';
+  document.getElementById('preg-conception-time-wrap').style.display = pregnancyData.is_pregnant ? '' : 'none';
   const note = document.getElementById('pregnancy-panel-note');
   if(note) note.textContent = editable ? '' : (isViewingOther ? 'Viewing another character — read only.' : 'Editing is locked — click 🔓 to unlock.');
+  refreshDueDateDisplay();
+}
+
+/* Recomputes the due date (conception + exactly 9 days) and (re)starts the
+   1-second live countdown against it. Called whenever the panel's data
+   changes, and internally by the interval itself to tick the display. */
+function refreshDueDateDisplay(){
+  const wrap = document.getElementById('preg-due-display');
+  const dateText = document.getElementById('preg-due-date-text');
+  const countdownText = document.getElementById('preg-countdown-text');
+  if(!wrap || !dateText || !countdownText) return;
+
+  stopPregnancyCountdown();
+
+  if(!pregnancyData.is_pregnant || !pregnancyData.conception_at){
+    wrap.style.display = 'none';
+    return;
+  }
+  const conception = new Date(pregnancyData.conception_at);
+  if(isNaN(conception.getTime())){
+    wrap.style.display = 'none';
+    return;
+  }
+  const due = new Date(conception.getTime() + GESTATION_MS);
+  wrap.style.display = '';
+  dateText.textContent = due.toLocaleString(undefined, {
+    weekday:'short', year:'numeric', month:'short', day:'numeric',
+    hour:'2-digit', minute:'2-digit', second:'2-digit'
+  });
+
+  const tick = () => {
+    const diffMs = due.getTime() - Date.now();
+    countdownText.textContent = formatCountdown(diffMs);
+  };
+  tick();
+  pregnancyCountdownTimer = setInterval(tick, 1000);
+}
+
+function stopPregnancyCountdown(){
+  if(pregnancyCountdownTimer){ clearInterval(pregnancyCountdownTimer); pregnancyCountdownTimer = null; }
+}
+
+function formatCountdown(diffMs){
+  const overdue = diffMs < 0;
+  let ms = Math.abs(diffMs);
+  const days = Math.floor(ms / 86400000); ms -= days * 86400000;
+  const hours = Math.floor(ms / 3600000); ms -= hours * 3600000;
+  const mins = Math.floor(ms / 60000); ms -= mins * 60000;
+  const secs = Math.floor(ms / 1000);
+  const pad = n => String(n).padStart(2,'0');
+  const str = `${days}d ${pad(hours)}:${pad(mins)}:${pad(secs)}`;
+  return overdue ? `Overdue by ${str}` : `${str} remaining`;
 }
 
 async function onPregnancyFieldChange(){
@@ -2469,10 +2579,15 @@ async function onPregnancyFieldChange(){
   pregnancyData = {
     is_pregnant: document.getElementById('preg-is-pregnant').checked,
     baby_count: parseInt(document.getElementById('preg-baby-count').value, 10) || 1,
-    due_date: document.getElementById('preg-due-date').value || null,
+    conception_at: dateAndTimeValuesToIso(
+      document.getElementById('preg-conception-date').value,
+      document.getElementById('preg-conception-time').value
+    ),
   };
   document.getElementById('preg-babies-wrap').style.display = pregnancyData.is_pregnant ? '' : 'none';
-  document.getElementById('preg-duedate-wrap').style.display = pregnancyData.is_pregnant ? '' : 'none';
+  document.getElementById('preg-conception-wrap').style.display = pregnancyData.is_pregnant ? '' : 'none';
+  document.getElementById('preg-conception-time-wrap').style.display = pregnancyData.is_pregnant ? '' : 'none';
+  refreshDueDateDisplay();
   await savePregnancyData();
 }
 
@@ -2487,7 +2602,7 @@ async function savePregnancyData(){
         user_id: currentUser.id,
         is_pregnant: pregnancyData.is_pregnant,
         baby_count: pregnancyData.baby_count,
-        due_date: pregnancyData.due_date,
+        conception_at: pregnancyData.conception_at,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
     if(error){ if(note) note.textContent = 'Error: ' + error.message; return; }
@@ -4180,7 +4295,7 @@ async function signOut(){
   currentUser = null;
   isSpellEditor = false;
   isPregnancyViewer = false;
-  pregnancyData = { is_pregnant: false, baby_count: 1, due_date: '' };
+  pregnancyData = { is_pregnant: false, baby_count: 1, conception_at: '' };
   pregnancyShownForUserId = null;
   updatePregnancyPanelVisibility();
   updateAuthUI();
