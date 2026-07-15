@@ -30,6 +30,8 @@
     --legacy-glow: rgba(155,111,201,0.15);
     --deity-accent:#d1548a;
     --deity-glow: rgba(209,84,138,0.15);
+    --secret-accent:#e0729a;
+    --secret-glow: rgba(224,114,154,0.14);
     --shadow-soft: 0 4px 14px rgba(0,0,0,0.28);
     --shadow-lift: 0 10px 30px rgba(0,0,0,0.4);
     --radius-lg: 14px;
@@ -1049,6 +1051,71 @@
   .charsheet-field input[type=text]:hover,
   .charsheet-field textarea:hover{border-color:var(--hairline-soft);}
 
+  /* RESTRICTED "lil menu" — only rendered/populated for users holding the
+     pregnancy_viewers role (see checkPregnancyViewerStatus). Visually set
+     apart from the rest of the sheet so it reads as a distinct, gated
+     panel rather than just another field. */
+  .pregnancy-panel{
+    margin-top:16px;
+    border:1px solid var(--secret-accent);
+    border-radius:var(--radius-md);
+    background:linear-gradient(180deg, var(--secret-glow), transparent 60%), var(--panel-2);
+    padding:14px 16px 16px;
+  }
+  .pregnancy-panel-title{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-family:'Cinzel', Garamond, serif;
+    font-size:16px;
+    letter-spacing:0.04em;
+    color:var(--secret-accent);
+    text-transform:uppercase;
+    margin-bottom:4px;
+  }
+  .pregnancy-panel-sub{
+    font-size:15px;
+    color:var(--parchment-dim);
+    margin-bottom:12px;
+  }
+  .pregnancy-panel-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:16px;
+    align-items:flex-end;
+  }
+  .pregnancy-field{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .pregnancy-field label{
+    font-size:14px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--parchment-dim);
+  }
+  .pregnancy-field-check{
+    flex-direction:row;
+    align-items:center;
+    gap:8px;
+  }
+  .pregnancy-field-check label{text-transform:none;font-size:18px;color:var(--parchment);letter-spacing:0;}
+  .pregnancy-field input[type=number],
+  .pregnancy-field input[type=date]{
+    background:var(--panel-3);
+    border:1px solid var(--hairline);
+    border-radius:var(--radius-sm);
+    color:var(--parchment);
+    padding:8px 10px;
+    font-family:'Crimson Pro',Georgia,serif;
+    font-size:18px;
+  }
+  .pregnancy-field input[type=number]{width:90px;}
+  .pregnancy-field input:disabled{opacity:0.7;cursor:not-allowed;}
+  .pregnancy-field input[type=checkbox]{width:20px;height:20px;accent-color:var(--secret-accent);cursor:pointer;}
+  .pregnancy-panel-note{font-size:14px;color:var(--parchment-dim);margin-top:8px;min-height:1em;}
+
   .stat-row{
     display:flex;
     flex-wrap:wrap;
@@ -1522,6 +1589,33 @@
         <div class="rollbuff-display" id="rollbuff-display"></div>
         <button type="button" class="rollbuff-manage-btn" onclick="openRollBuffModal()">⚙ Manage Roll Buffs</button>
       </div>
+    </div>
+
+    <!-- RESTRICTED PREGNANCY PANEL — a separate little menu, deliberately
+         kept outside .charsheet-grid and outside `state`. It is hidden by
+         default and only shown/populated by JS for users the site owner
+         has added to the "pregnancy_viewers" table in Supabase. Even spell
+         editors / warrior skill editors / oracles do NOT get access to
+         this — it's its own role, checked independently. See
+         checkPregnancyViewerStatus() and loadPregnancyData(). -->
+    <div class="pregnancy-panel" id="pregnancy-panel" style="display:none;">
+      <div class="pregnancy-panel-title">🤰 Pregnancy (Restricted)</div>
+      <div class="pregnancy-panel-sub">Only visible to people specifically granted this access.</div>
+      <div class="pregnancy-panel-row">
+        <div class="pregnancy-field pregnancy-field-check">
+          <input type="checkbox" id="preg-is-pregnant" onchange="onPregnancyFieldChange()">
+          <label for="preg-is-pregnant">Pregnant</label>
+        </div>
+        <div class="pregnancy-field" id="preg-babies-wrap">
+          <label for="preg-baby-count"># of Babies</label>
+          <input type="number" id="preg-baby-count" min="1" max="20" step="1" value="1" onchange="onPregnancyFieldChange()">
+        </div>
+        <div class="pregnancy-field" id="preg-duedate-wrap">
+          <label for="preg-due-date">Due Date</label>
+          <input type="date" id="preg-due-date" onchange="onPregnancyFieldChange()">
+        </div>
+      </div>
+      <div class="pregnancy-panel-note" id="pregnancy-panel-note"></div>
     </div>
   </div>
 
@@ -2115,6 +2209,19 @@ let isWsEditor = false;
    spells, and change any spell's description/tags/cost/etc. */
 let oracleSchools = new Set();
 
+/* Separate, unrelated "pregnancy_viewers" role. This is NOT part of the
+   editor hierarchy above on purpose — spell_editors / warrior_skill_editors
+   / school_oracle_editors get zero access to this data. It's a whitelist
+   of specific user_ids added by hand in Supabase (table "pregnancy_viewers").
+   Members can VIEW any character's pregnancy_data row, but can only EDIT
+   their own (enforced both here and, critically, by the table's RLS
+   policies — see the SQL notes near loadPregnancyData). Anyone not on the
+   list gets no rows back at all when they query pregnancy_data, so hiding
+   the panel client-side is a UX nicety, not the actual security boundary. */
+let isPregnancyViewer = false;
+let pregnancyData = { is_pregnant: false, baby_count: 1, due_date: '' };
+let pregnancyShownForUserId = null; // whose row is currently loaded into the panel
+
 const SPELL_INDEX = {};
 let DEFAULT_LEARNED = {};
 
@@ -2247,6 +2354,149 @@ async function checkSpellEditorStatus(){
   updateDisciplineAdminButtonVisibility();
   render();
   if(currentView === 'warrior') renderWarrior();
+}
+
+/* ---------- PREGNANCY PANEL (restricted role, separate table) ----------
+   Deliberately NOT stored in state.charInfo / the `characters` table. That
+   table's `data` column is fetched in full for every user when browsing
+   other people's sheets (see fetchOtherCharacters), so anything put there
+   is effectively visible to any logged-in user, editor or not. Real
+   gating needs its own table with its own RLS policies. Required Supabase
+   setup (run once in the SQL editor):
+
+     create table pregnancy_viewers (user_id uuid primary key references auth.users(id));
+     create table pregnancy_data (
+       user_id uuid primary key references auth.users(id),
+       is_pregnant boolean not null default false,
+       baby_count integer not null default 1,
+       due_date date,
+       updated_at timestamptz not null default now()
+     );
+     alter table pregnancy_viewers enable row level security;
+     alter table pregnancy_data enable row level security;
+
+     -- only the site owner (via the dashboard) adds/removes rows here, so no
+     -- policies are needed for pregnancy_viewers beyond letting a member
+     -- confirm their own membership:
+     create policy "self check" on pregnancy_viewers for select
+       using (auth.uid() = user_id);
+
+     -- only pregnancy_viewers members can read ANY row, including their own:
+     create policy "viewers can read" on pregnancy_data for select
+       using (exists (select 1 from pregnancy_viewers v where v.user_id = auth.uid()));
+
+     -- a member can only write their OWN row:
+     create policy "viewers edit own" on pregnancy_data for insert
+       with check (auth.uid() = user_id and exists (select 1 from pregnancy_viewers v where v.user_id = auth.uid()));
+     create policy "viewers update own" on pregnancy_data for update
+       using (auth.uid() = user_id and exists (select 1 from pregnancy_viewers v where v.user_id = auth.uid()));
+*/
+async function checkPregnancyViewerStatus(){
+  isPregnancyViewer = false;
+  if(!currentUser){ updatePregnancyPanelVisibility(); return; }
+  try{
+    const { data, error } = await supabaseClient
+      .from('pregnancy_viewers')
+      .select('user_id')
+      .eq('user_id', currentUser.id)
+      .maybeSingle();
+    if(error){
+      console.error('[pregnancy] role check failed:', error.message, '— current user id:', currentUser.id);
+    } else {
+      console.log('[pregnancy] role check for user id', currentUser.id, '→', data ? 'GRANTED' : 'not in pregnancy_viewers table');
+      if(data) isPregnancyViewer = true;
+    }
+  }catch(e){ console.error('[pregnancy] role check threw:', e); }
+  updatePregnancyPanelVisibility();
+  if(isPregnancyViewer){
+    await loadPregnancyData(isViewingOther && pregnancyShownForUserId ? pregnancyShownForUserId : currentUser.id);
+  }
+}
+
+function updatePregnancyPanelVisibility(){
+  const panel = document.getElementById('pregnancy-panel');
+  if(panel) panel.style.display = isPregnancyViewer ? '' : 'none';
+}
+
+/* Loads the pregnancy_data row for the given user_id and populates the
+   panel. Only ever called when isPregnancyViewer is true — but even if
+   called otherwise, RLS on the table means non-members simply get no row
+   back rather than someone else's data. */
+async function loadPregnancyData(userId){
+  if(!isPregnancyViewer || !userId) return;
+  pregnancyShownForUserId = userId;
+  const note = document.getElementById('pregnancy-panel-note');
+  try{
+    const { data, error } = await supabaseClient
+      .from('pregnancy_data')
+      .select('is_pregnant, baby_count, due_date')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if(error){ if(note) note.textContent = 'Could not load: ' + error.message; return; }
+    pregnancyData = data
+      ? { is_pregnant: !!data.is_pregnant, baby_count: data.baby_count || 1, due_date: data.due_date || '' }
+      : { is_pregnant: false, baby_count: 1, due_date: '' };
+    populatePregnancyFields();
+    if(note) note.textContent = '';
+  }catch(e){
+    if(note) note.textContent = 'Network error loading pregnancy data.';
+  }
+}
+
+function pregnancyFieldsEditable(){
+  return isPregnancyViewer && !isViewingOther && !editLocked
+    && !!currentUser && pregnancyShownForUserId === currentUser.id;
+}
+
+function populatePregnancyFields(){
+  const editable = pregnancyFieldsEditable();
+  const cb = document.getElementById('preg-is-pregnant');
+  const count = document.getElementById('preg-baby-count');
+  const due = document.getElementById('preg-due-date');
+  if(!cb || !count || !due) return;
+  cb.checked = pregnancyData.is_pregnant;
+  count.value = pregnancyData.baby_count;
+  due.value = pregnancyData.due_date || '';
+  [cb, count, due].forEach(el => el.disabled = !editable);
+  document.getElementById('preg-babies-wrap').style.display = pregnancyData.is_pregnant ? '' : 'none';
+  document.getElementById('preg-duedate-wrap').style.display = pregnancyData.is_pregnant ? '' : 'none';
+  const note = document.getElementById('pregnancy-panel-note');
+  if(note) note.textContent = editable ? '' : (isViewingOther ? 'Viewing another character — read only.' : 'Editing is locked — click 🔓 to unlock.');
+}
+
+async function onPregnancyFieldChange(){
+  if(!pregnancyFieldsEditable()) return; // fields are disabled anyway; belt-and-braces
+  pregnancyData = {
+    is_pregnant: document.getElementById('preg-is-pregnant').checked,
+    baby_count: parseInt(document.getElementById('preg-baby-count').value, 10) || 1,
+    due_date: document.getElementById('preg-due-date').value || null,
+  };
+  document.getElementById('preg-babies-wrap').style.display = pregnancyData.is_pregnant ? '' : 'none';
+  document.getElementById('preg-duedate-wrap').style.display = pregnancyData.is_pregnant ? '' : 'none';
+  await savePregnancyData();
+}
+
+async function savePregnancyData(){
+  if(!currentUser || !isPregnancyViewer) return;
+  const note = document.getElementById('pregnancy-panel-note');
+  if(note) note.textContent = 'Saving...';
+  try{
+    const { error } = await supabaseClient
+      .from('pregnancy_data')
+      .upsert({
+        user_id: currentUser.id,
+        is_pregnant: pregnancyData.is_pregnant,
+        baby_count: pregnancyData.baby_count,
+        due_date: pregnancyData.due_date,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+    if(error){ if(note) note.textContent = 'Error: ' + error.message; return; }
+    if(note) note.textContent = 'Saved ✓';
+    clearTimeout(window._pregSaveTimer);
+    window._pregSaveTimer = setTimeout(() => { if(note) note.textContent = ''; }, 1200);
+  }catch(e){
+    if(note) note.textContent = 'Network error while saving.';
+  }
 }
 
 async function saveSpellMetaRow(id, meta){
@@ -3856,6 +4106,7 @@ function switchToAlternativeSheet(targetUserId) {
     render();
     if(currentView === 'warrior') renderWarrior();
     applyEditLockState(); 
+    if(isPregnancyViewer) loadPregnancyData(targetUserId);
   }
 }
 
@@ -3883,6 +4134,7 @@ function returnToOwnSheet() {
   if(currentView === 'warrior') renderWarrior();
   applyEditLockState(); 
   saveState(false); 
+  if(isPregnancyViewer && currentUser) loadPregnancyData(currentUser.id);
 }
 
 async function signUp(){
@@ -3899,6 +4151,7 @@ async function signUp(){
     currentUser = data.user;
     updateAuthUI();
     await checkSpellEditorStatus();
+    await checkPregnancyViewerStatus();
     await loadFromCloud();
   } else {
     setCloudStatus('Signed up! If email confirmation is enabled, please confirm your email and then log in.', false);
@@ -3918,6 +4171,7 @@ async function signIn(){
   currentUser = data.user;
   updateAuthUI();
   await checkSpellEditorStatus();
+  await checkPregnancyViewerStatus();
   await loadFromCloud();
 }
 
@@ -3925,6 +4179,10 @@ async function signOut(){
   await supabaseClient.auth.signOut();
   currentUser = null;
   isSpellEditor = false;
+  isPregnancyViewer = false;
+  pregnancyData = { is_pregnant: false, baby_count: 1, due_date: '' };
+  pregnancyShownForUserId = null;
+  updatePregnancyPanelVisibility();
   updateAuthUI();
   updateTagGroupsButtonVisibility();
   setCloudStatus('Logged out.', false);
@@ -3935,6 +4193,7 @@ async function initAuth(){
   currentUser = session ? session.user : null;
   updateAuthUI();
   await checkSpellEditorStatus();
+  await checkPregnancyViewerStatus();
   if(currentUser) await loadFromCloud();
 }
 
@@ -5203,6 +5462,7 @@ function toggleReadOnly(readOnly) {
 function applyEditLockState(){
   toggleReadOnly(isViewingOther || editLocked);
   updateEditLockButtonUI();
+  if(isPregnancyViewer) populatePregnancyFields();
 }
 
 function updateEditLockButtonUI(){
