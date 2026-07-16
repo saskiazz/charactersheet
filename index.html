@@ -607,6 +607,19 @@
   #modal-save{background:var(--gold);border-color:var(--gold);color:#1a1408;font-weight:700;}
   #modal-save:hover{background:var(--gold-bright);border-color:var(--gold-bright);}
 
+  /* Personal, per-character field — visually set apart from the shared spell
+     data above/below it with the teal "neutral" accent instead of gold, so
+     it reads as "yours" rather than "everyone's". */
+  .modal-section.personal-section{
+    border:1px solid var(--neutral-accent);
+    background:var(--neutral-glow);
+    border-radius:var(--radius-md);
+    padding:12px 14px 6px;
+  }
+  .personal-label{color:var(--neutral-accent) !important;}
+  .spell-emote-flag{margin-left:6px;font-size:14px;opacity:0.85;cursor:pointer;}
+  .spell-emote-flag:hover{opacity:1;}
+
   /* SPELL DETAIL MODAL — larger than the other modals so descriptions are easier to
      read. The cost/damage number fields are deliberately excluded from the size bump
      (kept compact) so short 1-2 digit numbers don't look lost in an oversized box. */
@@ -1461,6 +1474,198 @@
     color:var(--parchment);
   }
 
+  /* ---------- DICE ROLLER ---------- */
+  .dice-fab{
+    position:fixed;
+    right:26px;
+    bottom:26px;
+    width:62px;
+    height:62px;
+    border-radius:50%;
+    background:linear-gradient(160deg,var(--gold),#a3803e);
+    border:1px solid var(--gold-bright);
+    color:#1a1408;
+    font-size:29px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    box-shadow:0 6px 20px rgba(0,0,0,0.45), 0 0 0 0 rgba(201,160,84,0.5);
+    z-index:900;
+    transition:transform .15s, box-shadow .2s;
+  }
+  .dice-fab:hover{transform:translateY(-3px) scale(1.05);box-shadow:0 10px 26px rgba(0,0,0,0.5), 0 0 22px rgba(201,160,84,0.45);}
+  .dice-fab:active{transform:translateY(-1px) scale(0.97);}
+
+  .dice-modal-box{max-width:480px;text-align:center;}
+  #dice-modal-title{font-family:'Cinzel', Garamond, serif;color:var(--light-accent);margin:0 0 2px;font-size:27px;}
+
+  .dice-presets{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    justify-content:center;
+    margin:18px 0 14px;
+  }
+  .dice-preset-btn{
+    background:var(--panel-2);
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    padding:8px 14px;
+    border-radius:var(--radius-sm);
+    cursor:pointer;
+    font-family:'Cinzel', Garamond, serif;
+    font-size:15.5px;
+    letter-spacing:0.03em;
+    transition:border-color .15s, background .15s, transform .15s, color .15s;
+  }
+  .dice-preset-btn:hover{border-color:var(--gold);transform:translateY(-1px);}
+  .dice-preset-btn.active{background:linear-gradient(180deg,var(--gold),#a3803e);border-color:var(--gold-bright);color:#1a1408;font-weight:700;}
+
+  .dice-config-row{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+    text-align:left;
+    margin-bottom:6px;
+  }
+  .dice-config-row label{display:block;font-size:14.5px;color:var(--parchment-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em;}
+  .dice-config-row input{
+    width:100%;
+    background:var(--ink);
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    padding:8px 9px;
+    border-radius:var(--radius-sm);
+    font-family:'Crimson Pro',serif;
+    font-size:18px;
+  }
+  .dice-config-row input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,160,84,0.15);}
+
+  .dice-buff-buttons{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:4px 0 4px;}
+  .dice-buff-btn{
+    background:transparent;
+    border:1px dashed var(--hairline);
+    color:var(--parchment-dim);
+    padding:5px 10px;
+    border-radius:var(--radius-sm);
+    cursor:pointer;
+    font-size:13.5px;
+    font-family:'Crimson Pro',serif;
+    transition:border-color .15s, color .15s;
+  }
+  .dice-buff-btn:hover{border-color:var(--neutral-accent);color:var(--neutral-accent);}
+
+  .dice-stage{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    margin:22px 0 6px;
+    min-height:150px;
+  }
+  .dice-die{
+    width:118px;
+    height:118px;
+    border-radius:22px;
+    background:linear-gradient(155deg,var(--panel-3),var(--panel));
+    border:2px solid var(--hairline);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 8px 22px rgba(0,0,0,0.4), inset 0 0 18px rgba(201,160,84,0.06);
+    position:relative;
+  }
+  .dice-die::before{
+    content:'';
+    position:absolute;
+    inset:6px;
+    border-radius:16px;
+    border:1px solid var(--hairline-soft);
+    pointer-events:none;
+  }
+  #dice-die-face{
+    font-family:'Cinzel', Garamond, serif;
+    font-weight:700;
+    font-size:44px;
+    color:var(--gold-bright);
+    text-shadow:0 0 16px var(--light-glow);
+  }
+  .dice-die.rolling{animation:diceShake 0.42s ease-in-out infinite;border-color:var(--gold);}
+  .dice-die.settle{animation:diceSettle 0.4s ease-out;}
+  .dice-die.crit{animation:critGlow 0.9s ease-in-out 2;border-color:var(--gold-bright);}
+  .dice-die.fumble{border-color:var(--dark-accent);box-shadow:0 8px 22px rgba(0,0,0,0.4), 0 0 22px rgba(168,84,84,0.5);}
+  @keyframes diceShake{
+    0%{transform:rotate(0deg) scale(1);}
+    20%{transform:rotate(-11deg) scale(1.05);}
+    40%{transform:rotate(9deg) scale(0.97);}
+    60%{transform:rotate(-7deg) scale(1.04);}
+    80%{transform:rotate(5deg) scale(0.98);}
+    100%{transform:rotate(0deg) scale(1);}
+  }
+  @keyframes diceSettle{
+    0%{transform:scale(1.32) rotate(0deg);}
+    55%{transform:scale(0.93) rotate(-3deg);}
+    100%{transform:scale(1) rotate(0deg);}
+  }
+  @keyframes critGlow{
+    0%,100%{box-shadow:0 8px 22px rgba(0,0,0,0.4), 0 0 18px 3px rgba(201,160,84,0.55);}
+    50%{box-shadow:0 8px 22px rgba(0,0,0,0.4), 0 0 34px 9px rgba(230,197,131,0.9);}
+  }
+
+  .dice-result-line{min-height:24px;margin:12px 0 4px;font-size:16.5px;color:var(--parchment-dim);}
+  .dice-result-line .dice-total{color:var(--gold-bright);font-weight:700;font-size:19px;}
+  .dice-result-line.dice-crit-text .dice-total{color:var(--gold-bright);text-shadow:0 0 12px var(--light-glow);}
+  .dice-result-line.dice-fumble-text .dice-total{color:var(--dark-accent);}
+
+  .dice-roll-btn{
+    background:linear-gradient(180deg,var(--gold),#a3803e);
+    border:1px solid var(--gold-bright);
+    color:#1a1408;
+    font-weight:700;
+    font-family:'Cinzel', Garamond, serif;
+    letter-spacing:0.04em;
+    font-size:18px;
+    padding:11px 30px;
+    border-radius:var(--radius-md);
+    cursor:pointer;
+    margin-top:10px;
+    transition:transform .15s, box-shadow .15s;
+  }
+  .dice-roll-btn:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(201,160,84,0.35);}
+  .dice-roll-btn:disabled{opacity:0.6;cursor:default;transform:none;box-shadow:none;}
+
+  .dice-history{
+    margin-top:20px;
+    padding-top:14px;
+    border-top:1px solid var(--hairline-soft);
+    text-align:left;
+    max-height:150px;
+    overflow-y:auto;
+  }
+  .dice-history-empty{color:var(--parchment-dim);font-style:italic;font-size:14.5px;}
+  .dice-history-row{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    font-size:15px;
+    padding:4px 2px;
+    color:var(--parchment-dim);
+    border-bottom:1px solid rgba(255,255,255,0.03);
+  }
+  .dice-history-row .dhr-total{color:var(--gold);font-weight:600;}
+  .dice-history-clear{
+    display:block;
+    margin:10px auto 0;
+    background:transparent;
+    border:none;
+    color:var(--parchment-dim);
+    font-size:13px;
+    text-decoration:underline;
+    cursor:pointer;
+  }
+  .dice-history-clear:hover{color:var(--gold);}
+
 </style>
 </head>
 <body>
@@ -1776,6 +1981,12 @@
     <button class="modal-close" onclick="closeSpellModal()">✕</button>
     <h2 id="modal-title"></h2>
     <p id="modal-subtitle" class="modal-subtitle"></p>
+
+    <div class="modal-section personal-section">
+      <label class="modal-label personal-label">My Emote Text <span class="modal-hint">(personal — saved with your own character, only visible to you, tied to this spell no matter where it moves)</span></label>
+      <div class="grow-wrap"><textarea id="modal-emote-text" rows="3" placeholder="Your go-to roleplay text for casting this spell..." oninput="onEmoteTextChange(); syncGrowWrap(this)"></textarea></div>
+      <p id="modal-emote-readonly-hint" class="modal-hint" style="display:none;">Editing is locked, or you're viewing someone else's sheet — this text is read-only right now.</p>
+    </div>
 
     <div class="modal-section">
       <label class="modal-label">Tags <span class="modal-hint">(comma separated, e.g. movement, healing, shielding, cc, damage)</span></label>
@@ -2189,6 +2400,45 @@
       <button type="button" onclick="closeAddWsModal()">Cancel</button>
       <button type="button" id="add-ws-modal-save" onclick="createWarriorSkill()">Add Skill</button>
     </div>
+  </div>
+</div>
+
+<!-- DICE ROLLER -->
+<button type="button" id="dice-fab" class="dice-fab" onclick="openDiceModal()" title="Roll dice">🎲</button>
+
+<div id="dice-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeDiceModal()">
+  <div class="modal-box dice-modal-box">
+    <button class="modal-close" onclick="closeDiceModal()">✕</button>
+    <h2 id="dice-modal-title">Roll the Dice</h2>
+    <p class="modal-subtitle">Pick a die, or set a custom range from 2 to 100.</p>
+
+    <div class="dice-presets" id="dice-presets">
+      <button type="button" class="dice-preset-btn active" data-sides="20" onclick="selectDiceSides(20)">d20</button>
+      <button type="button" class="dice-preset-btn" data-sides="100" onclick="selectDiceSides(100)">d100</button>
+    </div>
+
+    <div class="dice-config-row">
+      <label>Custom sides (2–100)<input type="number" id="dice-sides-input" min="2" max="100" step="1" value="20" oninput="onCustomSidesInput()"></label>
+      <label>Modifier<input type="number" id="dice-mod-input" step="1" value="0"></label>
+    </div>
+
+    <div class="dice-buff-buttons">
+      <button type="button" class="dice-buff-btn" onclick="applyBuffToModifier('attack')" title="Fill the modifier with your total Attack Roll buffs">+ Use Attack Buff</button>
+      <button type="button" class="dice-buff-btn" onclick="applyBuffToModifier('defense')" title="Fill the modifier with your total Defense Roll buffs">+ Use Defense Buff</button>
+    </div>
+
+    <div class="dice-stage">
+      <div class="dice-die" id="dice-die"><span id="dice-die-face">?</span></div>
+    </div>
+
+    <div class="dice-result-line" id="dice-result-line"></div>
+
+    <button type="button" class="dice-roll-btn" id="dice-roll-btn" onclick="performDiceRoll()">🎲 Roll!</button>
+
+    <div class="dice-history" id="dice-history">
+      <span class="dice-history-empty">No rolls yet — give it a spin.</span>
+    </div>
+    <button type="button" class="dice-history-clear" id="dice-history-clear" onclick="clearDiceHistory()" style="display:none;">Clear history</button>
   </div>
 </div>
 
@@ -3007,6 +3257,13 @@ window.openSpellModal = function(evt, id){
   document.getElementById('modal-buff-upkeep-spirit').value = meta.buffUpkeep.spirit || '';
   document.getElementById('modal-desc').value = meta.desc;
 
+  const emoteLocked = isViewingOther || editLocked;
+  const emoteField = document.getElementById('modal-emote-text');
+  emoteField.value = getEmoteText(id);
+  emoteField.disabled = emoteLocked;
+  document.getElementById('modal-emote-readonly-hint').style.display = emoteLocked ? 'block' : 'none';
+  syncGrowWrap(emoteField);
+
   const flavor = getDisplayFlavor(meta);
   document.getElementById('modal-flavor-incantation').value = flavor.incantation || '';
   document.getElementById('modal-flavor-movements').value = flavor.movements || '';
@@ -3051,8 +3308,44 @@ window.openSpellModal = function(evt, id){
 };
 
 window.closeSpellModal = function(){
+  const closingId = currentModalSpellId;
   document.getElementById('spell-modal-backdrop').classList.remove('open');
   currentModalSpellId = null;
+  if(closingId) updateSpellEmoteFlag(closingId);
+};
+
+/* Cheap targeted DOM update so the 💬 flag in the list reflects the emote
+   text you just typed, without re-rendering (and losing scroll position /
+   collapsed state of) the entire grid. */
+function updateSpellEmoteFlag(id){
+  const li = document.querySelector(`#grid .spell-item[data-id="${id}"]`);
+  if(!li) return;
+  const label = li.querySelector('label');
+  if(!label) return;
+  let flag = label.querySelector('.spell-emote-flag');
+  const hasText = !!getEmoteText(id);
+  if(hasText && !flag){
+    flag = document.createElement('span');
+    flag.className = 'spell-emote-flag';
+    flag.title = 'You have emote text saved for this spell — click the name to view/edit it';
+    flag.textContent = '💬';
+    label.appendChild(flag);
+  } else if(!hasText && flag){
+    flag.remove();
+  }
+}
+
+/* Autosaves as you type — no separate "Save" button, since this is your
+   own data (not the shared spell database the Save/Delete buttons write
+   to) and there's nothing to conflict with. */
+window.onEmoteTextChange = function(){
+  if (isViewingOther || editLocked) return;
+  if (!currentModalSpellId) return;
+  if (!state.emoteText || typeof state.emoteText !== 'object') state.emoteText = {};
+  const val = document.getElementById('modal-emote-text').value;
+  if (val) state.emoteText[currentModalSpellId] = val;
+  else delete state.emoteText[currentModalSpellId];
+  persist();
 };
 
 window.saveSpellModal = async function(){
@@ -3905,7 +4198,7 @@ document.getElementById('ws-reset-all').addEventListener('click', async () => {
 });
 
 document.addEventListener('keydown', (e) => {
-  if(e.key === 'Escape'){ closeSpellModal(); closeRollBuffModal(); closeWsModal(); closeDisciplinesModal(); closeAddWsModal(); }
+  if(e.key === 'Escape'){ closeSpellModal(); closeRollBuffModal(); closeWsModal(); closeDisciplinesModal(); closeAddWsModal(); closeDiceModal(); }
 });
 
 document.getElementById('modal-desc').addEventListener('input', function(){ syncGrowWrap(this); });
@@ -3937,6 +4230,7 @@ let state = {
   showDeity: false,
   charInfo: {},
   rollBuffs: [],
+  emoteText: {},  // spell id -> this character's own personal "how I emote casting it" text
   wsProgress: {},  // warrior skill id -> number of passed learning rolls so far
   wsCollapsed: {}  // discipline key -> collapsed state (same idea as `collapsed` for schools)
 };
@@ -3977,6 +4271,15 @@ function isLearned(id){
 function setLearned(id, val){
   state.learned[id] = val;
   persist();
+}
+
+/* Personal per-character "emote text" — keyed by the spell's own primary
+   key (sp.id, straight from the schools/spells table), never by its
+   position in a school/group or its display order. That's what makes it
+   stay attached to the right spell even if spells get reordered, moved
+   between groups, or a school gets restructured. */
+function getEmoteText(id){
+  return (state.emoteText && state.emoteText[id]) || '';
 }
 
 function saveState(markDirty){
@@ -4058,6 +4361,7 @@ async function loadFromCloud(){
     state = data.data || state;
     if(!state.charInfo) state.charInfo = {};
     if(!Array.isArray(state.rollBuffs)) state.rollBuffs = [];
+    if(!state.emoteText || typeof state.emoteText !== 'object') state.emoteText = {};
     if(!state.wsProgress) state.wsProgress = {};
     if(!state.wsCollapsed) state.wsCollapsed = {};
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -4208,6 +4512,7 @@ function switchToAlternativeSheet(targetUserId) {
     state = JSON.parse(JSON.stringify(foundRow.data));
     if(!state.charInfo) state.charInfo = {};
     if(!Array.isArray(state.rollBuffs)) state.rollBuffs = [];
+    if(!state.emoteText || typeof state.emoteText !== 'object') state.emoteText = {};
     if(!state.wsProgress) state.wsProgress = {};
     if(!state.wsCollapsed) state.wsCollapsed = {};
     
@@ -4235,6 +4540,7 @@ function returnToOwnSheet() {
     myStoredState = null;
   }
   if(!Array.isArray(state.rollBuffs)) state.rollBuffs = [];
+  if(!state.emoteText || typeof state.emoteText !== 'object') state.emoteText = {};
   if(!state.wsProgress) state.wsProgress = {};
   if(!state.wsCollapsed) state.wsCollapsed = {};
   
@@ -4327,6 +4633,7 @@ function load(){
       if(parsed.hasOwnProperty('showDeity')) state.showDeity = parsed.showDeity;
       state.charInfo = parsed.charInfo || {};
       state.rollBuffs = Array.isArray(parsed.rollBuffs) ? parsed.rollBuffs : [];
+      state.emoteText = (parsed.emoteText && typeof parsed.emoteText === 'object') ? parsed.emoteText : {};
       state.wsProgress = parsed.wsProgress || {};
       state.wsCollapsed = parsed.wsCollapsed || {};
     }catch(e){console.error(e);}
@@ -4356,7 +4663,7 @@ function populateCharInfoFields(){
    toggle, with no JS measurement or timing races involved.
    The only job left for JS is keeping the mirror's text (data-replicated-
    value) in sync with the textarea's actual value. */
-const AUTOSIZE_TEXTAREA_SELECTOR = '.charsheet-field textarea, .rollbuff-field-desc textarea, #modal-desc';
+const AUTOSIZE_TEXTAREA_SELECTOR = '.charsheet-field textarea, .rollbuff-field-desc textarea, #modal-desc, #modal-emote-text';
 
 function syncGrowWrap(el){
   const wrap = el && el.closest ? el.closest('.grow-wrap') : null;
@@ -5051,6 +5358,158 @@ window.closeRollBuffModal = function(){
   persist();
 };
 
+/* ---------- DICE ROLLER ----------
+   A standalone utility, tucked behind a floating button so it doesn't
+   compete with the character sheet for attention. Rolls are ephemeral
+   (kept in localStorage just so the little history list survives a
+   refresh) and are not part of the character's saved/cloud state. */
+const DICE_HISTORY_KEY = 'spellbook_dice_history';
+let diceSides = 20;
+let diceRolling = false;
+
+function loadDiceHistory(){
+  try{
+    const raw = localStorage.getItem(DICE_HISTORY_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  }catch(e){ return []; }
+}
+function saveDiceHistory(list){
+  try{ localStorage.setItem(DICE_HISTORY_KEY, JSON.stringify(list.slice(0,8))); }catch(e){}
+}
+
+window.openDiceModal = function(){
+  document.getElementById('dice-modal-backdrop').classList.add('open');
+  renderDiceHistory();
+};
+window.closeDiceModal = function(){
+  document.getElementById('dice-modal-backdrop').classList.remove('open');
+};
+
+window.selectDiceSides = function(n){
+  diceSides = n;
+  document.getElementById('dice-sides-input').value = n;
+  document.querySelectorAll('.dice-preset-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.sides,10) === n);
+  });
+  resetDiceStage();
+};
+
+window.onCustomSidesInput = function(){
+  const input = document.getElementById('dice-sides-input');
+  let n = parseInt(input.value, 10);
+  if(isNaN(n)) return;
+  n = Math.max(2, Math.min(100, n));
+  diceSides = n;
+  document.querySelectorAll('.dice-preset-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.sides,10) === n);
+  });
+  resetDiceStage();
+};
+
+function resetDiceStage(){
+  const die = document.getElementById('dice-die');
+  const face = document.getElementById('dice-die-face');
+  die.classList.remove('crit','fumble','settle','rolling');
+  face.textContent = '?';
+  document.getElementById('dice-result-line').className = 'dice-result-line';
+  document.getElementById('dice-result-line').innerHTML = '';
+}
+
+/* Pulls the current Attack/Defense roll-buff totals (the same numbers shown
+   in the "Roll Buffs" pills on the sheet) straight into the modifier field,
+   so a combat roll can include active buffs without retyping them. */
+window.applyBuffToModifier = function(type){
+  const buffs = Array.isArray(state.rollBuffs) ? state.rollBuffs : [];
+  let sum = 0;
+  buffs.forEach(b => {
+    if(!getBuffTypes(b).includes(type)) return;
+    const n = parseRollBuffValue((b.value || '').trim());
+    if(!isNaN(n)) sum += n;
+  });
+  document.getElementById('dice-mod-input').value = sum;
+};
+
+window.performDiceRoll = function(){
+  if(diceRolling) return;
+  const sides = Math.max(2, Math.min(100, parseInt(document.getElementById('dice-sides-input').value,10) || diceSides));
+  const mod = parseInt(document.getElementById('dice-mod-input').value,10) || 0;
+  diceSides = sides;
+
+  const die = document.getElementById('dice-die');
+  const face = document.getElementById('dice-die-face');
+  const resultLine = document.getElementById('dice-result-line');
+  const rollBtn = document.getElementById('dice-roll-btn');
+
+  diceRolling = true;
+  rollBtn.disabled = true;
+  die.classList.remove('crit','fumble','settle');
+  die.classList.add('rolling');
+  resultLine.className = 'dice-result-line';
+  resultLine.innerHTML = '';
+
+  // Rapid-fire fake numbers while the die "shakes", purely for flavor.
+  const cycle = setInterval(() => {
+    face.textContent = 1 + Math.floor(Math.random()*sides);
+  }, 55);
+
+  setTimeout(() => {
+    clearInterval(cycle);
+    die.classList.remove('rolling');
+
+    const roll = 1 + Math.floor(Math.random()*sides);
+    const total = roll + mod;
+
+    face.textContent = roll;
+    die.classList.add('settle');
+    setTimeout(() => die.classList.remove('settle'), 400);
+
+    const isCrit = roll === sides && sides > 1;
+    const isFumble = roll === 1 && sides > 1;
+    if(isCrit) die.classList.add('crit');
+    if(isFumble) die.classList.add('fumble');
+
+    const notation = `d${sides}${mod ? (mod>0?`+${mod}`:mod) : ''}`;
+    resultLine.classList.toggle('dice-crit-text', isCrit);
+    resultLine.classList.toggle('dice-fumble-text', isFumble);
+    resultLine.innerHTML = `${notation}: <span class="dice-total">${total}</span>` +
+      (mod ? ` <span style="opacity:.7;">(${roll}${mod>0?` + ${mod}`:` − ${Math.abs(mod)}`})</span>` : '') +
+      (isCrit ? ' — ✨ max roll!' : (isFumble ? ' — fumble…' : ''));
+
+    recordDiceRoll(notation, total, roll, mod);
+    diceRolling = false;
+    rollBtn.disabled = false;
+  }, 700);
+};
+
+function recordDiceRoll(notation, total, roll, mod){
+  const history = loadDiceHistory();
+  history.unshift({ notation, total, roll, mod, t: Date.now() });
+  saveDiceHistory(history);
+  renderDiceHistory();
+}
+
+function renderDiceHistory(){
+  const wrap = document.getElementById('dice-history');
+  const clearBtn = document.getElementById('dice-history-clear');
+  const history = loadDiceHistory();
+  if(!history.length){
+    wrap.innerHTML = '<span class="dice-history-empty">No rolls yet — give it a spin.</span>';
+    clearBtn.style.display = 'none';
+    return;
+  }
+  clearBtn.style.display = 'block';
+  wrap.innerHTML = history.map(h => {
+    const detail = h.mod ? ` (${h.roll}${h.mod>0?`+${h.mod}`:h.mod})` : '';
+    return `<div class="dice-history-row"><span>${escapeHtml(h.notation)}${escapeHtml(detail)}</span><span class="dhr-total">${h.total}</span></div>`;
+  }).join('');
+}
+
+window.clearDiceHistory = function(){
+  saveDiceHistory([]);
+  renderDiceHistory();
+};
+
 function onFilterChange(){
   state.showLight = document.getElementById('filter-light').checked;
   state.showDark = document.getElementById('filter-dark').checked;
@@ -5216,10 +5675,11 @@ function renderSpellItem(sp){
   const flavor = getDisplayFlavor(meta);
   const durationHtml = ''; // duration is modal-only now too, to keep the list from getting crowded
   const tagsHtml = meta.tags.length ? `<span class="spell-tags">${meta.tags.map(t=>`<span class="mini-tag">${escapeHtml(t)}</span>`).join('')}</span>` : '';
+  const emoteFlagHtml = getEmoteText(sp.id) ? `<span class="spell-emote-flag" title="You have emote text saved for this spell — click the name to view/edit it">💬</span>` : '';
   return `
     <li class="spell-item" data-name="${(sp.latin+' '+sp.en).toLowerCase()}" data-id="${sp.id}">
       <input type="checkbox" id="cb_${sp.id}" ${checked} onchange="onToggleSpell('${sp.id}', this.checked)">
-      <label for="cb_${sp.id}"><span class="spell-name" onclick="openSpellModal(event,'${sp.id}')">${sp.latin}</span><span class="spell-latin">(${sp.en})</span>${costStr ? `<span class="spell-cost">${costStr}</span>` : ''}${effectHtml}${extraHtml}${durationHtml}${tagsHtml}</label>
+      <label for="cb_${sp.id}"><span class="spell-name" onclick="openSpellModal(event,'${sp.id}')">${sp.latin}</span><span class="spell-latin">(${sp.en})</span>${costStr ? `<span class="spell-cost">${costStr}</span>` : ''}${effectHtml}${extraHtml}${durationHtml}${tagsHtml}${emoteFlagHtml}</label>
     </li>`;
 }
 
@@ -5432,6 +5892,7 @@ function importCharacter() {
       state = parsed;
       if(!state.charInfo) state.charInfo = {};
       if(!Array.isArray(state.rollBuffs)) state.rollBuffs = [];
+      if(!state.emoteText || typeof state.emoteText !== 'object') state.emoteText = {};
       if(!state.wsProgress) state.wsProgress = {};
       if(!state.wsCollapsed) state.wsCollapsed = {};
       persist();
@@ -5673,6 +6134,10 @@ document.getElementById('reset-all').addEventListener('click', async () => {
   });
 
   state = { learned: resetLearned, savant:{}, oracle:{}, collapsed:{}, showLight: state.showLight, showDark: state.showDark, showLegacy: state.showLegacy, showDeity: state.showDeity, charInfo: {}, rollBuffs: [],
+    // Your personal emote text is creative writing tied to the spell, not a
+    // checkmark — "Reset all checks" shouldn't wipe out text you wrote, so
+    // (like warrior skill progress below) it's carried over as-is.
+    emoteText: state.emoteText,
     // Warrior skills are a separate tracking system — "Reset all checks" only
     // resets spells, so their progress/collapsed state is carried over as-is.
     wsProgress: state.wsProgress, wsCollapsed: state.wsCollapsed };
