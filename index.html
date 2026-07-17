@@ -2262,6 +2262,11 @@
     </div>
 
     <div class="modal-section">
+      <label class="modal-label">Skills Learned Requirement <span class="modal-hint">(minimum number of warrior skills learned overall, across any discipline — leave blank for none)</span></label>
+      <input type="number" id="ws-modal-req-skills-learned" min="0" step="1" style="width:90px;">
+    </div>
+
+    <div class="modal-section">
       <label class="modal-label">Effect Type</label>
       <div class="effect-type-picker">
         <label class="effect-type-option"><input type="checkbox" id="ws-modal-effect-damage" data-effect="damage" onchange="updateWsEffectSectionVisibility()"> Damage</label>
@@ -2976,6 +2981,17 @@ function getWsRequirementStatus(meta){
     else { met = cur >= reqVal; if(!met) anyUnmet = true; }
     parts.push({ key, label: REQUIREMENT_STAT_LABELS[key], reqVal, met });
   });
+  // "Skills Learned" requirement: a minimum COUNT of warrior skills learned
+  // overall (any discipline, any skill) — not specific named skills like
+  // prerequisites are. Always resolvable (never "unknown") since it's
+  // derived from tracked progress rather than a free-text stat field.
+  const skillsReqVal = Number(req.skillsLearned);
+  if(skillsReqVal && skillsReqVal > 0){
+    const cur = getTotalWsLearnedCount();
+    const met = cur >= skillsReqVal;
+    if(!met) anyUnmet = true;
+    parts.push({ key: 'skillsLearned', label: 'Skills Learned', reqVal: skillsReqVal, met, cur });
+  }
   return { parts, hasAny: parts.length > 0, anyUnmet, anyUnknown };
 }
 
@@ -3562,6 +3578,17 @@ function disciplineMainSkills(disc){
   return disc.groups.filter(g => g.tier === 'main').flatMap(g => g.skills);
 }
 
+/* Total count of learned warrior skills across every discipline (main-tier
+   skills only, same population the "Skills Learned" stat pill and each
+   discipline's progress bar count against). Used by the "Skills Learned"
+   requirement type below — a requirement that a certain NUMBER of warrior
+   skills be learned, without caring which specific ones. */
+function getTotalWsLearnedCount(){
+  let total = 0;
+  DISCIPLINES.forEach(disc => { total += countWsGroup(disciplineMainSkills(disc)).learned; });
+  return total;
+}
+
 function renderWsItem(sk){
   const meta = getWsMeta(sk.id);
   const progress = getWsProgress(sk.id);
@@ -3588,7 +3615,9 @@ function renderWsItem(sk){
   if(reqStatus.hasAny){
     const cls = reqStatus.anyUnmet ? 'ws-prereq-tag unmet' : (reqStatus.anyUnknown ? 'ws-prereq-tag unknown' : 'ws-prereq-tag met');
     const icon = reqStatus.anyUnmet ? '🔒' : (reqStatus.anyUnknown ? '❔' : '🔓');
-    const reqText = reqStatus.parts.map(p => `${p.label} ${p.reqVal}`).join(', ');
+    const reqText = reqStatus.parts.map(p => p.key === 'skillsLearned'
+      ? `${p.label} ${p.reqVal} (${p.cur}/${p.reqVal})`
+      : `${p.label} ${p.reqVal}`).join(', ');
     reqHtml = `<span class="${cls}" title="Minimum stats required for this skill">${icon} Requires: ${reqText}</span>`;
   }
   return `
@@ -3927,6 +3956,7 @@ window.openWsModal = function(evt, id){
   document.getElementById('ws-modal-req-body').value = meta.requirements.body || '';
   document.getElementById('ws-modal-req-mind').value = meta.requirements.mind || '';
   document.getElementById('ws-modal-req-spirit').value = meta.requirements.spirit || '';
+  document.getElementById('ws-modal-req-skills-learned').value = meta.requirements.skillsLearned || '';
   document.getElementById('ws-modal-damage-body').value = meta.damage.body || '';
   document.getElementById('ws-modal-damage-mind').value = meta.damage.mind || '';
   document.getElementById('ws-modal-damage-spirit').value = meta.damage.spirit || '';
@@ -3954,7 +3984,7 @@ window.openWsModal = function(evt, id){
   document.getElementById('ws-modal-effect-buff').checked = meta.effectTypes.includes('buff');
   updateWsEffectSectionVisibility();
 
-  const editableIds = ['ws-modal-tags','ws-modal-rolls-required','ws-modal-req-rank','ws-modal-req-body','ws-modal-req-mind','ws-modal-req-spirit',
+  const editableIds = ['ws-modal-tags','ws-modal-rolls-required','ws-modal-req-rank','ws-modal-req-body','ws-modal-req-mind','ws-modal-req-spirit','ws-modal-req-skills-learned',
     'ws-modal-effect-damage','ws-modal-effect-heal','ws-modal-effect-buff',
     'ws-modal-damage-body','ws-modal-damage-mind','ws-modal-damage-spirit',
     'ws-modal-damage-upkeep-body','ws-modal-damage-upkeep-mind','ws-modal-damage-upkeep-spirit',
@@ -3995,7 +4025,7 @@ window.saveWsModal = async function(){
   let rollsRequired = parseInt(document.getElementById('ws-modal-rolls-required').value, 10);
   if(isNaN(rollsRequired) || rollsRequired < 1) rollsRequired = 1;
   const prerequisites = getCheckedWsPrereqs();
-  const requirements = { rank: num('ws-modal-req-rank'), body: num('ws-modal-req-body'), mind: num('ws-modal-req-mind'), spirit: num('ws-modal-req-spirit') };
+  const requirements = { rank: num('ws-modal-req-rank'), body: num('ws-modal-req-body'), mind: num('ws-modal-req-mind'), spirit: num('ws-modal-req-spirit'), skillsLearned: num('ws-modal-req-skills-learned') };
   const meta = {
     desc: document.getElementById('ws-modal-desc').value,
     tags,
