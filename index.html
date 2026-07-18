@@ -864,6 +864,15 @@
   .group.savant-group .group-label{color:var(--gold-bright);}
   .group.oracle-group .group-label{color:var(--neutral-accent);}
   .group-count{font-size:15px;color:var(--parchment-dim);font-weight:400;text-transform:none;letter-spacing:0;}
+  .group-race-note{
+    font-size:11.5px;
+    letter-spacing:0.04em;
+    text-transform:none;
+    color:var(--parchment-dim);
+    font-style:italic;
+    margin-left:8px;
+    opacity:0.75;
+  }
 
   .spell-list{list-style:none;margin:0;padding:0;}
   .spell-item{
@@ -2507,6 +2516,18 @@ let DEFAULT_LEARNED = {};
    in ANY school. Only the global "spell_editors" role can do this. */
 function canManageSchools(){ return isSpellEditor; }
 
+/* Groups whose label marks them as restricted to a specific race (e.g.
+   "Fae Only", "Angelics", "Fae/Angel Only") aren't learnable by every
+   character, so they're excluded from the spell mastery counters (the
+   per-school progress bar, the "Mastered" ribbon, and the global stats)
+   even though tier === 'main'. The spells themselves still render
+   normally and can still be checked off. Matches "fae" as a whole word
+   and "angel" as a word-start (so "Angelics"/"Angelic" also match)
+   without matching mid-word occurrences like "Evangelist". */
+function isRaceRestrictedGroupLabel(label){
+  return /\bfae\b|\bangel/i.test(label || '');
+}
+
 /* True if the current user may add, edit, or delete spells (and their
    metadata) within the given school. True for global editors everywhere,
    and true for Oracle editors within their own assigned school(s). */
@@ -2533,7 +2554,7 @@ async function loadSchoolsAndSpells(){
       if(!sch) return; // spell pointing at a school that no longer exists — skip defensively
       let group = sch._groupIndex[row.group_label];
       if(!group){
-        group = { label: row.group_label, tier: row.tier, spells: [] };
+        group = { label: row.group_label, tier: row.tier, spells: [], excludeFromMastery: isRaceRestrictedGroupLabel(row.group_label) };
         sch._groupIndex[row.group_label] = group;
         sch.groups.push(group);
       }
@@ -5716,9 +5737,10 @@ function renderSpellItem(sp){
 function renderGroup(sch, g){
   const c = countGroup(g.spells);
   const cls = g.tier === 'savant' ? 'savant-group' : (g.tier === 'oracle' ? 'oracle-group' : '');
+  const raceNote = g.excludeFromMastery ? `<span class="group-race-note" title="Not everyone can learn these — excluded from the school's mastery count">not counted toward mastery</span>` : '';
   return `
     <div class="group ${cls}">
-      <div class="group-label"><span>${g.label}</span><span class="group-count">${c.learned}/${c.total} learned</span></div>
+      <div class="group-label"><span>${g.label}${raceNote}</span><span class="group-count">${c.learned}/${c.total} learned</span></div>
       <ul class="spell-list">${g.spells.map(renderSpellItem).join('')}</ul>
     </div>`;
 }
