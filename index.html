@@ -32,6 +32,12 @@
     --deity-glow: rgba(209,84,138,0.15);
     --secret-accent:#e0729a;
     --secret-glow: rgba(224,114,154,0.14);
+    --jewelry-accent:#e0b04f;
+    --jewelry-glow: rgba(224,176,79,0.15);
+    --blacksmith-accent:#93a2b8;
+    --blacksmith-glow: rgba(147,162,184,0.15);
+    --alchemy-accent:#6fae7f;
+    --alchemy-glow: rgba(111,174,127,0.15);
     --shadow-soft: 0 4px 14px rgba(0,0,0,0.28);
     --shadow-lift: 0 10px 30px rgba(0,0,0,0.4);
     --radius-lg: 14px;
@@ -967,6 +973,26 @@
   .ws-prereq-option label{cursor:pointer;}
   .ws-prereq-empty{font-size:15px;color:var(--parchment-dim);font-style:italic;}
 
+  /* CRAFTING (Jewelry / Blacksmithing / Alchemy) — reuses the same .school /
+     .group / .spell-item shapes as Spells and Warrior Skills, just with its
+     own accent per craft type instead of light/dark/legacy/deity. */
+  .school.type-jewelry{box-shadow:inset 3px 0 0 var(--jewelry-accent);}
+  .school.type-blacksmithing{box-shadow:inset 3px 0 0 var(--blacksmith-accent);}
+  .school.type-alchemy{box-shadow:inset 3px 0 0 var(--alchemy-accent);}
+  .school.type-jewelry .school-title{color:var(--jewelry-accent);}
+  .school.type-blacksmithing .school-title{color:var(--blacksmith-accent);}
+  .school.type-alchemy .school-title{color:var(--alchemy-accent);}
+  .school.type-jewelry .bar-fill{background:linear-gradient(90deg,var(--jewelry-accent),#f0cf8f);}
+  .school.type-blacksmithing .bar-fill{background:linear-gradient(90deg,var(--blacksmith-accent),#c3ccd9);}
+  .school.type-alchemy .bar-fill{background:linear-gradient(90deg,var(--alchemy-accent),#a9d6b6);}
+  .school.type-jewelry .spell-item input[type=checkbox]{accent-color:var(--jewelry-accent);}
+  .school.type-blacksmithing .spell-item input[type=checkbox]{accent-color:var(--blacksmith-accent);}
+  .school.type-alchemy .spell-item input[type=checkbox]{accent-color:var(--alchemy-accent);}
+  .craft-mats{font-size:15px;color:var(--gold);margin-left:7px;}
+  .craft-mat-free{color:var(--ok);font-style:italic;}
+  .craft-time{font-size:15px;color:var(--neutral-accent);margin-left:7px;}
+  .craft-dc{font-size:15px;color:var(--dark-accent);margin-left:7px;}
+
   footer{
     text-align:center;
     margin-top:44px;
@@ -1856,6 +1882,7 @@
   <div class="view-toggle">
     <button type="button" class="view-toggle-btn active" id="view-toggle-spells" onclick="switchView('spells')">📖 Spells</button>
     <button type="button" class="view-toggle-btn" id="view-toggle-warrior" onclick="switchView('warrior')">⚔ Warrior Skills</button>
+    <button type="button" class="view-toggle-btn" id="view-toggle-crafting" onclick="switchView('crafting')">🔨 Crafting</button>
   </div>
 
   <div id="spell-view">
@@ -1980,6 +2007,56 @@
 
     <div class="grid" id="ws-grid"></div>
   </div><!-- /#warrior-view -->
+
+  <div id="crafting-view" style="display:none;">
+  <div class="alignment-box">
+    <label class="alignment-label" style="color: var(--jewelry-accent)">
+      <input type="checkbox" id="filter-jewelry" onchange="onFilterChange()"> Jewelry Crafting
+    </label>
+    <label class="alignment-label" style="color: var(--blacksmith-accent)">
+      <input type="checkbox" id="filter-blacksmithing" onchange="onFilterChange()"> Blacksmithing
+    </label>
+    <label class="alignment-label" style="color: var(--alchemy-accent)">
+      <input type="checkbox" id="filter-alchemy" onchange="onFilterChange()"> Alchemy
+    </label>
+  </div>
+
+    <div class="statbar">
+      <div class="stat-pill"><span class="num" id="craft-stat-learned">0</span><span class="lbl">Recipes Known</span></div>
+      <div class="stat-pill warn"><span class="num" id="craft-stat-missing">0</span><span class="lbl">Recipes Missing</span></div>
+      <div class="stat-pill mastered"><span class="num" id="craft-stat-mastered">0 / 0</span><span class="lbl">Types Mastered</span></div>
+    </div>
+
+    <div class="toolbar">
+      <input type="text" id="craft-search" placeholder="Search a recipe or craft type...">
+      <button id="craft-reset-all">Reset all checks</button>
+
+      <div class="toolbar-sep"></div>
+
+      <button id="craft-expand-all" onclick="setAllCraftSectionsCollapsed(false)">Expand all</button>
+      <button id="craft-collapse-all" onclick="setAllCraftSectionsCollapsed(true)">Collapse all</button>
+
+      <div class="toolbar-sep"></div>
+
+      <button type="button" id="craft-toggle-filters-btn" onclick="toggleCraftFilterBar()" title="Show/hide the tag filters">▸ Filters</button>
+      <select id="jump-craft-select" onchange="jumpToCraftSection(this.value)" title="Jump straight to a craft type">
+        <option value="">Jump to craft type…</option>
+      </select>
+
+      <span id="craft-save-note"></span>
+    </div>
+
+    <div class="spell-filter-bar" id="craft-filter-bar">
+      <div class="filter-row-tags-wrap">
+        <div class="filter-row-tags-header">
+          <span class="filter-row-label">Tags:</span>
+        </div>
+        <div id="craft-tag-filters" class="tag-filters" style="flex-wrap:wrap;"></div>
+      </div>
+    </div>
+
+    <div class="grid" id="craft-grid"></div>
+  </div><!-- /#crafting-view -->
 
   <footer>Progress saves automatically to your local storage. Cloud saving of your character sheet only happens when you click "Save to Cloud Now" while logged in. Spell descriptions, tags, costs and damage are shared reference data stored centrally in the cloud for everyone using this tracker; only designated editors can change them (click a spell name to view or, if you're an editor, edit it).</footer>
 
@@ -2417,6 +2494,78 @@
   </div>
 </div>
 
+<div id="craft-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeCraftModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeCraftModal()">✕</button>
+    <h2 id="craft-modal-title">Recipe Name</h2>
+    <p class="modal-subtitle" id="craft-modal-subtitle"></p>
+
+    <div class="modal-section">
+      <label class="modal-label">Tags <span class="modal-hint">(comma separated, e.g. necklace, ring, tier5)</span></label>
+      <input type="text" id="craft-modal-tags" placeholder="necklace, ring, tier5...">
+    </div>
+
+    <div class="modal-section">
+      <label class="modal-label">Materials Required</label>
+      <div class="extra-effects-list" id="craft-materials-list"></div>
+      <p class="extra-effects-empty" id="craft-materials-empty" style="display:none;">No materials added.</p>
+      <div class="extra-effects-add-row">
+        <button type="button" class="ee-add-btn" id="craft-add-material-btn" onclick="addCraftMaterial()">+ Add Material</button>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <label class="modal-label">Crafting Details</label>
+      <div class="modal-cost-grid" style="grid-template-columns:1fr 1fr 1fr;">
+        <div><label>Crafting Time</label><input type="text" id="craft-modal-time" placeholder="e.g. 6 Hours"></div>
+        <div><label>DC to Craft</label><input type="number" id="craft-modal-dc" min="0" step="1"></div>
+        <div><label>Tries Allowed</label><input type="number" id="craft-modal-tries" min="0" step="1"></div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <label class="modal-label">Effect / Description</label>
+      <div class="grow-wrap"><textarea id="craft-modal-desc" rows="5" placeholder="What does this item do when made?"></textarea></div>
+    </div>
+
+    <p id="craft-modal-readonly-hint" class="modal-hint" style="display:none;color:var(--danger);">
+      You don't have edit rights for the shared crafting data. Ask the tracker owner to add you as an editor if you should be able to change this.
+    </p>
+
+    <div class="modal-actions">
+      <button id="craft-modal-delete" onclick="deleteCurrentModalCraft()" style="background:var(--danger);border-color:var(--danger);color:#1a0d0b;display:none;">Delete Recipe</button>
+      <button onclick="closeCraftModal()">Close</button>
+      <button id="craft-modal-save" onclick="saveCraftModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="add-craft-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeAddCraftModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeAddCraftModal()">✕</button>
+    <h2 id="add-craft-modal-title">Add Recipe</h2>
+    <p class="modal-subtitle" id="add-craft-modal-subtitle"></p>
+
+    <label style="display:block;margin-top:14px;">Tier / Group
+      <select id="new-craft-group" style="width:100%;margin-top:6px;" onchange="onNewCraftGroupChange()"></select>
+    </label>
+    <div id="new-craft-group-custom-wrap" style="display:none;">
+      <label style="display:block;margin-top:14px;">New tier / group name
+        <input type="text" id="new-craft-group-custom" placeholder="e.g. Tier Five" style="width:100%;margin-top:6px;">
+      </label>
+    </div>
+    <label style="display:block;margin-top:14px;">Recipe name
+      <input type="text" id="new-craft-name" placeholder="e.g. Regalia: Enchanted Rhodium-Gold Jewelry" style="width:100%;margin-top:6px;">
+    </label>
+    <p id="add-craft-modal-status" style="font-size:13px;color:var(--parchment-dim);font-style:italic;min-height:1.2em;margin-top:10px;"></p>
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button type="button" onclick="closeAddCraftModal()">Cancel</button>
+      <button type="button" id="add-craft-modal-save" onclick="createCraftRecipe()">Add Recipe</button>
+    </div>
+  </div>
+</div>
+
 <!-- DICE ROLLER -->
 <button type="button" id="dice-fab" class="dice-fab" onclick="openDiceModal()" title="Roll dice">🎲</button>
 
@@ -2622,6 +2771,7 @@ async function loadSpellMeta(){
 async function checkSpellEditorStatus(){
   isSpellEditor = false;
   isWsEditor = false;
+  isCraftEditor = false;
   oracleSchools = new Set();
   if(!currentUser){ updateTagGroupsButtonVisibility(); updateSchoolAdminButtonVisibility(); updateDisciplineAdminButtonVisibility(); return; }
   try{
@@ -2642,6 +2792,14 @@ async function checkSpellEditorStatus(){
   }catch(e){ console.error(e); }
   try{
     const { data, error } = await supabaseClient
+      .from('crafting_editors')
+      .select('user_id')
+      .eq('user_id', currentUser.id)
+      .maybeSingle();
+    if(!error && data) isCraftEditor = true;
+  }catch(e){ console.error(e); }
+  try{
+    const { data, error } = await supabaseClient
       .from('school_oracle_editors')
       .select('school_key')
       .eq('user_id', currentUser.id);
@@ -2652,6 +2810,7 @@ async function checkSpellEditorStatus(){
   updateDisciplineAdminButtonVisibility();
   render();
   if(currentView === 'warrior') renderWarrior();
+  if(currentView === 'crafting') renderCrafting();
 }
 
 /* ---------- PREGNANCY PANEL (restricted role, separate table) ----------
@@ -3836,15 +3995,21 @@ window.switchView = function(view){
   currentView = view;
   localStorage.setItem('spellbook_active_view', view);
   const isSpells = view === 'spells';
+  const isWarrior = view === 'warrior';
+  const isCrafting = view === 'crafting';
   document.getElementById('spell-view').style.display = isSpells ? '' : 'none';
-  document.getElementById('warrior-view').style.display = isSpells ? 'none' : '';
+  document.getElementById('warrior-view').style.display = isWarrior ? '' : 'none';
+  document.getElementById('crafting-view').style.display = isCrafting ? '' : 'none';
   document.getElementById('view-toggle-spells').classList.toggle('active', isSpells);
-  document.getElementById('view-toggle-warrior').classList.toggle('active', !isSpells);
-  document.getElementById('page-title').textContent = isSpells ? 'Spellbook Tracker' : 'Warrior Skills Tracker';
+  document.getElementById('view-toggle-warrior').classList.toggle('active', isWarrior);
+  document.getElementById('view-toggle-crafting').classList.toggle('active', isCrafting);
+  document.getElementById('page-title').textContent = isSpells ? 'Spellbook Tracker' : (isWarrior ? 'Warrior Skills Tracker' : 'Crafting Tracker');
   document.getElementById('page-subtitle').textContent = isSpells
     ? "Track what you know, what you're missing, and where you stand as Savant or Oracle"
-    : 'Track passed learning rolls toward each warrior skill, discipline by discipline';
-  if(!isSpells) renderWarrior();
+    : (isWarrior ? 'Track passed learning rolls toward each warrior skill, discipline by discipline'
+                 : 'Track which recipes you know across Jewelry, Blacksmithing, and Alchemy');
+  if(isWarrior) renderWarrior();
+  if(isCrafting) renderCrafting();
 };
 
 /* ---------- EXTRA EFFECTS BUILDER (warrior skill modal copy) ----------
@@ -4248,8 +4413,551 @@ document.getElementById('ws-reset-all').addEventListener('click', async () => {
   renderWarrior();
 });
 
+/* =========================================================================
+   CRAFTING (Jewelry / Blacksmithing / Alchemy)
+   A third parallel system alongside Spells and Warrior Skills. Unlike
+   Warrior Skills, the three craft "types" are fixed (not user-addable —
+   see CRAFT_TYPES below), matching how the person asked for this: three
+   known categories, gated behind checkboxes like the Light/Dark/Legacy/
+   Deity magic checkboxes, since most characters only know one but some
+   know more. Recipes within each type ARE addable/editable by editors,
+   same as spells/warrior skills, stored in their own Supabase tables
+   ("crafting_recipes", "crafting_recipe_meta") plus a "crafting_editors"
+   role table (parallel to warrior_skill_editors). "Known" is a plain
+   checkbox per recipe (like spells), not a progress counter (like warrior
+   skills) — see the earlier chat decision.
+   ========================================================================= */
+
+const CRAFT_TYPES = [
+  { key: 'jewelry', name: 'Jewelry Crafting' },
+  { key: 'blacksmithing', name: 'Blacksmithing' },
+  { key: 'alchemy', name: 'Alchemy' },
+];
+
+let CRAFT_SECTIONS = []; // one entry per CRAFT_TYPES, each with .groups[].recipes[]
+let craftMeta = {};
+const CRAFT_INDEX = {};
+let isCraftEditor = false;
+
+/* Global editors (spell_editors) and the craft-only "crafting_editors" role
+   both get full add/edit/delete rights over every craft type — there's no
+   per-type Oracle-style role for crafting (yet). */
+function canManageCrafting(){ return isSpellEditor || isCraftEditor; }
+function canEditCraftType(){ return isSpellEditor || isCraftEditor; }
+
+async function loadCraftingRecipes(){
+  try{
+    const { data: rows, error } = await supabaseClient.from('crafting_recipes').select('*').order('sort_order', { ascending: true });
+    if(error) throw error;
+    const byType = {};
+    CRAFT_TYPES.forEach(t => { byType[t.key] = { key: t.key, name: t.name, type: t.key, groups: [], _groupIndex: {} }; });
+    (rows || []).forEach(row => {
+      const sec = byType[row.craft_type];
+      if(!sec) return; // unknown/legacy craft_type — skip defensively
+      let group = sec._groupIndex[row.group_label];
+      if(!group){
+        group = { label: row.group_label, tier: 'main', recipes: [] };
+        sec._groupIndex[row.group_label] = group;
+        sec.groups.push(group);
+      }
+      group.recipes.push({ id: row.id, name: row.name, craftType: row.craft_type });
+    });
+    CRAFT_SECTIONS = CRAFT_TYPES.map(t => { const s = byType[t.key]; delete s._groupIndex; return s; });
+    rebuildCraftIndex();
+  }catch(e){
+    console.error('Could not load crafting recipes from cloud:', e);
+    // Non-fatal — the tables may not exist yet if this is a fresh setup.
+  }
+}
+
+function rebuildCraftIndex(){
+  Object.keys(CRAFT_INDEX).forEach(k => delete CRAFT_INDEX[k]);
+  CRAFT_SECTIONS.forEach(sec => sec.groups.forEach(g => g.recipes.forEach(r => { CRAFT_INDEX[r.id] = r; })));
+}
+
+async function loadCraftMeta(){
+  try{
+    const { data, error } = await supabaseClient.from('crafting_recipe_meta').select('*');
+    if(error) throw error;
+    const next = {};
+    (data || []).forEach(row => {
+      next[row.id] = {
+        desc: row.description || '',
+        tags: row.tags || [],
+        materials: row.materials || [],
+        craftingTime: row.crafting_time || '',
+        dc: (row.dc === null || row.dc === undefined) ? null : row.dc,
+        tries: (row.tries === null || row.tries === undefined) ? null : row.tries,
+      };
+    });
+    craftMeta = next;
+  }catch(e){
+    console.error('Could not load crafting recipe metadata from cloud:', e);
+  }
+}
+
+async function saveCraftMetaRow(id, meta){
+  const payload = {
+    id,
+    description: meta.desc,
+    tags: meta.tags,
+    materials: meta.materials,
+    crafting_time: meta.craftingTime,
+    dc: meta.dc,
+    tries: meta.tries,
+    updated_by: currentUser ? currentUser.id : null,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabaseClient.from('crafting_recipe_meta').upsert(payload, { onConflict: 'id' });
+  if(error) throw error;
+  craftMeta[id] = meta;
+}
+
+function getCraftMeta(id){
+  const m = craftMeta[id];
+  return {
+    desc: (m && m.desc) || '',
+    tags: (m && m.tags) || [],
+    materials: (m && m.materials) || [],
+    craftingTime: (m && m.craftingTime) || '',
+    dc: (m && m.hasOwnProperty('dc')) ? m.dc : null,
+    tries: (m && m.hasOwnProperty('tries')) ? m.tries : null,
+  };
+}
+
+/* ---------- KNOWN (plain checkbox, like spells) ---------- */
+function isCraftLearned(id){ return !!state.craftLearned[id]; }
+function setCraftLearned(id, val){ state.craftLearned[id] = !!val; persist(); }
+window.onToggleCraft = function(id, val){
+  if (isViewingOther) return;
+  setCraftLearned(id, val);
+  renderCrafting();
+};
+
+function countCraftGroup(recipes){
+  let learned = 0;
+  recipes.forEach(r => { if(isCraftLearned(r.id)) learned++; });
+  return {learned, total: recipes.length, missing: recipes.length - learned};
+}
+function craftSectionAllRecipes(sec){
+  return sec.groups.flatMap(g => g.recipes);
+}
+
+/* ---------- VISIBILITY (gated by the Jewelry/Blacksmithing/Alchemy checkboxes) ---------- */
+function getVisibleCraftSections(){
+  return CRAFT_SECTIONS.filter(sec => {
+    if(sec.key === 'jewelry') return !!state.showJewelry;
+    if(sec.key === 'blacksmithing') return !!state.showBlacksmithing;
+    if(sec.key === 'alchemy') return !!state.showAlchemy;
+    return true;
+  });
+}
+
+/* ---------- RENDER ---------- */
+function formatCraftMaterialsHtml(materials){
+  if(!materials || !materials.length) return '';
+  return materials.map(m => {
+    const label = `(${m.qty || 1}) ${escapeHtml(m.name)}`;
+    return m.free
+      ? `<span class="craft-mat-free" title="Always available at the crafting place — free, no need to buy">${label} ✓ free</span>`
+      : `<span class="craft-mat">${label}</span>`;
+  }).join(', ');
+}
+
+function renderCraftRecipeItem(r){
+  const checked = isCraftLearned(r.id) ? 'checked' : '';
+  const meta = getCraftMeta(r.id);
+  const matsHtml = formatCraftMaterialsHtml(meta.materials);
+  const tagsHtml = meta.tags.length ? `<span class="spell-tags">${meta.tags.map(t=>`<span class="mini-tag">${escapeHtml(t)}</span>`).join('')}</span>` : '';
+  return `
+    <li class="spell-item" data-name="${r.name.toLowerCase()}" data-id="${r.id}">
+      <input type="checkbox" id="craftcb_${r.id}" ${checked} onchange="onToggleCraft('${r.id}', this.checked)">
+      <label for="craftcb_${r.id}"><span class="spell-name" onclick="openCraftModal(event,'${r.id}')">${escapeHtml(r.name)}</span>${matsHtml ? `<span class="craft-mats">🧱 ${matsHtml}</span>` : ''}${meta.craftingTime ? `<span class="craft-time">⏱ ${escapeHtml(meta.craftingTime)}</span>` : ''}${(meta.dc !== null && meta.dc !== '') ? `<span class="craft-dc">DC ${meta.dc}${(meta.tries !== null && meta.tries !== '') ? ` (${meta.tries} ${meta.tries == 1 ? 'try' : 'tries'})` : ''}</span>` : ''}${tagsHtml}</label>
+    </li>`;
+}
+
+function renderCraftGroup(sec, g){
+  const c = countCraftGroup(g.recipes);
+  return `
+    <div class="group">
+      <div class="group-label"><span>${escapeHtml(g.label)}</span><span class="group-count">${c.learned}/${c.total} known</span></div>
+      <ul class="spell-list">${g.recipes.map(renderCraftRecipeItem).join('')}</ul>
+    </div>`;
+}
+
+function renderCraftSection(sec){
+  const all = craftSectionAllRecipes(sec);
+  const count = countCraftGroup(all);
+  const pct = count.total ? Math.round(100*count.learned/count.total) : 0;
+  const mastered = count.total > 0 && count.missing === 0;
+  const collapsed = isCraftSectionCollapsed(sec.key);
+
+  return `
+  <section class="school type-${sec.type} ${mastered?'is-mastered':''}" data-craft-section="${sec.key}" data-craft-section-name="${sec.name.toLowerCase()}">
+    <div class="school-head" onclick="toggleCraftSectionCollapse('${sec.key}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCraftSectionCollapse('${sec.key}')}">
+      <div class="school-title-row">
+        <div class="school-title-main">
+          <span class="school-chevron ${collapsed?'':'open'}">▸</span>
+          <div>
+            <div class="school-title">${escapeHtml(sec.name)}</div>
+          </div>
+        </div>
+      </div>
+      <div class="school-progress">
+        <div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div>
+        <div class="progress-text"><b>${count.learned}/${count.total}</b> known · <span class="missing-count">${count.missing} missing</span></div>
+      </div>
+      ${mastered ? `<div class="mastered-ribbon">✦ Mastered</div>` : ''}
+    </div>
+    <div class="school-body ${collapsed?'collapsed':''}">
+      ${sec.groups.map(g => renderCraftGroup(sec,g)).join('') || `<p class="extra-effects-empty" style="padding:0 18px;">No recipes yet.</p>`}
+      ${canEditCraftType() ? `<div class="school-foot" style="height:auto;padding:6px 0 10px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button type="button" class="manage-tag-groups-btn" onclick="event.stopPropagation(); openAddCraftModal('${sec.key}')">+ Add Recipe</button>
+      </div>` : `<div class="school-foot"></div>`}
+    </div>
+  </section>`;
+}
+
+function isCraftSectionCollapsed(key){
+  return state.craftCollapsed[key] !== false;
+}
+window.toggleCraftSectionCollapse = function(key){
+  state.craftCollapsed[key] = isCraftSectionCollapsed(key) ? false : true;
+  persist(false);
+  renderCrafting();
+};
+window.setAllCraftSectionsCollapsed = function(collapse){
+  getVisibleCraftSections().forEach(sec => { state.craftCollapsed[sec.key] = collapse; });
+  persist(false);
+  renderCrafting();
+};
+
+function renderCraftGlobalStats(){
+  let totalLearned = 0, totalAll = 0, masteredCount = 0;
+  const visible = getVisibleCraftSections();
+  visible.forEach(sec => {
+    const c = countCraftGroup(craftSectionAllRecipes(sec));
+    totalLearned += c.learned;
+    totalAll += c.total;
+    if(c.total > 0 && c.missing === 0) masteredCount++;
+  });
+  document.getElementById('craft-stat-learned').textContent = totalLearned;
+  document.getElementById('craft-stat-missing').textContent = totalAll - totalLearned;
+  document.getElementById('craft-stat-mastered').textContent = `${masteredCount} / ${visible.length}`;
+}
+
+function renderCrafting(){
+  const visible = getVisibleCraftSections();
+  document.getElementById('craft-grid').innerHTML = visible.map(renderCraftSection).join('');
+  renderCraftGlobalStats();
+  applyCraftFilters();
+  applyGridLockState();
+  renderCraftJumpNav(visible);
+}
+
+function renderCraftJumpNav(visibleSections){
+  const sel = document.getElementById('jump-craft-select');
+  if(!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Jump to craft type…</option>' +
+    visibleSections.map(s => `<option value="${escapeHtml(s.key)}">${escapeHtml(s.name)}</option>`).join('');
+  sel.value = (current && visibleSections.some(s => s.key === current)) ? current : '';
+}
+window.jumpToCraftSection = function(key){
+  if(!key) return;
+  if(isCraftSectionCollapsed(key)){
+    state.craftCollapsed[key] = false;
+    persist(false);
+    renderCrafting();
+  }
+  requestAnimationFrame(() => {
+    const el = Array.from(document.querySelectorAll('#craft-grid [data-craft-section]')).find(d => d.dataset.craftSection === key);
+    if(el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+    const sel = document.getElementById('jump-craft-select');
+    if(sel) sel.value = '';
+  });
+};
+
+/* ---------- SEARCH + TAG FILTER ---------- */
+function getAllCraftTags(){
+  const tagSet = new Set();
+  Object.values(craftMeta).forEach(m => (m.tags||[]).forEach(t => tagSet.add(t)));
+  return Array.from(tagSet).sort();
+}
+function renderCraftTagFilters(){
+  const container = document.getElementById('craft-tag-filters');
+  if(!container) return;
+  const activeTags = Array.from(container.querySelectorAll('.tag-filter-btn.active')).map(b=>b.dataset.tag);
+  const tags = getAllCraftTags();
+  if(!tags.length){
+    container.innerHTML = `<span class="filter-hint">No tags yet — click a recipe name to add some.</span>`;
+    return;
+  }
+  container.innerHTML = tags.map(t => `<button type="button" class="tag-filter-btn ${activeTags.includes(t)?'active':''}" data-tag="${escapeHtml(t)}" onclick="toggleCraftTagFilter(this)">${escapeHtml(t)}</button>`).join('');
+}
+window.toggleCraftTagFilter = function(btn){
+  btn.classList.toggle('active');
+  applyCraftFilters();
+};
+
+function applyCraftFilters(){
+  const q = document.getElementById('craft-search').value.trim().toLowerCase();
+  const activeTags = Array.from(document.querySelectorAll('#craft-tag-filters .tag-filter-btn.active')).map(b => b.dataset.tag);
+
+  const matchedSections = new Set();
+  if(q){
+    document.querySelectorAll('#craft-grid [data-craft-section]').forEach(sec => {
+      const name = sec.getAttribute('data-craft-section-name') || '';
+      if(name.includes(q)) matchedSections.add(sec);
+    });
+  }
+
+  document.querySelectorAll('#craft-grid .spell-item').forEach(li => {
+    const name = li.getAttribute('data-name') || '';
+    const id = li.getAttribute('data-id');
+    const meta = getCraftMeta(id);
+    let visible = true;
+    if(q){
+      const inMatchedSection = matchedSections.has(li.closest('[data-craft-section]'));
+      if(!inMatchedSection && !name.includes(q)) visible = false;
+    }
+    if(visible && activeTags.length){
+      if(!activeTags.some(t => meta.tags.includes(t))) visible = false;
+    }
+    li.classList.toggle('hidden', !visible);
+  });
+
+  const filtersActive = !!q || activeTags.length > 0;
+  document.querySelectorAll('#craft-grid .group').forEach(group => {
+    const hasVisible = group.querySelectorAll('.spell-item:not(.hidden)').length > 0;
+    group.classList.toggle('hidden', filtersActive && !hasVisible);
+  });
+  document.querySelectorAll('#craft-grid [data-craft-section]').forEach(sec => {
+    const hasVisible = sec.querySelectorAll('.spell-item:not(.hidden)').length > 0;
+    sec.classList.toggle('hidden', filtersActive && !hasVisible);
+    const body = sec.querySelector('.school-body');
+    if(body) body.classList.toggle('filter-open', filtersActive && hasVisible);
+    const chevron = sec.querySelector('.school-chevron');
+    if(chevron) chevron.classList.toggle('open', (filtersActive && hasVisible) || !body?.classList.contains('collapsed'));
+  });
+}
+
+/* ---------- MATERIALS BUILDER (modal) ----------
+   Same dynamic add/remove-row shape as the spell/warrior-skill "extra
+   effects" builder, just for a flat list of {qty, name, free} materials
+   instead of typed effect entries. "free" marks a material that's always
+   available at the crafting place for free (e.g. water, a shared tool) —
+   listed for flavor, but nobody needs to go buy/gather it. */
+let craftModalMaterials = [];
+window.addCraftMaterial = function(){
+  craftModalMaterials.push({ qty: 1, name: '', free: false });
+  renderCraftMaterialsList();
+};
+window.removeCraftMaterial = function(idx){
+  craftModalMaterials.splice(idx, 1);
+  renderCraftMaterialsList();
+};
+window.updateCraftMaterialField = function(idx, field, value){
+  if(!craftModalMaterials[idx]) return;
+  craftModalMaterials[idx][field] = value;
+};
+window.updateCraftMaterialQty = function(idx, value){
+  const v = parseInt(value, 10);
+  updateCraftMaterialField(idx, 'qty', isNaN(v) || v < 1 ? 1 : v);
+};
+window.updateCraftMaterialFree = function(idx, checked){
+  if(!craftModalMaterials[idx]) return;
+  craftModalMaterials[idx].free = !!checked;
+};
+function craftMaterialRowHtml(m, idx, disabled){
+  const dis = disabled ? 'disabled' : '';
+  return `<div class="extra-effect-row">
+    <div class="ee-field" style="flex:0 0 70px;"><label>Qty</label><input type="number" min="1" step="1" ${dis} value="${m.qty || 1}" oninput="updateCraftMaterialQty(${idx},this.value)"></div>
+    <div class="ee-field" style="flex:1 1 220px;"><label>Material</label><input type="text" ${dis} value="${escapeHtml(m.name||'')}" oninput="updateCraftMaterialField(${idx},'name',this.value)" placeholder="e.g. Gold Ingot"></div>
+    <div class="ee-field" style="flex:0 0 auto;"><label>Provided Free</label><input type="checkbox" ${dis} ${m.free?'checked':''} onchange="updateCraftMaterialFree(${idx},this.checked)" title="Always available at the crafting place — free, no need to buy or gather" style="width:19px;height:19px;margin-top:4px;cursor:pointer;accent-color:var(--gold);"></div>
+    ${disabled ? '' : `<button type="button" class="ee-remove-btn" title="Remove" onclick="removeCraftMaterial(${idx})">✕</button>`}
+  </div>`;
+}
+function renderCraftMaterialsList(disabled){
+  const container = document.getElementById('craft-materials-list');
+  const empty = document.getElementById('craft-materials-empty');
+  if(!container) return;
+  if(!craftModalMaterials.length){
+    container.innerHTML = '';
+    if(empty) empty.style.display = 'block';
+  } else {
+    if(empty) empty.style.display = 'none';
+    container.innerHTML = craftModalMaterials.map((m, idx) => craftMaterialRowHtml(m, idx, disabled)).join('');
+  }
+}
+
+/* ---------- CRAFT RECIPE DETAIL / EDIT MODAL ---------- */
+let currentModalCraftId = null;
+
+window.openCraftModal = function(evt, id){
+  if(evt){ evt.preventDefault(); evt.stopPropagation(); }
+  const r = CRAFT_INDEX[id];
+  if(!r) return;
+  currentModalCraftId = id;
+  const meta = getCraftMeta(id);
+  document.getElementById('craft-modal-title').textContent = r.name;
+  document.getElementById('craft-modal-subtitle').textContent = isCraftLearned(id) ? '✓ Known' : 'Not known';
+  document.getElementById('craft-modal-tags').value = meta.tags.join(', ');
+  document.getElementById('craft-modal-time').value = meta.craftingTime;
+  document.getElementById('craft-modal-dc').value = (meta.dc === null || meta.dc === undefined) ? '' : meta.dc;
+  document.getElementById('craft-modal-tries').value = (meta.tries === null || meta.tries === undefined) ? '' : meta.tries;
+  document.getElementById('craft-modal-desc').value = meta.desc;
+
+  craftModalMaterials = (meta.materials || []).map(m => ({...m}));
+
+  const editableIds = ['craft-modal-tags','craft-modal-time','craft-modal-dc','craft-modal-tries','craft-modal-desc','craft-add-material-btn'];
+  const hasRights = canEditCraftType();
+  const canEdit = hasRights && !editLocked;
+  editableIds.forEach(elId => { document.getElementById(elId).disabled = !canEdit; });
+  document.getElementById('craft-modal-save').style.display = canEdit ? '' : 'none';
+  document.getElementById('craft-modal-delete').style.display = canEdit ? '' : 'none';
+  document.getElementById('craft-modal-readonly-hint').style.display = canEdit ? 'none' : 'block';
+  document.getElementById('craft-modal-readonly-hint').textContent = hasRights && editLocked
+    ? 'Editing is locked. Click the lock button in the toolbar to unlock it before editing crafting recipes.'
+    : "You don't have edit rights for the shared crafting data. Ask the tracker owner to add you as an editor if you should be able to change this.";
+
+  renderCraftMaterialsList(!canEdit);
+
+  document.getElementById('craft-modal-backdrop').classList.add('open');
+  syncGrowWrap(document.getElementById('craft-modal-desc'));
+};
+
+window.closeCraftModal = function(){
+  document.getElementById('craft-modal-backdrop').classList.remove('open');
+  currentModalCraftId = null;
+};
+
+window.saveCraftModal = async function(){
+  const r = currentModalCraftId ? CRAFT_INDEX[currentModalCraftId] : null;
+  if(!r || !canEditCraftType() || editLocked) return;
+  const tags = document.getElementById('craft-modal-tags').value
+    .split(',').map(t=>t.trim().toLowerCase()).filter(Boolean);
+  const numOrNull = (elId) => { const raw = document.getElementById(elId).value; if(raw === '') return null; const v = parseFloat(raw); return isNaN(v) ? null : v; };
+  const meta = {
+    desc: document.getElementById('craft-modal-desc').value,
+    tags,
+    materials: craftModalMaterials.filter(m => (m.name||'').trim() !== ''),
+    craftingTime: document.getElementById('craft-modal-time').value,
+    dc: numOrNull('craft-modal-dc'),
+    tries: numOrNull('craft-modal-tries'),
+  };
+  const saveBtn = document.getElementById('craft-modal-save');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving...';
+  try{
+    await saveCraftMetaRow(currentModalCraftId, meta);
+    renderCraftTagFilters();
+    renderCrafting();
+    closeCraftModal();
+  }catch(e){
+    alert('Could not save to the shared crafting database: ' + (e.message || e));
+  }finally{
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save';
+  }
+};
+
+window.deleteCurrentModalCraft = async function(){
+  if(!currentModalCraftId) return;
+  const r = CRAFT_INDEX[currentModalCraftId];
+  if(!r || !canEditCraftType()) return;
+  if(!confirm(`Delete "${r.name}" for everyone? This cannot be undone.`)) return;
+  try{
+    const { error } = await supabaseClient.from('crafting_recipes').delete().eq('id', currentModalCraftId);
+    if(error) throw error;
+    await loadCraftingRecipes();
+    closeCraftModal();
+    renderCrafting();
+  }catch(e){
+    alert('Could not delete this recipe: ' + (e.message || e));
+  }
+};
+
+/* ---------- ADD RECIPE (editors only) ---------- */
+let addCraftTargetTypeKey = null;
+
+window.openAddCraftModal = function(typeKey){
+  if(!canEditCraftType()) return;
+  const sec = CRAFT_SECTIONS.find(s => s.key === typeKey);
+  if(!sec) return;
+  addCraftTargetTypeKey = typeKey;
+  document.getElementById('add-craft-modal-title').textContent = `Add Recipe — ${sec.name}`;
+  document.getElementById('add-craft-modal-subtitle').textContent = 'Visible to everyone immediately. You can add its materials, description, DC, etc. afterwards by clicking on the recipe.';
+  document.getElementById('add-craft-modal-status').textContent = '';
+
+  const groupSel = document.getElementById('new-craft-group');
+  groupSel.innerHTML = sec.groups.map(g => `<option value="${escapeHtml(g.label)}">${escapeHtml(g.label)}</option>`).join('')
+    + `<option value="__new__">+ New tier / group…</option>`;
+  document.getElementById('new-craft-group-custom').value = '';
+  document.getElementById('new-craft-name').value = '';
+  onNewCraftGroupChange();
+
+  document.getElementById('add-craft-modal-backdrop').classList.add('open');
+};
+window.closeAddCraftModal = function(){
+  document.getElementById('add-craft-modal-backdrop').classList.remove('open');
+  addCraftTargetTypeKey = null;
+};
+window.onNewCraftGroupChange = function(){
+  const isNew = document.getElementById('new-craft-group').value === '__new__';
+  document.getElementById('new-craft-group-custom-wrap').style.display = isNew ? '' : 'none';
+};
+window.createCraftRecipe = async function(){
+  if(!addCraftTargetTypeKey || !canEditCraftType()) return;
+  const sec = CRAFT_SECTIONS.find(s => s.key === addCraftTargetTypeKey);
+  const statusEl = document.getElementById('add-craft-modal-status');
+  const saveBtn = document.getElementById('add-craft-modal-save');
+  const groupSel = document.getElementById('new-craft-group');
+  const name = document.getElementById('new-craft-name').value.trim();
+  let groupLabel;
+  if(groupSel.value === '__new__'){
+    groupLabel = document.getElementById('new-craft-group-custom').value.trim();
+  } else {
+    groupLabel = groupSel.value;
+  }
+  if(!name){ statusEl.textContent = 'Please enter a recipe name.'; return; }
+  if(!groupLabel){ statusEl.textContent = 'Please enter a tier / group name.'; return; }
+
+  const id = uniqueKey(`${sec.key}_${slugify(name)}`, new Set(Object.keys(CRAFT_INDEX)));
+
+  saveBtn.disabled = true;
+  statusEl.textContent = 'Saving...';
+  try{
+    const { error } = await supabaseClient.from('crafting_recipes').insert({
+      id, craft_type: sec.key, group_label: groupLabel,
+      name, sort_order: 9999,
+      created_by: currentUser ? currentUser.id : null,
+    });
+    if(error) throw error;
+    await saveCraftMetaRow(id, { desc:'', tags:[], materials:[], craftingTime:'', dc:null, tries:null });
+    await loadCraftingRecipes();
+    await loadCraftMeta();
+    renderCrafting();
+    closeAddCraftModal();
+  }catch(e){
+    console.error(e);
+    statusEl.textContent = 'Error: ' + (e.message || 'could not save.');
+  }finally{
+    saveBtn.disabled = false;
+  }
+};
+
+document.getElementById('craft-search').addEventListener('input', applyCraftFilters);
+document.getElementById('craft-reset-all').addEventListener('click', async () => {
+  if (isViewingOther) return;
+  if(!confirm('Reset ALL "known" checks for crafting recipes? This cannot be undone.')) return;
+  state.craftLearned = {};
+  await persist();
+  renderCrafting();
+});
+
 document.addEventListener('keydown', (e) => {
-  if(e.key === 'Escape'){ closeSpellModal(); closeRollBuffModal(); closeWsModal(); closeDisciplinesModal(); closeAddWsModal(); closeDiceModal(); }
+  if(e.key === 'Escape'){ closeSpellModal(); closeRollBuffModal(); closeWsModal(); closeDisciplinesModal(); closeAddWsModal(); closeDiceModal(); closeCraftModal(); closeAddCraftModal(); }
 });
 
 document.getElementById('modal-desc').addEventListener('input', function(){ syncGrowWrap(this); });
@@ -4283,7 +4991,12 @@ let state = {
   rollBuffs: [],
   emoteText: {},  // spell id -> this character's own personal "how I emote casting it" text
   wsProgress: {},  // warrior skill id -> number of passed learning rolls so far
-  wsCollapsed: {}  // discipline key -> collapsed state (same idea as `collapsed` for schools)
+  wsCollapsed: {},  // discipline key -> collapsed state (same idea as `collapsed` for schools)
+  craftLearned: {},  // crafting recipe id -> known boolean (plain checkbox, like spells)
+  craftCollapsed: {}, // craft type key -> collapsed state (same idea as `collapsed` for schools)
+  showJewelry: false,
+  showBlacksmithing: false,
+  showAlchemy: false
 };
 
 /* ---------- BROWSING STATE VARIABLES ---------- */
@@ -4415,15 +5128,21 @@ async function loadFromCloud(){
     if(!state.emoteText || typeof state.emoteText !== 'object') state.emoteText = {};
     if(!state.wsProgress) state.wsProgress = {};
     if(!state.wsCollapsed) state.wsCollapsed = {};
+    if(!state.craftLearned) state.craftLearned = {};
+    if(!state.craftCollapsed) state.craftCollapsed = {};
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     document.getElementById('filter-light').checked = !!state.showLight;
     document.getElementById('filter-dark').checked = !!state.showDark;
     document.getElementById('filter-legacy').checked = !!state.showLegacy;
     document.getElementById('filter-deity').checked = !!state.showDeity;
+    document.getElementById('filter-jewelry').checked = !!state.showJewelry;
+    document.getElementById('filter-blacksmithing').checked = !!state.showBlacksmithing;
+    document.getElementById('filter-alchemy').checked = !!state.showAlchemy;
     populateCharInfoFields();
     renderRollBuffDisplay();
     render();
     if(currentView === 'warrior') renderWarrior();
+    if(currentView === 'crafting') renderCrafting();
     setCloudDirty(false);
     setCloudStatus('Loaded from cloud ✓');
   }catch(e){
@@ -4566,16 +5285,22 @@ function switchToAlternativeSheet(targetUserId) {
     if(!state.emoteText || typeof state.emoteText !== 'object') state.emoteText = {};
     if(!state.wsProgress) state.wsProgress = {};
     if(!state.wsCollapsed) state.wsCollapsed = {};
+    if(!state.craftLearned) state.craftLearned = {};
+    if(!state.craftCollapsed) state.craftCollapsed = {};
     
     document.getElementById('filter-light').checked = !!state.showLight;
     document.getElementById('filter-dark').checked = !!state.showDark;
     document.getElementById('filter-legacy').checked = !!state.showLegacy;
     document.getElementById('filter-deity').checked = !!state.showDeity;
+    document.getElementById('filter-jewelry').checked = !!state.showJewelry;
+    document.getElementById('filter-blacksmithing').checked = !!state.showBlacksmithing;
+    document.getElementById('filter-alchemy').checked = !!state.showAlchemy;
     
     populateCharInfoFields();
     renderRollBuffDisplay();
     render();
     if(currentView === 'warrior') renderWarrior();
+    if(currentView === 'crafting') renderCrafting();
     applyEditLockState(); 
     if(isPregnancyViewer) loadPregnancyData(targetUserId);
   }
@@ -4594,16 +5319,22 @@ function returnToOwnSheet() {
   if(!state.emoteText || typeof state.emoteText !== 'object') state.emoteText = {};
   if(!state.wsProgress) state.wsProgress = {};
   if(!state.wsCollapsed) state.wsCollapsed = {};
+    if(!state.craftLearned) state.craftLearned = {};
+    if(!state.craftCollapsed) state.craftCollapsed = {};
   
   document.getElementById('filter-light').checked = !!state.showLight;
   document.getElementById('filter-dark').checked = !!state.showDark;
   document.getElementById('filter-legacy').checked = !!state.showLegacy;
   document.getElementById('filter-deity').checked = !!state.showDeity;
+    document.getElementById('filter-jewelry').checked = !!state.showJewelry;
+    document.getElementById('filter-blacksmithing').checked = !!state.showBlacksmithing;
+    document.getElementById('filter-alchemy').checked = !!state.showAlchemy;
   
   populateCharInfoFields();
   renderRollBuffDisplay();
   render();
   if(currentView === 'warrior') renderWarrior();
+    if(currentView === 'crafting') renderCrafting();
   applyEditLockState(); 
   saveState(false); 
   if(isPregnancyViewer && currentUser) loadPregnancyData(currentUser.id);
@@ -4682,17 +5413,25 @@ function load(){
       if(parsed.hasOwnProperty('showDark')) state.showDark = parsed.showDark;
       if(parsed.hasOwnProperty('showLegacy')) state.showLegacy = parsed.showLegacy;
       if(parsed.hasOwnProperty('showDeity')) state.showDeity = parsed.showDeity;
+      if(parsed.hasOwnProperty('showJewelry')) state.showJewelry = parsed.showJewelry;
+      if(parsed.hasOwnProperty('showBlacksmithing')) state.showBlacksmithing = parsed.showBlacksmithing;
+      if(parsed.hasOwnProperty('showAlchemy')) state.showAlchemy = parsed.showAlchemy;
       state.charInfo = parsed.charInfo || {};
       state.rollBuffs = Array.isArray(parsed.rollBuffs) ? parsed.rollBuffs : [];
       state.emoteText = (parsed.emoteText && typeof parsed.emoteText === 'object') ? parsed.emoteText : {};
       state.wsProgress = parsed.wsProgress || {};
       state.wsCollapsed = parsed.wsCollapsed || {};
+      state.craftLearned = parsed.craftLearned || {};
+      state.craftCollapsed = parsed.craftCollapsed || {};
     }catch(e){console.error(e);}
   }
   document.getElementById('filter-light').checked = state.showLight;
   document.getElementById('filter-dark').checked = state.showDark;
   document.getElementById('filter-legacy').checked = state.showLegacy;
   document.getElementById('filter-deity').checked = state.showDeity;
+  document.getElementById('filter-jewelry').checked = state.showJewelry;
+  document.getElementById('filter-blacksmithing').checked = state.showBlacksmithing;
+  document.getElementById('filter-alchemy').checked = state.showAlchemy;
   populateCharInfoFields();
   renderRollBuffDisplay();
   render();
@@ -5566,8 +6305,12 @@ function onFilterChange(){
   state.showDark = document.getElementById('filter-dark').checked;
   state.showLegacy = document.getElementById('filter-legacy').checked;
   state.showDeity = document.getElementById('filter-deity').checked;
+  state.showJewelry = document.getElementById('filter-jewelry').checked;
+  state.showBlacksmithing = document.getElementById('filter-blacksmithing').checked;
+  state.showAlchemy = document.getElementById('filter-alchemy').checked;
   persist(false);   // display filter only, not worth a cloud-save nag
   render();
+  if(currentView === 'crafting') renderCrafting();
 }
 
 function getVisibleSchools(){
@@ -5916,7 +6659,7 @@ window.jumpToSchool = function(key){
    recursion — it only touches the grid's own inputs/buttons.) */
 function applyGridLockState(){
   const locked = isViewingOther || editLocked;
-  document.querySelectorAll('#grid input, #grid button, #ws-grid input, #ws-grid button').forEach(el => {
+  document.querySelectorAll('#grid input, #grid button, #ws-grid input, #ws-grid button, #craft-grid input, #craft-grid button').forEach(el => {
     if (locked) el.setAttribute('disabled', 'true');
     else el.removeAttribute('disabled');
   });
@@ -5947,14 +6690,20 @@ function importCharacter() {
       if(!state.emoteText || typeof state.emoteText !== 'object') state.emoteText = {};
       if(!state.wsProgress) state.wsProgress = {};
       if(!state.wsCollapsed) state.wsCollapsed = {};
+    if(!state.craftLearned) state.craftLearned = {};
+    if(!state.craftCollapsed) state.craftCollapsed = {};
       persist();
       render();
       if(currentView === 'warrior') renderWarrior();
+    if(currentView === 'crafting') renderCrafting();
       
       document.getElementById('filter-light').checked = !!state.showLight;
       document.getElementById('filter-dark').checked = !!state.showDark;
       document.getElementById('filter-legacy').checked = !!state.showLegacy;
       document.getElementById('filter-deity').checked = !!state.showDeity;
+    document.getElementById('filter-jewelry').checked = !!state.showJewelry;
+    document.getElementById('filter-blacksmithing').checked = !!state.showBlacksmithing;
+    document.getElementById('filter-alchemy').checked = !!state.showAlchemy;
       populateCharInfoFields();
       renderRollBuffDisplay();
       
@@ -6060,7 +6809,7 @@ function applyFilters(){
 }
 
 function toggleReadOnly(readOnly) {
-  const inputs = document.querySelectorAll('.charsheet input, .charsheet textarea, .charsheet button, .alignment-box input, #grid input, #grid button, #ws-grid input, #ws-grid button');
+  const inputs = document.querySelectorAll('.charsheet input, .charsheet textarea, .charsheet button, .alignment-box input, #grid input, #grid button, #ws-grid input, #ws-grid button, #craft-grid input, #craft-grid button');
   const cloudSaveBtn = document.getElementById('cloud-save');
   const resetBtn = document.getElementById('reset-all');
   const wsResetBtn = document.getElementById('ws-reset-all');
@@ -6079,7 +6828,8 @@ function toggleReadOnly(readOnly) {
     }
   });
   
-  if (!readOnly) { render(); if(currentView === 'warrior') renderWarrior(); }
+  if (!readOnly) { render(); if(currentView === 'warrior') renderWarrior();
+    if(currentView === 'crafting') renderCrafting(); }
 }
 
 /* The edit lock is a manual on/off switch (persisted in localStorage) that
@@ -6122,6 +6872,7 @@ function toggleEditLock(){
 let charsheetCollapsed = localStorage.getItem('spellbook_charsheet_collapsed') === 'true';
 let filtersCollapsed = localStorage.getItem('spellbook_filters_collapsed') === 'true';
 let wsFiltersCollapsed = localStorage.getItem('spellbook_ws_filters_collapsed') === 'true';
+let craftFiltersCollapsed = localStorage.getItem('spellbook_craft_filters_collapsed') === 'true';
 
 function applyCharsheetCollapsedState(){
   const grid = document.getElementById('charsheet-grid');
@@ -6159,6 +6910,18 @@ window.toggleWsFilterBar = function(){
   applyWsFilterBarCollapsedState();
 };
 
+function applyCraftFilterBarCollapsedState(){
+  const bar = document.getElementById('craft-filter-bar');
+  const btn = document.getElementById('craft-toggle-filters-btn');
+  if(bar) bar.classList.toggle('collapsed', craftFiltersCollapsed);
+  if(btn) btn.textContent = (craftFiltersCollapsed ? '▸' : '▾') + ' Filters';
+}
+window.toggleCraftFilterBar = function(){
+  craftFiltersCollapsed = !craftFiltersCollapsed;
+  localStorage.setItem('spellbook_craft_filters_collapsed', craftFiltersCollapsed ? 'true' : 'false');
+  applyCraftFilterBarCollapsedState();
+};
+
 document.getElementById('btn-toggle-list-view').addEventListener('click', () => {
   const dir = document.getElementById('other-chars-directory');
   dir.style.display = dir.style.display === 'none' ? 'block' : 'none';
@@ -6185,14 +6948,16 @@ document.getElementById('reset-all').addEventListener('click', async () => {
     });
   });
 
-  state = { learned: resetLearned, savant:{}, oracle:{}, collapsed:{}, showLight: state.showLight, showDark: state.showDark, showLegacy: state.showLegacy, showDeity: state.showDeity, charInfo: {}, rollBuffs: [],
+  state = { learned: resetLearned, savant:{}, oracle:{}, collapsed:{}, showLight: state.showLight, showDark: state.showDark, showLegacy: state.showLegacy, showDeity: state.showDeity, showJewelry: state.showJewelry, showBlacksmithing: state.showBlacksmithing, showAlchemy: state.showAlchemy, charInfo: {}, rollBuffs: [],
     // Your personal emote text is creative writing tied to the spell, not a
     // checkmark — "Reset all checks" shouldn't wipe out text you wrote, so
     // (like warrior skill progress below) it's carried over as-is.
     emoteText: state.emoteText,
-    // Warrior skills are a separate tracking system — "Reset all checks" only
-    // resets spells, so their progress/collapsed state is carried over as-is.
-    wsProgress: state.wsProgress, wsCollapsed: state.wsCollapsed };
+    // Warrior skills and Crafting are separate tracking systems — "Reset all
+    // checks" only resets spells, so their progress/collapsed state is
+    // carried over as-is.
+    wsProgress: state.wsProgress, wsCollapsed: state.wsCollapsed,
+    craftLearned: state.craftLearned, craftCollapsed: state.craftCollapsed };
   await persist();
   populateCharInfoFields();
   renderRollBuffDisplay();
@@ -6224,17 +6989,22 @@ window.addEventListener('beforeunload', function(e){
   await loadTagGroups();     // fetch shared tag-group organization from the cloud
   await loadDisciplinesAndSkills(); // fetch Disciplines + their warrior skills from the cloud
   await loadWarriorSkillMeta();     // fetch shared warrior skill data (desc/tags/damage/etc.) from the cloud
+  await loadCraftingRecipes();      // fetch Jewelry/Blacksmithing/Alchemy recipes from the cloud
+  await loadCraftMeta();            // fetch shared recipe data (desc/tags/materials/DC/etc.) from the cloud
   renderTagFilters();
   renderWsTagFilters();
+  renderCraftTagFilters();
   load();                    // renders the grid with the loaded spell metadata
   applyEditLockState();      // apply saved lock preference before anything can be touched
   applyCharsheetCollapsedState();
   applyFilterBarCollapsedState();
   applyWsFilterBarCollapsedState();
+  applyCraftFilterBarCollapsedState();
   await initAuth();          // also determines isSpellEditor
   initAutosizeTextareas();
   const savedView = localStorage.getItem('spellbook_active_view');
   if(savedView === 'warrior') switchView('warrior');
+  if(savedView === 'crafting') switchView('crafting');
   requestAnimationFrame(alignEditLockWithAuthBar);
 })();
 window.addEventListener('load', () => requestAnimationFrame(alignEditLockWithAuthBar));
