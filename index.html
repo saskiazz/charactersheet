@@ -1870,6 +1870,12 @@
       <span class="charsheet-chevron" id="charsheet-chevron">▸</span>
     </div>
     <div class="charsheet-grid" id="charsheet-grid">
+      <div class="charsheet-field wide">
+        <label class="modal-label personal-label" style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;">
+          <input type="checkbox" id="ci-share-emotes" checked onchange="onShareEmotesChange()" style="margin-top:3px;">
+          <span>Share my personal emote text with people viewing my sheet <span class="modal-hint">(on by default — turn this off if you'd rather keep your spell/ability emotes private; this only affects what OTHER people can see, you'll always see your own)</span></span>
+        </label>
+      </div>
       <div class="charsheet-field">
         <label for="ci-name">Name</label>
         <input type="text" id="ci-name" data-ci="name" oninput="onCharInfoChange()">
@@ -3848,13 +3854,19 @@ window.openSpellModal = function(evt, id){
   document.getElementById('modal-desc').value = meta.desc;
 
   const emoteLocked = isViewingOther || editLocked;
+  const emotePrivate = isViewingOther && state.shareEmotes === false;
   const precastCb = document.getElementById('modal-precast');
   precastCb.checked = isPrecastSpell(id);
   precastCb.disabled = emoteLocked;
   const emoteField = document.getElementById('modal-emote-text');
   emoteField.value = getEmoteText(id);
   emoteField.disabled = emoteLocked;
-  document.getElementById('modal-emote-readonly-hint').style.display = emoteLocked ? 'block' : 'none';
+  emoteField.placeholder = emotePrivate ? "This player has kept their emote text private." : "Your go-to roleplay text for casting this spell...";
+  const emoteHint = document.getElementById('modal-emote-readonly-hint');
+  emoteHint.textContent = emotePrivate
+    ? "This player has chosen to keep their personal emote text private — you can't see it."
+    : "Editing is locked, or you're viewing someone else's sheet — this text is read-only right now.";
+  emoteHint.style.display = emoteLocked ? 'block' : 'none';
   syncGrowWrap(emoteField);
 
   const flavor = getDisplayFlavor(meta);
@@ -6130,6 +6142,7 @@ window.abilityParseFlavorFromDescription = function(){
    the ability's own id so it stays attached even if abilities get
    reordered or reassigned between races. */
 function getAbilityEmoteText(id){
+  if (isViewingOther && state.shareEmotes === false) return '';
   return (state.abilityEmoteText && state.abilityEmoteText[id]) || '';
 }
 window.onAbilityEmoteTextChange = function(){
@@ -6180,13 +6193,19 @@ window.openAbilityModal = function(evt, id){
   document.getElementById('ability-modal-desc').value = meta.desc;
 
   const emoteLocked = isViewingOther || editLocked;
+  const emotePrivate = isViewingOther && state.shareEmotes === false;
   const abilityPrecastCb = document.getElementById('ability-modal-precast');
   abilityPrecastCb.checked = isPrecastAbility(id);
   abilityPrecastCb.disabled = emoteLocked;
   const emoteField = document.getElementById('ability-modal-emote-text');
   emoteField.value = getAbilityEmoteText(id);
   emoteField.disabled = emoteLocked;
-  document.getElementById('ability-modal-emote-readonly-hint').style.display = emoteLocked ? 'block' : 'none';
+  emoteField.placeholder = emotePrivate ? "This player has kept their emote text private." : "Your go-to roleplay text for using this ability...";
+  const abilityEmoteHint = document.getElementById('ability-modal-emote-readonly-hint');
+  abilityEmoteHint.textContent = emotePrivate
+    ? "This player has chosen to keep their personal emote text private — you can't see it."
+    : "Editing is locked, or you're viewing someone else's sheet — this text is read-only right now.";
+  abilityEmoteHint.style.display = emoteLocked ? 'block' : 'none';
   syncGrowWrap(emoteField);
 
   const flavor = getDisplayFlavor(meta);
@@ -6797,7 +6816,8 @@ let state = {
   inventoryGroups: [], // {id, name}[] — custom sort groups for inventoryItems, order = array order
   weaponGroups: [], // {id, name}[] — custom sort groups for weaponItems, order = array order
   precastSpells: [], // spell id[] — this character's Precast spells (added via ⭐), order = array order
-  precastAbilities: [] // racial ability id[] — this character's Precast abilities (added via ⭐), order = array order
+  precastAbilities: [], // racial ability id[] — this character's Precast abilities (added via ⭐), order = array order
+  shareEmotes: true // whether OTHER people viewing this sheet can see this character's personal emote text (spells & abilities). Defaults to on; the owner can opt out. Never affects the owner's own view of their own sheet.
 };
 
 /* ---------- BROWSING STATE VARIABLES ---------- */
@@ -6844,6 +6864,7 @@ function setLearned(id, val){
    stay attached to the right spell even if spells get reordered, moved
    between groups, or a school gets restructured. */
 function getEmoteText(id){
+  if (isViewingOther && state.shareEmotes === false) return '';
   return (state.emoteText && state.emoteText[id]) || '';
 }
 
@@ -6932,6 +6953,7 @@ async function loadFromCloud(){
     if(!Array.isArray(state.weaponGroups)) state.weaponGroups = [];
     if(!Array.isArray(state.precastSpells)) state.precastSpells = [];
     if(!Array.isArray(state.precastAbilities)) state.precastAbilities = [];
+    if(typeof state.shareEmotes !== 'boolean') state.shareEmotes = true;
     if(!state.emoteText || typeof state.emoteText !== 'object') state.emoteText = {};
     if(!state.abilityEmoteText || typeof state.abilityEmoteText !== 'object') state.abilityEmoteText = {};
     if(!state.wsProgress) state.wsProgress = {};
@@ -6946,6 +6968,7 @@ async function loadFromCloud(){
     document.getElementById('filter-jewelry').checked = !!state.showJewelry;
     document.getElementById('filter-blacksmithing').checked = !!state.showBlacksmithing;
     document.getElementById('filter-alchemy').checked = !!state.showAlchemy;
+    document.getElementById('ci-share-emotes').checked = state.shareEmotes !== false;
     populateCharInfoFields();
     renderRollBuffDisplay();
     render();
@@ -7108,6 +7131,7 @@ function switchToAlternativeSheet(targetUserId) {
     if(!Array.isArray(state.weaponGroups)) state.weaponGroups = [];
     if(!Array.isArray(state.precastSpells)) state.precastSpells = [];
     if(!Array.isArray(state.precastAbilities)) state.precastAbilities = [];
+    if(typeof state.shareEmotes !== 'boolean') state.shareEmotes = true;
     if(!state.emoteText || typeof state.emoteText !== 'object') state.emoteText = {};
     if(!state.abilityEmoteText || typeof state.abilityEmoteText !== 'object') state.abilityEmoteText = {};
     if(!state.wsProgress) state.wsProgress = {};
@@ -7122,6 +7146,7 @@ function switchToAlternativeSheet(targetUserId) {
     document.getElementById('filter-jewelry').checked = !!state.showJewelry;
     document.getElementById('filter-blacksmithing').checked = !!state.showBlacksmithing;
     document.getElementById('filter-alchemy').checked = !!state.showAlchemy;
+    document.getElementById('ci-share-emotes').checked = state.shareEmotes !== false;
     
     populateCharInfoFields();
     renderRollBuffDisplay();
@@ -7149,6 +7174,7 @@ function returnToOwnSheet() {
   if(!Array.isArray(state.weaponGroups)) state.weaponGroups = [];
   if(!Array.isArray(state.precastSpells)) state.precastSpells = [];
   if(!Array.isArray(state.precastAbilities)) state.precastAbilities = [];
+  if(typeof state.shareEmotes !== 'boolean') state.shareEmotes = true;
   if(!state.emoteText || typeof state.emoteText !== 'object') state.emoteText = {};
     if(!state.abilityEmoteText || typeof state.abilityEmoteText !== 'object') state.abilityEmoteText = {};
   if(!state.wsProgress) state.wsProgress = {};
@@ -7163,6 +7189,7 @@ function returnToOwnSheet() {
     document.getElementById('filter-jewelry').checked = !!state.showJewelry;
     document.getElementById('filter-blacksmithing').checked = !!state.showBlacksmithing;
     document.getElementById('filter-alchemy').checked = !!state.showAlchemy;
+    document.getElementById('ci-share-emotes').checked = state.shareEmotes !== false;
   
   populateCharInfoFields();
   renderRollBuffDisplay();
@@ -7250,6 +7277,7 @@ function load(){
       if(parsed.hasOwnProperty('showJewelry')) state.showJewelry = parsed.showJewelry;
       if(parsed.hasOwnProperty('showBlacksmithing')) state.showBlacksmithing = parsed.showBlacksmithing;
       if(parsed.hasOwnProperty('showAlchemy')) state.showAlchemy = parsed.showAlchemy;
+      if(parsed.hasOwnProperty('shareEmotes')) state.shareEmotes = parsed.shareEmotes;
       state.charInfo = parsed.charInfo || {};
       state.rollBuffs = Array.isArray(parsed.rollBuffs) ? parsed.rollBuffs : [];
       state.inventoryItems = Array.isArray(parsed.inventoryItems) ? parsed.inventoryItems : [];
@@ -7273,6 +7301,7 @@ function load(){
   document.getElementById('filter-jewelry').checked = state.showJewelry;
   document.getElementById('filter-blacksmithing').checked = state.showBlacksmithing;
   document.getElementById('filter-alchemy').checked = state.showAlchemy;
+  document.getElementById('ci-share-emotes').checked = state.shareEmotes !== false;
   populateCharInfoFields();
   renderRollBuffDisplay();
   render();
@@ -7333,6 +7362,18 @@ window.onCharInfoChange = function(){
   // changed, so typing in unrelated fields (inventory, weapons, ...) stays
   // snappy. renderWarrior() is cheap even while the Spells view is showing.
   if(relevantChanged) renderWarrior();
+};
+
+/* This character's privacy preference for personal emote text — a plain
+   top-level state key (like showLight etc.), not a charInfo field, since
+   it isn't shown/edited as free text. Re-renders anything that currently
+   displays emote text so the effect is visible immediately if you're
+   looking at your own sheet (toggling it never changes what you see of
+   your own sheet, only what others would see). */
+window.onShareEmotesChange = function(){
+  if (isViewingOther || editLocked) return;
+  state.shareEmotes = document.getElementById('ci-share-emotes').checked;
+  persist();
 };
 
 /* ---------- ROLL BUFFS / DEBUFFS ---------- */
@@ -8540,6 +8581,7 @@ function importCharacter() {
       if(!Array.isArray(state.weaponGroups)) state.weaponGroups = [];
       if(!Array.isArray(state.precastSpells)) state.precastSpells = [];
       if(!Array.isArray(state.precastAbilities)) state.precastAbilities = [];
+      if(typeof state.shareEmotes !== 'boolean') state.shareEmotes = true;
       if(!state.emoteText || typeof state.emoteText !== 'object') state.emoteText = {};
     if(!state.abilityEmoteText || typeof state.abilityEmoteText !== 'object') state.abilityEmoteText = {};
       if(!state.wsProgress) state.wsProgress = {};
@@ -8558,6 +8600,7 @@ function importCharacter() {
     document.getElementById('filter-jewelry').checked = !!state.showJewelry;
     document.getElementById('filter-blacksmithing').checked = !!state.showBlacksmithing;
     document.getElementById('filter-alchemy').checked = !!state.showAlchemy;
+      document.getElementById('ci-share-emotes').checked = state.shareEmotes !== false;
       populateCharInfoFields();
       renderRollBuffDisplay();
       
