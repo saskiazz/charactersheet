@@ -870,6 +870,11 @@
   .group.savant-group .group-label{color:var(--gold-bright);}
   .group.oracle-group .group-label{color:var(--neutral-accent);}
   .group-count{font-size:15px;color:var(--parchment-dim);font-weight:400;text-transform:none;letter-spacing:0;}
+  .group-label-right{display:flex;align-items:center;gap:8px;}
+  .group-drag-handle{cursor:grab;color:var(--parchment-dim);font-size:17px;line-height:1;user-select:none;}
+  .group-drag-handle:hover{color:var(--gold-bright);}
+  .group[draggable="true"]:active{cursor:grabbing;}
+  .group.dragging{opacity:0.35;}
   .group-race-note{
     font-size:11.5px;
     letter-spacing:0.04em;
@@ -923,6 +928,17 @@
   
   .spell-latin{font-size:16.5px;color:var(--parchment-dim);font-style:italic;margin-left:4px;}
   .spell-item label{cursor:pointer;}
+
+  /* DRAG-TO-REORDER — used within a tier/group (currently Crafting
+     recipes). Only rendered for editors with editing unlocked. */
+  .drag-handle{
+    margin-left:auto;flex-shrink:0;padding-left:8px;
+    color:var(--parchment-dim);font-size:18px;line-height:1;cursor:grab;
+    user-select:none;
+  }
+  .drag-handle:hover{color:var(--gold-bright);}
+  .spell-item[draggable="true"]:active{cursor:grabbing;}
+  .spell-item.dragging{opacity:0.35;}
   .spell-item.hidden{display:none;}
   .group.hidden{display:none;}
   .school.hidden{display:none;}
@@ -989,6 +1005,11 @@
   .school.type-blacksmithing .spell-item input[type=checkbox]{accent-color:var(--blacksmith-accent);}
   .school.type-alchemy .spell-item input[type=checkbox]{accent-color:var(--alchemy-accent);}
   .craft-mats{font-size:15px;color:var(--gold);margin-left:7px;}
+  .craft-bundle-badge{
+    font-size:12.5px;text-transform:uppercase;letter-spacing:0.05em;
+    background:rgba(201,160,84,0.12);border:1px solid var(--gold);color:var(--gold-bright);
+    border-radius:10px;padding:1px 7px;margin-left:7px;
+  }
   .craft-mat-free{color:var(--ok);font-style:italic;}
   .craft-time{font-size:15px;color:var(--neutral-accent);margin-left:7px;}
   .craft-dc{font-size:15px;color:var(--dark-accent);margin-left:7px;}
@@ -1080,6 +1101,7 @@
     color:var(--parchment-dim);
   }
   .charsheet-field input[type=text],
+  .charsheet-field select,
   .charsheet-field textarea,
   .charsheet-field .grow-wrap::after{
     background:rgba(0,0,0,0.25);
@@ -1095,9 +1117,93 @@
   .charsheet-field textarea,
   .charsheet-field .grow-wrap::after{min-height:72px;line-height:1.5;resize:none;overflow:hidden;}
   .charsheet-field input[type=text]:focus,
+  .charsheet-field select:focus,
   .charsheet-field textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,160,84,0.15);}
   .charsheet-field input[type=text]:hover,
+  .charsheet-field select:hover,
   .charsheet-field textarea:hover{border-color:var(--hairline-soft);}
+
+  /* RACE ADMIN LINKS — tiny inline "⚙ Manage..." links under the Race
+     dropdown, visible only to global editors (canManageRaces()). */
+  .charsheet-admin-links{display:flex;gap:10px;margin-top:2px;}
+  .mini-admin-link{
+    background:transparent;border:none;color:var(--parchment-dim);
+    font-size:12.5px;letter-spacing:0.03em;cursor:pointer;padding:0;text-decoration:underline;
+    text-decoration-style:dotted;text-underline-offset:2px;
+  }
+  .mini-admin-link:hover{color:var(--light-accent);}
+
+  /* RACIAL ABILITIES DISPLAY — replaces the old free-text "Special
+     Abilities" textarea with an automatic list of clickable ability
+     names (like a compact spell list) driven by the selected Race. Click
+     a name to see its full cost/damage/effects/description. */
+  .racial-abilities-display{
+    background:rgba(0,0,0,0.25);border:1px solid var(--hairline);border-radius:var(--radius-sm);
+    padding:10px 12px;min-height:72px;display:flex;flex-direction:row;flex-wrap:wrap;align-items:flex-start;gap:6px 16px;
+  }
+  .racial-abilities-empty{font-size:16px;color:var(--parchment-dim);font-style:italic;}
+  .racial-ability-link{cursor:pointer;}
+
+  /* INVENTORY DISPLAY — same container as the racial abilities list
+     (.racial-abilities-display), but stacked one item per line instead
+     of wrapped inline pills, since a shopping-list layout reads easier
+     for an inventory than a wrapped row of tags does. */
+  .inventory-display-stacked{flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:5px;}
+  .inventory-item-pill{
+    font-size:16.5px;color:var(--parchment);
+    background:rgba(255,255,255,0.05);border:1px solid var(--hairline);
+    border-radius:8px;padding:5px 10px;
+    display:block;width:fit-content;
+    cursor:pointer;
+  }
+  .inventory-item-pill:hover{border-color:var(--gold);color:var(--gold-bright);}
+
+  /* CUSTOM GROUPS — Inventory & Weapons items can be sorted into
+     user-defined groups. Used both in the Manage modals (edit rows) and
+     on the main sheet's compact pill display. */
+  .inv-display-group{margin-bottom:9px;}
+  .inv-display-group:last-child{margin-bottom:0;}
+  .inv-display-group-label{
+    display:block;font-family:'Cinzel',Garamond,serif;font-size:11.5px;color:var(--gold);
+    letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px;
+  }
+  .inv-display-group-items{display:flex;flex-direction:column;gap:5px;}
+  .inv-group-header{
+    display:flex;align-items:center;gap:10px;padding:8px 2px 5px;margin-top:8px;
+    border-bottom:1px solid var(--hairline-soft);
+  }
+  .inv-group-header:first-child{margin-top:0;}
+  .inv-group-name{font-family:'Cinzel',Garamond,serif;font-size:13px;color:var(--gold-bright);letter-spacing:0.04em;}
+  .inv-group-count{color:var(--parchment-dim);font-size:11.5px;margin-right:auto;}
+  .inv-group-header-ungrouped .inv-group-name{color:var(--parchment-dim);font-style:italic;}
+
+  /* PRECAST PILLS — same shape as .inventory-item-pill but includes an
+     inline remove (✕) button so a spell can be removed from Precast
+     right from the main sheet without opening its modal. */
+  .precast-pill{display:inline-flex;align-items:center;gap:7px;}
+  .precast-remove-btn{
+    background:transparent;border:none;color:var(--parchment-dim);cursor:pointer;
+    font-size:12px;padding:0 2px;line-height:1;
+  }
+  .precast-remove-btn:hover{color:var(--danger);}
+
+  /* Details toggle + dedicated stat row inside the Manage Inventory /
+     Manage Weapons rows — keeps qty/name/remove compact by default, and
+     gives fields like Body/Mind/Spirit damage their own full-width row
+     instead of fighting the rest of the row for space when wrapping. */
+  .ee-detail-toggle{
+    background:transparent;border:1px solid var(--hairline);color:var(--parchment-dim);
+    font-size:13px;padding:5px 10px;border-radius:6px;cursor:pointer;white-space:nowrap;
+  }
+  .ee-detail-toggle:hover{color:var(--gold-bright);border-color:var(--gold);}
+  .item-detail-row{flex:1 1 100%;display:flex;gap:10px;flex-wrap:wrap;}
+
+  /* ITEM VIEW MODAL (read-only) */
+  .item-view-stat{
+    background:rgba(0,0,0,0.25);border:1px solid var(--hairline);border-radius:var(--radius-sm);
+    padding:9px 11px;font-family:'Crimson Pro',Georgia,serif;font-size:19px;color:var(--parchment);
+  }
+  .item-view-desc-text{font-size:17px;color:var(--parchment);line-height:1.5;white-space:pre-wrap;}
 
   /* RESTRICTED "lil menu" — only rendered/populated for users holding the
      pregnancy_viewers role (see checkPregnancyViewerStatus). Visually set
@@ -1770,7 +1876,13 @@
       </div>
       <div class="charsheet-field">
         <label for="ci-race">Race</label>
-        <input type="text" id="ci-race" data-ci="race" oninput="onCharInfoChange()">
+        <select id="ci-race" data-ci="race" onchange="onCharInfoChange(); renderRaceAbilitiesDisplay();">
+          <option value="">— Select Race —</option>
+        </select>
+        <div class="charsheet-admin-links" id="race-admin-links" style="display:none;">
+          <button type="button" class="mini-admin-link" onclick="openAbilitiesModal()">⚙ Manage Abilities</button>
+          <button type="button" class="mini-admin-link" onclick="openRacesModal()">⚙ Manage Races</button>
+        </div>
       </div>
       <div class="charsheet-field">
         <label for="ci-rank">Rank</label>
@@ -1797,31 +1909,38 @@
           <div class="stat-mini reset-time"><label for="ci-reset-time">Reset Time</label><input type="datetime-local" id="ci-reset-time" data-ci="reset_time" oninput="onCharInfoChange()"></div>
         </div>
       </div>
-      <div class="charsheet-field">
-        <label for="ci-tradeskill">Tradeskill</label>
-        <input type="text" id="ci-tradeskill" data-ci="tradeskill" oninput="onCharInfoChange()">
-      </div>
       <div class="charsheet-field wide">
-        <label for="ci-abilities">Special Abilities</label>
-        <div class="grow-wrap"><textarea id="ci-abilities" data-ci="abilities" oninput="onCharInfoChange(); syncGrowWrap(this)"></textarea></div>
+        <label>Special Abilities <span class="modal-hint" style="text-transform:none;letter-spacing:0;">(automatic, based on Race)</span></label>
+        <div id="ci-abilities-display" class="racial-abilities-display"></div>
       </div>
       <div class="charsheet-field wide">
         <label for="ci-weakness">Weakness</label>
         <div class="grow-wrap"><textarea id="ci-weakness" data-ci="weakness" oninput="onCharInfoChange(); syncGrowWrap(this)"></textarea></div>
       </div>
       <div class="charsheet-field wide">
-        <label for="ci-inventory">Inventory</label>
-        <div class="grow-wrap"><textarea id="ci-inventory" data-ci="inventory" oninput="onCharInfoChange(); syncGrowWrap(this)"></textarea></div>
+        <label>Inventory</label>
+        <div id="inventory-display" class="racial-abilities-display inventory-display-stacked"></div>
+        <div class="charsheet-admin-links">
+          <button type="button" class="mini-admin-link" onclick="openInventoryModal()">⚙ Manage Inventory</button>
+        </div>
       </div>
       <div class="charsheet-field wide">
-        <label for="ci-weapons">Weapons / Weapon Skills</label>
-        <div class="grow-wrap"><textarea id="ci-weapons" data-ci="weapons" oninput="onCharInfoChange(); syncGrowWrap(this)"></textarea></div>
+        <label>Weapons</label>
+        <div id="weapons-display" class="racial-abilities-display inventory-display-stacked"></div>
+        <div class="charsheet-admin-links">
+          <button type="button" class="mini-admin-link" onclick="openWeaponsModal()">⚙ Manage Weapons</button>
+        </div>
       </div>
 
-      <!-- PRECAST ACTIONS FIELDS BENEATH WEAPONS -->
+      <!-- PRECAST — used to be a free-text emoting field; now that each
+           spell/ability has its own personal emote text (see their
+           modals), this is just a list of spells and racial abilities
+           you've added to Precast. Star one (in its list row or its
+           modal) to add it here; click a name to open its full details,
+           including your emote text. -->
       <div class="charsheet-field wide">
-        <label for="ci-precast-actions">Precast Actions</label>
-        <div class="grow-wrap"><textarea id="ci-precast-actions" data-ci="precast_actions" oninput="onCharInfoChange(); syncGrowWrap(this)" placeholder="List your active buff setups, rituals, or temporary transformations..."></textarea></div>
+        <label>Precast <span class="modal-hint" style="text-transform:none;letter-spacing:0;">(⭐ a spell or ability to add it to Precast)</span></label>
+        <div id="precast-display" class="racial-abilities-display inventory-display-stacked"></div>
       </div>
       <div class="charsheet-field wide">
         <label>Stats After Precast</label>
@@ -2067,6 +2186,12 @@
     <button class="modal-close" onclick="closeSpellModal()">✕</button>
     <h2 id="modal-title"></h2>
     <p id="modal-subtitle" class="modal-subtitle"></p>
+
+    <div class="modal-section personal-section">
+      <label class="modal-label personal-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;">
+        <input type="checkbox" id="modal-precast" onchange="onPrecastCheckboxChange()"> ⭐ Precast spell <span class="modal-hint">(add this to Precast — it'll show under Precast on your main sheet)</span>
+      </label>
+    </div>
 
     <div class="modal-section personal-section">
       <label class="modal-label personal-label">My Emote Text <span class="modal-hint">(personal — saved with your own character, not the shared spell data)</span></label>
@@ -2506,6 +2631,11 @@
     </div>
 
     <div class="modal-section">
+      <label class="modal-label">Learn Bundle <span class="modal-hint">(optional — recipes sharing the same bundle name, even across different tiers/groups, are learned together with one checkmark and count as a single item toward this craft type's mastery total)</span></label>
+      <input type="text" id="craft-modal-bundle" placeholder="e.g. jewelry-tier-6">
+    </div>
+
+    <div class="modal-section">
       <label class="modal-label">Materials Required</label>
       <div class="extra-effects-list" id="craft-materials-list"></div>
       <p class="extra-effects-empty" id="craft-materials-empty" style="display:none;">No materials added.</p>
@@ -2562,6 +2692,269 @@
     <div class="modal-actions" style="justify-content:flex-end;">
       <button type="button" onclick="closeAddCraftModal()">Cancel</button>
       <button type="button" id="add-craft-modal-save" onclick="createCraftRecipe()">Add Recipe</button>
+    </div>
+  </div>
+</div>
+
+<div id="abilities-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeAbilitiesModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeAbilitiesModal()">✕</button>
+    <h2>Manage Racial Special Abilities</h2>
+    <p class="modal-subtitle">Define the pool of special abilities that can be granted by a race — same shape as a Spell (tags, cost, damage/heal/buff, effects, description). Once added here, assign them to specific races from "⚙ Manage Races" — the same ability can be assigned to more than one race.</p>
+
+    <div id="abilities-manage-list"></div>
+    <p id="abilities-manage-empty" class="rollbuff-list-empty" style="display:none;">No abilities yet. Add one below.</p>
+
+    <label style="display:block;margin-top:14px;">Ability name
+      <input type="text" id="new-ability-name" placeholder="e.g. Darkvision" style="width:100%;margin-top:6px;">
+    </label>
+    <p class="modal-hint" style="margin-top:6px;">Add the name here, then click "Edit Details" on it below to fill in cost, damage, effects, and description.</p>
+    <p id="abilities-modal-status" style="font-size:13px;color:var(--parchment-dim);font-style:italic;min-height:1.2em;margin-top:10px;"></p>
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button type="button" onclick="closeAbilitiesModal()">Close</button>
+      <button type="button" id="abilities-modal-save" onclick="createRacialAbility()">+ Add Ability</button>
+    </div>
+  </div>
+</div>
+
+<div id="races-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeRacesModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeRacesModal()">✕</button>
+    <h2>Manage Races</h2>
+    <p class="modal-subtitle">Add races — they appear in the Race dropdown right away. Check off which special abilities each race grants; those show automatically under "Special Abilities" on the sheet once that race is selected.</p>
+
+    <div id="races-manage-list"></div>
+    <p id="races-manage-empty" class="rollbuff-list-empty" style="display:none;">No races yet. Add one below.</p>
+
+    <label style="display:block;margin-top:14px;">Race name
+      <input type="text" id="new-race-name" placeholder="e.g. Fae" style="width:100%;margin-top:6px;">
+    </label>
+    <p id="races-modal-status" style="font-size:13px;color:var(--parchment-dim);font-style:italic;min-height:1.2em;margin-top:10px;"></p>
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button type="button" onclick="closeRacesModal()">Close</button>
+      <button type="button" id="races-modal-save" onclick="createRace()">+ Add Race</button>
+    </div>
+  </div>
+</div>
+
+<div id="ability-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeAbilityModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeAbilityModal()">✕</button>
+    <h2 id="ability-modal-title"></h2>
+    <p class="modal-subtitle">Racial Special Ability</p>
+
+    <div class="modal-section personal-section">
+      <label class="modal-label personal-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;">
+        <input type="checkbox" id="ability-modal-precast" onchange="onAbilityPrecastCheckboxChange()"> ⭐ Precast ability <span class="modal-hint">(add this to Precast — it'll show under Precast on your main sheet)</span>
+      </label>
+    </div>
+
+    <div class="modal-section personal-section">
+      <label class="modal-label personal-label">My Emote Text <span class="modal-hint">(personal — saved with your own character, not the shared ability data)</span></label>
+      <div class="grow-wrap"><textarea id="ability-modal-emote-text" rows="3" placeholder="Your go-to roleplay text for using this ability..." oninput="onAbilityEmoteTextChange(); syncGrowWrap(this)"></textarea></div>
+      <p id="ability-modal-emote-readonly-hint" class="modal-hint" style="display:none;">Editing is locked, or you're viewing someone else's sheet — this text is read-only right now.</p>
+    </div>
+
+    <div class="modal-section">
+      <label class="modal-label">Tags <span class="modal-hint">(comma separated)</span></label>
+      <input type="text" id="ability-modal-tags" placeholder="movement, healing, shielding...">
+    </div>
+
+    <div class="modal-section">
+      <label class="modal-label">Casting Details <span class="modal-hint">(Incantation / Movements / Auto Hit / Friendly Fire / Duration)</span></label>
+      <button type="button" class="flavor-parse-btn" id="ability-flavor-parse-btn" onclick="abilityParseFlavorFromDescription()">⟳ Auto-fill from description text</button>
+      <div class="flavor-grid">
+        <div><label>Incantation</label><div class="grow-wrap"><textarea id="ability-modal-flavor-incantation" rows="1" placeholder="e.g. Must say &quot;Custodiae&quot;" oninput="syncGrowWrap(this)"></textarea></div></div>
+        <div><label>Movements</label><div class="grow-wrap"><textarea id="ability-modal-flavor-movements" rows="1" placeholder="e.g. Point casting hand at target" oninput="syncGrowWrap(this)"></textarea></div></div>
+        <div><label>Auto Hit</label><div class="grow-wrap"><textarea id="ability-modal-flavor-autohit" rows="1" placeholder="e.g. N/A" oninput="syncGrowWrap(this)"></textarea></div></div>
+        <div><label>Friendly Fire</label><div class="grow-wrap"><textarea id="ability-modal-flavor-friendlyfire" rows="1" placeholder="e.g. N/A" oninput="syncGrowWrap(this)"></textarea></div></div>
+        <div class="flavor-field-wide"><label>Duration</label><div class="grow-wrap"><textarea id="ability-modal-flavor-duration" rows="1" placeholder="e.g. End of Scene" oninput="syncGrowWrap(this)"></textarea></div></div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <label class="modal-label">Cost to Use</label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><input type="number" id="ability-modal-cost-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="ability-modal-cost-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="ability-modal-cost-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <label class="modal-label">Upkeep <span class="modal-hint">(per round, if any)</span></label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><input type="number" id="ability-modal-upkeep-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="ability-modal-upkeep-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="ability-modal-upkeep-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <label class="modal-label">Effect Type <span class="modal-hint">(pick all that apply)</span></label>
+      <div class="effect-type-picker">
+        <label class="effect-type-option"><input type="checkbox" id="ability-modal-effect-damage" data-effect="damage" onchange="updateAbilityEffectSectionVisibility()"> Damage</label>
+        <label class="effect-type-option"><input type="checkbox" id="ability-modal-effect-heal" data-effect="heal" onchange="updateAbilityEffectSectionVisibility()"> Healing</label>
+        <label class="effect-type-option"><input type="checkbox" id="ability-modal-effect-buff" data-effect="buff" onchange="updateAbilityEffectSectionVisibility()"> Buff</label>
+      </div>
+    </div>
+
+    <div class="modal-section" data-ability-effect-section="damage">
+      <label class="modal-label">Damage on Use</label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><input type="number" id="ability-modal-damage-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="ability-modal-damage-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="ability-modal-damage-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+
+    <div class="modal-section" data-ability-effect-section="damage">
+      <label class="modal-label">Damage per Round</label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><input type="number" id="ability-modal-damage-upkeep-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="ability-modal-damage-upkeep-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="ability-modal-damage-upkeep-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+
+    <div class="modal-section" data-ability-effect-section="heal">
+      <label class="modal-label">Healing on Use</label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><input type="number" id="ability-modal-heal-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="ability-modal-heal-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="ability-modal-heal-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+
+    <div class="modal-section" data-ability-effect-section="heal">
+      <label class="modal-label">Healing per Round</label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><input type="number" id="ability-modal-heal-upkeep-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="ability-modal-heal-upkeep-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="ability-modal-heal-upkeep-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+
+    <div class="modal-section" data-ability-effect-section="buff">
+      <label class="modal-label">Buff on Use</label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><input type="number" id="ability-modal-buff-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="ability-modal-buff-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="ability-modal-buff-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+
+    <div class="modal-section" data-ability-effect-section="buff">
+      <label class="modal-label">Buff per Round</label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><input type="number" id="ability-modal-buff-upkeep-body" min="0" step="1"></div>
+        <div><label>Mind</label><input type="number" id="ability-modal-buff-upkeep-mind" min="0" step="1"></div>
+        <div><label>Spirit</label><input type="number" id="ability-modal-buff-upkeep-spirit" min="0" step="1"></div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <label class="modal-label">Other Effects <span class="modal-hint">(shields, roll bonuses/penalties, area shape, or anything else that doesn't fit the fields above)</span></label>
+      <div class="extra-effects-list" id="ability-extra-effects-list"></div>
+      <p class="extra-effects-empty" id="ability-extra-effects-empty" style="display:none;">No extra effects added.</p>
+      <div class="extra-effects-add-row">
+        <button type="button" class="ee-add-btn" id="ability-ee-add-shield" onclick="abilityAddExtraEffect('shield')">+ Shield / Absorption</button>
+        <button type="button" class="ee-add-btn" id="ability-ee-add-rollmod" onclick="abilityAddExtraEffect('rollmod')">+ Roll Modifier</button>
+        <button type="button" class="ee-add-btn" id="ability-ee-add-aoe" onclick="abilityAddExtraEffect('aoe')">+ Area (AOE)</button>
+        <button type="button" class="ee-add-btn" id="ability-ee-add-special" onclick="abilityAddExtraEffect('special')">+ Special Effect</button>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <label class="modal-label">Description</label>
+      <div class="grow-wrap"><textarea id="ability-modal-desc" rows="5" placeholder="What does this ability do?"></textarea></div>
+    </div>
+
+    <p id="ability-modal-readonly-hint" class="modal-hint" style="display:none;color:var(--danger);">
+      You don't have edit rights for the shared racial ability data. Ask the tracker owner to add you as an editor if you should be able to change this.
+    </p>
+
+    <div class="modal-actions">
+      <button id="ability-modal-delete" onclick="deleteCurrentModalAbility()" style="background:var(--danger);border-color:var(--danger);color:#1a0d0b;display:none;">Delete Ability</button>
+      <button onclick="closeAbilityModal()">Close</button>
+      <button id="ability-modal-save" onclick="saveAbilityModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="inventory-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeInventoryModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeInventoryModal()">✕</button>
+    <h2>Manage Inventory</h2>
+    <p class="modal-subtitle">What you're carrying — quantity and item name. Personal to your character, not shared.</p>
+
+    <div id="inventory-list"></div>
+    <p id="inventory-list-empty" class="rollbuff-list-empty" style="display:none;">No items yet. Add one below.</p>
+    <div class="extra-effects-add-row">
+      <button type="button" class="ee-add-btn" onclick="addInventoryItem()">+ Add Item</button>
+      <button type="button" class="ee-add-btn" onclick="addInventoryGroup()">+ Add Group</button>
+    </div>
+
+    <div class="modal-section personal-section" style="margin-top:22px;">
+      <label class="modal-label personal-label">Legacy Inventory <span class="modal-hint">(your old free-text inventory notes, kept here so nothing's lost — move things into the list above and clear this out whenever you're ready)</span></label>
+      <div class="grow-wrap"><textarea id="ci-inventory" data-ci="inventory" rows="4" oninput="onCharInfoChange(); syncGrowWrap(this)"></textarea></div>
+    </div>
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button type="button" onclick="closeInventoryModal()">Done</button>
+    </div>
+  </div>
+</div>
+
+<div id="weapons-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeWeaponsModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeWeaponsModal()">✕</button>
+    <h2>Manage Weapons</h2>
+    <p class="modal-subtitle">What you're carrying — quantity and weapon name. Personal to your character, not shared.</p>
+
+    <div id="weapons-list"></div>
+    <p id="weapons-list-empty" class="rollbuff-list-empty" style="display:none;">No weapons yet. Add one below.</p>
+    <div class="extra-effects-add-row">
+      <button type="button" class="ee-add-btn" onclick="addWeaponItem()">+ Add Weapon</button>
+      <button type="button" class="ee-add-btn" onclick="addWeaponGroup()">+ Add Group</button>
+    </div>
+
+    <div class="modal-section personal-section" style="margin-top:22px;">
+      <label class="modal-label personal-label">Legacy Weapons / Weapon Skills <span class="modal-hint">(your old free-text notes, kept here so nothing's lost — move things into the list above and clear this out whenever you're ready)</span></label>
+      <div class="grow-wrap"><textarea id="ci-weapons" data-ci="weapons" rows="4" oninput="onCharInfoChange(); syncGrowWrap(this)"></textarea></div>
+    </div>
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button type="button" onclick="closeWeaponsModal()">Done</button>
+    </div>
+  </div>
+</div>
+
+<div id="item-view-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeItemViewModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeItemViewModal()">✕</button>
+    <h2 id="item-view-title"></h2>
+    <p class="modal-subtitle" id="item-view-qty"></p>
+
+    <div id="item-view-damage" class="modal-section" style="display:none;">
+      <label class="modal-label">Damage</label>
+      <div class="modal-cost-grid">
+        <div><label>Body</label><div class="item-view-stat" id="item-view-dmg-body">0</div></div>
+        <div><label>Mind</label><div class="item-view-stat" id="item-view-dmg-mind">0</div></div>
+        <div><label>Spirit</label><div class="item-view-stat" id="item-view-dmg-spirit">0</div></div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <label class="modal-label">Description</label>
+      <p id="item-view-desc" class="item-view-desc-text"></p>
+    </div>
+
+    <div class="modal-actions">
+      <button id="item-view-edit-btn" onclick="openItemViewEdit()" style="display:none;">✏ Edit</button>
+      <button onclick="closeItemViewModal()" style="margin-left:auto;">Close</button>
     </div>
   </div>
 </div>
@@ -2773,7 +3166,7 @@ async function checkSpellEditorStatus(){
   isWsEditor = false;
   isCraftEditor = false;
   oracleSchools = new Set();
-  if(!currentUser){ updateTagGroupsButtonVisibility(); updateSchoolAdminButtonVisibility(); updateDisciplineAdminButtonVisibility(); return; }
+  if(!currentUser){ updateTagGroupsButtonVisibility(); updateSchoolAdminButtonVisibility(); updateDisciplineAdminButtonVisibility(); updateRaceAdminLinksVisibility(); return; }
   try{
     const { data, error } = await supabaseClient
       .from('spell_editors')
@@ -2808,6 +3201,7 @@ async function checkSpellEditorStatus(){
   updateTagGroupsButtonVisibility();
   updateSchoolAdminButtonVisibility();
   updateDisciplineAdminButtonVisibility();
+  updateRaceAdminLinksVisibility();
   render();
   if(currentView === 'warrior') renderWarrior();
   if(currentView === 'crafting') renderCrafting();
@@ -3454,6 +3848,9 @@ window.openSpellModal = function(evt, id){
   document.getElementById('modal-desc').value = meta.desc;
 
   const emoteLocked = isViewingOther || editLocked;
+  const precastCb = document.getElementById('modal-precast');
+  precastCb.checked = isPrecastSpell(id);
+  precastCb.disabled = emoteLocked;
   const emoteField = document.getElementById('modal-emote-text');
   emoteField.value = getEmoteText(id);
   emoteField.disabled = emoteLocked;
@@ -3543,6 +3940,104 @@ window.onEmoteTextChange = function(){
   else delete state.emoteText[currentModalSpellId];
   persist();
 };
+
+/* =========================================================================
+   PRECAST — a personal list of spell ids added to Precast
+   (state.precastSpells), same idea/shape as emoteText but a simple
+   ordered array rather than a map, since order (the sequence you added
+   them in) is meaningful here and there's no per-spell text to store.
+   Toggled from three places that all have to stay in sync: the ⭐ in
+   each spell's list row, the ⭐ checkbox inside the spell modal, and the
+   ✕ on a pill in the main sheet's Precast display — see
+   setPrecastSpell().
+   ========================================================================= */
+function isPrecastSpell(id){
+  return Array.isArray(state.precastSpells) && state.precastSpells.includes(id);
+}
+function setPrecastSpell(id, val){
+  if (isViewingOther || editLocked) return;
+  if(!Array.isArray(state.precastSpells)) state.precastSpells = [];
+  const idx = state.precastSpells.indexOf(id);
+  if(val && idx === -1) state.precastSpells.push(id);
+  else if(!val && idx !== -1) state.precastSpells.splice(idx, 1);
+  else return;
+  persist();
+  renderPrecastDisplay();
+}
+window.togglePrecastSpell = function(id){
+  setPrecastSpell(id, !isPrecastSpell(id));
+  if(currentModalSpellId === id){
+    const cb = document.getElementById('modal-precast');
+    if(cb) cb.checked = isPrecastSpell(id);
+  }
+};
+window.onPrecastCheckboxChange = function(){
+  if (!currentModalSpellId) return;
+  setPrecastSpell(currentModalSpellId, document.getElementById('modal-precast').checked);
+};
+
+/* ---------- PRECAST ABILITIES — same pattern as precast spells above,
+   against state.precastAbilities / RACIAL_ABILITY_INDEX. Racial abilities
+   don't live in a big always-mounted grid like spells do (they're a
+   short list that's rebuilt on race change), so there's no cheap
+   targeted DOM update here — togglePrecastAbility just re-renders the
+   (short) abilities list and the Precast field directly. ---------- */
+function isPrecastAbility(id){
+  return Array.isArray(state.precastAbilities) && state.precastAbilities.includes(id);
+}
+function setPrecastAbility(id, val){
+  if (isViewingOther || editLocked) return;
+  if(!Array.isArray(state.precastAbilities)) state.precastAbilities = [];
+  const idx = state.precastAbilities.indexOf(id);
+  if(val && idx === -1) state.precastAbilities.push(id);
+  else if(!val && idx !== -1) state.precastAbilities.splice(idx, 1);
+  else return;
+  persist();
+  renderPrecastDisplay();
+  renderRaceAbilitiesDisplay();
+}
+window.togglePrecastAbility = function(id){
+  setPrecastAbility(id, !isPrecastAbility(id));
+  if(currentModalAbilityId === id){
+    const cb = document.getElementById('ability-modal-precast');
+    if(cb) cb.checked = isPrecastAbility(id);
+  }
+};
+window.onAbilityPrecastCheckboxChange = function(){
+  if (!currentModalAbilityId) return;
+  setPrecastAbility(currentModalAbilityId, document.getElementById('ability-modal-precast').checked);
+};
+
+/* Main sheet's Precast field — a compact list of spells AND racial
+   abilities added to Precast, click a name to open its full modal
+   (cost/effects/description/emote text). */
+function renderPrecastDisplay(){
+  const wrap = document.getElementById('precast-display');
+  if(!wrap) return;
+  const spellIds = (Array.isArray(state.precastSpells) ? state.precastSpells : []).filter(id => SPELL_INDEX[id]);
+  const abilityIds = (Array.isArray(state.precastAbilities) ? state.precastAbilities : []).filter(id => RACIAL_ABILITY_INDEX[id]);
+  if(!spellIds.length && !abilityIds.length){
+    wrap.innerHTML = `<span class="racial-abilities-empty">No precast spells or abilities yet — star one (⭐ in its list row, or in its details) to add it here.</span>`;
+    return;
+  }
+  const spellPills = spellIds.map(id => {
+    const sp = SPELL_INDEX[id];
+    const emoteFlag = getEmoteText(id) ? `<span class="spell-emote-flag" title="You have emote text saved for this spell">💬</span>` : '';
+    return `<span class="inventory-item-pill precast-pill">
+      <span onclick="openSpellModal(event,'${id}')" style="cursor:pointer;">${escapeHtml(sp.latin)} <span class="spell-latin">(${escapeHtml(sp.en)})</span></span>${emoteFlag}
+      <button type="button" class="precast-remove-btn" title="Remove from Precast" onclick="event.stopPropagation(); togglePrecastSpell('${id}')">✕</button>
+    </span>`;
+  });
+  const abilityPills = abilityIds.map(id => {
+    const a = RACIAL_ABILITY_INDEX[id];
+    const emoteFlag = getAbilityEmoteText(id) ? `<span class="spell-emote-flag" title="You have emote text saved for this ability">💬</span>` : '';
+    return `<span class="inventory-item-pill precast-pill">
+      <span onclick="openAbilityModal(event,'${id}')" style="cursor:pointer;">${escapeHtml(a.name)} <span class="spell-latin">(ability)</span></span>${emoteFlag}
+      <button type="button" class="precast-remove-btn" title="Remove from Precast" onclick="event.stopPropagation(); togglePrecastAbility('${id}')">✕</button>
+    </span>`;
+  });
+  wrap.innerHTML = spellPills.concat(abilityPills).join('');
+}
 
 window.saveSpellModal = async function(){
   const sp = currentModalSpellId ? SPELL_INDEX[currentModalSpellId] : null;
@@ -4488,6 +4983,7 @@ async function loadCraftMeta(){
         craftingTime: row.crafting_time || '',
         dc: (row.dc === null || row.dc === undefined) ? null : row.dc,
         tries: (row.tries === null || row.tries === undefined) ? null : row.tries,
+        learnBundle: row.learn_bundle || '',
       };
     });
     craftMeta = next;
@@ -4505,6 +5001,7 @@ async function saveCraftMetaRow(id, meta){
     crafting_time: meta.craftingTime,
     dc: meta.dc,
     tries: meta.tries,
+    learn_bundle: meta.learnBundle || '',
     updated_by: currentUser ? currentUser.id : null,
     updated_at: new Date().toISOString(),
   };
@@ -4522,15 +5019,38 @@ function getCraftMeta(id){
     craftingTime: (m && m.craftingTime) || '',
     dc: (m && m.hasOwnProperty('dc')) ? m.dc : null,
     tries: (m && m.hasOwnProperty('tries')) ? m.tries : null,
+    learnBundle: (m && m.learnBundle) || '',
   };
 }
 
-/* ---------- KNOWN (plain checkbox, like spells) ---------- */
+/* ---------- KNOWN (plain checkbox, like spells) ----------
+   Recipes can optionally share a "learn bundle" key (set in the recipe's
+   own edit modal) — e.g. every Jewelry recipe across "Tier 6", "Tier 6 -
+   Dark/Light", and "Tier 6 - Neutral" can all carry the same bundle name
+   so checking any ONE of them checks all the others too (they're learned
+   as a single package), and for section-level mastery totals the whole
+   bundle counts as ONE item rather than one-per-recipe. */
 function isCraftLearned(id){ return !!state.craftLearned[id]; }
 function setCraftLearned(id, val){ state.craftLearned[id] = !!val; persist(); }
+
+function getCraftBundleSiblingIds(craftType, bundleKey){
+  const sec = CRAFT_SECTIONS.find(s => s.key === craftType);
+  if(!sec || !bundleKey) return [];
+  return craftSectionAllRecipes(sec)
+    .filter(r => getCraftMeta(r.id).learnBundle === bundleKey)
+    .map(r => r.id);
+}
+
 window.onToggleCraft = function(id, val){
   if (isViewingOther) return;
-  setCraftLearned(id, val);
+  const r = CRAFT_INDEX[id];
+  const bundle = getCraftMeta(id).learnBundle;
+  if(r && bundle){
+    getCraftBundleSiblingIds(r.craftType, bundle).forEach(sibId => { state.craftLearned[sibId] = !!val; });
+    persist();
+  } else {
+    setCraftLearned(id, val);
+  }
   renderCrafting();
 };
 
@@ -4541,6 +5061,27 @@ function countCraftGroup(recipes){
 }
 function craftSectionAllRecipes(sec){
   return sec.groups.flatMap(g => g.recipes);
+}
+/* Section-level totals (used for the section header stats, the global
+   stat pills, and "Types Mastered") need to count a whole learn-bundle as
+   ONE unit instead of one per recipe — otherwise a 13-recipe Tier 6
+   bundle would inflate Jewelry's total by 13 instead of 1. Per-group
+   counts (each group's own "X/Y known" label) intentionally keep using
+   countCraftGroup()/plain recipe counts instead, since within a single
+   group a bundle's recipes are already all-or-nothing together anyway. */
+function countCraftUnits(sec){
+  const seenBundles = new Set();
+  let total = 0, learned = 0;
+  craftSectionAllRecipes(sec).forEach(r => {
+    const bundle = getCraftMeta(r.id).learnBundle;
+    if(bundle){
+      if(seenBundles.has(bundle)) return;
+      seenBundles.add(bundle);
+    }
+    total += 1;
+    if(isCraftLearned(r.id)) learned += 1;
+  });
+  return { learned, total, missing: total - learned };
 }
 
 /* ---------- VISIBILITY (gated by the Jewelry/Blacksmithing/Alchemy checkboxes) ---------- */
@@ -4569,25 +5110,30 @@ function renderCraftRecipeItem(r){
   const meta = getCraftMeta(r.id);
   const matsHtml = formatCraftMaterialsHtml(meta.materials);
   const tagsHtml = meta.tags.length ? `<span class="spell-tags">${meta.tags.map(t=>`<span class="mini-tag">${escapeHtml(t)}</span>`).join('')}</span>` : '';
+  const bundleHtml = meta.learnBundle ? `<span class="craft-bundle-badge" title="Learned together with every other recipe in the '${escapeHtml(meta.learnBundle)}' bundle — checking any one checks them all">🔗 ${escapeHtml(meta.learnBundle)}</span>` : '';
+  const canReorder = canEditCraftType() && !editLocked;
+  const dragHtml = canReorder ? `<span class="drag-handle" title="Drag to reorder within this tier">⠿</span>` : '';
   return `
-    <li class="spell-item" data-name="${r.name.toLowerCase()}" data-id="${r.id}">
+    <li class="spell-item" data-name="${r.name.toLowerCase()}" data-id="${r.id}" ${canReorder ? `draggable="true" ondragstart="craftDragStart(event,'${r.id}')" ondragend="craftDragEnd(event)"` : ''}>
       <input type="checkbox" id="craftcb_${r.id}" ${checked} onchange="onToggleCraft('${r.id}', this.checked)">
-      <label for="craftcb_${r.id}"><span class="spell-name" onclick="openCraftModal(event,'${r.id}')">${escapeHtml(r.name)}</span>${matsHtml ? `<span class="craft-mats">🧱 ${matsHtml}</span>` : ''}${meta.craftingTime ? `<span class="craft-time">⏱ ${escapeHtml(meta.craftingTime)}</span>` : ''}${(meta.dc !== null && meta.dc !== '') ? `<span class="craft-dc">DC ${meta.dc}${(meta.tries !== null && meta.tries !== '') ? ` (${meta.tries} ${meta.tries == 1 ? 'try' : 'tries'})` : ''}</span>` : ''}${tagsHtml}</label>
+      <label for="craftcb_${r.id}"><span class="spell-name" onclick="openCraftModal(event,'${r.id}')">${escapeHtml(r.name)}</span>${matsHtml ? `<span class="craft-mats">🧱 ${matsHtml}</span>` : ''}${meta.craftingTime ? `<span class="craft-time">⏱ ${escapeHtml(meta.craftingTime)}</span>` : ''}${(meta.dc !== null && meta.dc !== '') ? `<span class="craft-dc">DC ${meta.dc}${(meta.tries !== null && meta.tries !== '') ? ` (${meta.tries} ${meta.tries == 1 ? 'try' : 'tries'})` : ''}</span>` : ''}${tagsHtml}${bundleHtml}</label>
+      ${dragHtml}
     </li>`;
 }
 
-function renderCraftGroup(sec, g){
+function renderCraftGroup(sec, g, gi){
   const c = countCraftGroup(g.recipes);
+  const canReorderGroups = canEditCraftType() && !editLocked;
+  const groupHandle = canReorderGroups ? `<span class="drag-handle group-drag-handle" title="Drag to reorder this tier">⠿</span>` : '';
   return `
-    <div class="group">
-      <div class="group-label"><span>${escapeHtml(g.label)}</span><span class="group-count">${c.learned}/${c.total} known</span></div>
-      <ul class="spell-list">${g.recipes.map(renderCraftRecipeItem).join('')}</ul>
+    <div class="group" data-craft-group-label="${escapeHtml(g.label)}" ${canReorderGroups ? `draggable="true" ondragstart="craftGroupDragStart(event)" ondragend="craftGroupDragEnd(event)"` : ''}>
+      <div class="group-label"><span>${escapeHtml(g.label)}</span><span class="group-label-right"><span class="group-count">${c.learned}/${c.total} known</span>${groupHandle}</span></div>
+      <ul class="spell-list" data-craft-section="${escapeHtml(sec.key)}" data-craft-group-idx="${gi}" ondragover="craftDragOver(event)" ondrop="craftDrop(event)">${g.recipes.map(renderCraftRecipeItem).join('')}</ul>
     </div>`;
 }
 
 function renderCraftSection(sec){
-  const all = craftSectionAllRecipes(sec);
-  const count = countCraftGroup(all);
+  const count = countCraftUnits(sec);
   const pct = count.total ? Math.round(100*count.learned/count.total) : 0;
   const mastered = count.total > 0 && count.missing === 0;
   const collapsed = isCraftSectionCollapsed(sec.key);
@@ -4610,7 +5156,9 @@ function renderCraftSection(sec){
       ${mastered ? `<div class="mastered-ribbon">✦ Mastered</div>` : ''}
     </div>
     <div class="school-body ${collapsed?'collapsed':''}">
-      ${sec.groups.map(g => renderCraftGroup(sec,g)).join('') || `<p class="extra-effects-empty" style="padding:0 18px;">No recipes yet.</p>`}
+      <div class="craft-groups-container" data-craft-groups-section="${sec.key}" ondragover="craftGroupDragOver(event)" ondrop="craftGroupDrop(event)">
+        ${sec.groups.map((g, gi) => renderCraftGroup(sec,g,gi)).join('') || `<p class="extra-effects-empty" style="padding:0 18px;">No recipes yet.</p>`}
+      </div>
       ${canEditCraftType() ? `<div class="school-foot" style="height:auto;padding:6px 0 10px;display:flex;gap:8px;flex-wrap:wrap;">
         <button type="button" class="manage-tag-groups-btn" onclick="event.stopPropagation(); openAddCraftModal('${sec.key}')">+ Add Recipe</button>
       </div>` : `<div class="school-foot"></div>`}
@@ -4636,7 +5184,7 @@ function renderCraftGlobalStats(){
   let totalLearned = 0, totalAll = 0, masteredCount = 0;
   const visible = getVisibleCraftSections();
   visible.forEach(sec => {
-    const c = countCraftGroup(craftSectionAllRecipes(sec));
+    const c = countCraftUnits(sec);
     totalLearned += c.learned;
     totalAll += c.total;
     if(c.total > 0 && c.missing === 0) masteredCount++;
@@ -4803,6 +5351,7 @@ window.openCraftModal = function(evt, id){
   document.getElementById('craft-modal-title').textContent = r.name;
   document.getElementById('craft-modal-subtitle').textContent = isCraftLearned(id) ? '✓ Known' : 'Not known';
   document.getElementById('craft-modal-tags').value = meta.tags.join(', ');
+  document.getElementById('craft-modal-bundle').value = meta.learnBundle;
   document.getElementById('craft-modal-time').value = meta.craftingTime;
   document.getElementById('craft-modal-dc').value = (meta.dc === null || meta.dc === undefined) ? '' : meta.dc;
   document.getElementById('craft-modal-tries').value = (meta.tries === null || meta.tries === undefined) ? '' : meta.tries;
@@ -4810,7 +5359,7 @@ window.openCraftModal = function(evt, id){
 
   craftModalMaterials = (meta.materials || []).map(m => ({...m}));
 
-  const editableIds = ['craft-modal-tags','craft-modal-time','craft-modal-dc','craft-modal-tries','craft-modal-desc','craft-add-material-btn'];
+  const editableIds = ['craft-modal-tags','craft-modal-bundle','craft-modal-time','craft-modal-dc','craft-modal-tries','craft-modal-desc','craft-add-material-btn'];
   const hasRights = canEditCraftType();
   const canEdit = hasRights && !editLocked;
   editableIds.forEach(elId => { document.getElementById(elId).disabled = !canEdit; });
@@ -4845,6 +5394,7 @@ window.saveCraftModal = async function(){
     craftingTime: document.getElementById('craft-modal-time').value,
     dc: numOrNull('craft-modal-dc'),
     tries: numOrNull('craft-modal-tries'),
+    learnBundle: document.getElementById('craft-modal-bundle').value.trim(),
   };
   const saveBtn = document.getElementById('craft-modal-save');
   saveBtn.disabled = true;
@@ -4934,7 +5484,7 @@ window.createCraftRecipe = async function(){
       created_by: currentUser ? currentUser.id : null,
     });
     if(error) throw error;
-    await saveCraftMetaRow(id, { desc:'', tags:[], materials:[], craftingTime:'', dc:null, tries:null });
+    await saveCraftMetaRow(id, { desc:'', tags:[], materials:[], craftingTime:'', dc:null, tries:null, learnBundle:'' });
     await loadCraftingRecipes();
     await loadCraftMeta();
     renderCrafting();
@@ -4947,6 +5497,137 @@ window.createCraftRecipe = async function(){
   }
 };
 
+/* ---------- REORDER WITHIN A TIER/GROUP (editors only, drag & drop) ----------
+   IMPORTANT: group order itself is derived from sort_order too (whichever
+   group's recipes have the lowest sort_order values renders first), so
+   simply renumbering one group to 0,1,2,... can shove it in front of
+   every other group — that was the earlier bug. Fixed by giving every
+   group its own fixed "band" (1000 slots) based on its CURRENT position,
+   and resequencing the whole section at once so bands never overlap. */
+async function resequenceCraftSection(sec){
+  const updates = [];
+  sec.groups.forEach((g, gi) => {
+    g.recipes.forEach((r, ri) => {
+      updates.push({ id: r.id, sort_order: gi * 1000 + ri });
+    });
+  });
+  try{
+    const results = await Promise.all(updates.map(u =>
+      supabaseClient.from('crafting_recipes').update({ sort_order: u.sort_order }).eq('id', u.id)
+    ));
+    const failed = results.find(res => res.error);
+    if(failed) throw failed.error;
+  }catch(e){
+    alert('Could not save the new order: ' + (e.message || e));
+    await loadCraftingRecipes();
+    renderCrafting();
+  }
+}
+
+let craftDragId = null;
+window.craftDragStart = function(evt, id){
+  if(!canEditCraftType() || editLocked) return;
+  evt.stopPropagation(); // don't let this also trigger the enclosing group's own dragstart
+  craftDragId = id;
+  evt.dataTransfer.effectAllowed = 'move';
+  evt.dataTransfer.setData('text/plain', id);
+  evt.currentTarget.classList.add('dragging');
+};
+window.craftDragEnd = function(evt){
+  evt.stopPropagation();
+  evt.currentTarget.classList.remove('dragging');
+  craftDragId = null;
+};
+function craftDragAfterElement(list, y){
+  const items = [...list.querySelectorAll('.spell-item:not(.dragging)')];
+  return items.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if(offset < 0 && offset > closest.offset) return { offset, element: child };
+    return closest;
+  }, { offset: -Infinity, element: null }).element;
+}
+window.craftDragOver = function(evt){
+  if(!craftDragId) return;
+  const list = evt.currentTarget;
+  const draggingEl = list.querySelector('.spell-item.dragging');
+  if(!draggingEl) return; // dragged item belongs to a different tier/group — don't allow cross-group drops
+  evt.preventDefault();
+  evt.stopPropagation();
+  evt.dataTransfer.dropEffect = 'move';
+  const afterEl = craftDragAfterElement(list, evt.clientY);
+  if(afterEl == null) list.appendChild(draggingEl);
+  else list.insertBefore(draggingEl, afterEl);
+};
+window.craftDrop = async function(evt){
+  if(!craftDragId) return;
+  evt.preventDefault();
+  evt.stopPropagation();
+  const list = evt.currentTarget;
+  const sec = CRAFT_SECTIONS.find(s => s.key === list.dataset.craftSection);
+  if(!sec) return;
+  const group = sec.groups[parseInt(list.dataset.craftGroupIdx, 10)];
+  if(!group) return;
+  const newOrderIds = [...list.querySelectorAll('.spell-item')].map(li => li.dataset.id);
+  group.recipes.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
+  await resequenceCraftSection(sec);
+  renderCrafting();
+};
+
+/* ---------- REORDER THE TIERS/GROUPS THEMSELVES (editors only, drag & drop) ----------
+   Same idea as item-level dragging above, just one level up: drag a
+   group by its ⠿ handle to move the whole tier earlier/later within its
+   craft type. Reuses resequenceCraftSection, which already keys off
+   sec.groups' current order to assign each group's band — so all this
+   needs to do is put sec.groups back in the new order before calling it. */
+let craftGroupDragActive = false;
+window.craftGroupDragStart = function(evt){
+  if(!canEditCraftType() || editLocked) return;
+  evt.stopPropagation();
+  craftGroupDragActive = true;
+  evt.dataTransfer.effectAllowed = 'move';
+  evt.dataTransfer.setData('text/plain', 'group');
+  evt.currentTarget.classList.add('dragging');
+};
+window.craftGroupDragEnd = function(evt){
+  evt.stopPropagation();
+  evt.currentTarget.classList.remove('dragging');
+  craftGroupDragActive = false;
+};
+function craftGroupDragAfterElement(container, y){
+  const groups = [...container.querySelectorAll(':scope > .group:not(.dragging)')];
+  return groups.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if(offset < 0 && offset > closest.offset) return { offset, element: child };
+    return closest;
+  }, { offset: -Infinity, element: null }).element;
+}
+window.craftGroupDragOver = function(evt){
+  if(!craftGroupDragActive) return;
+  const container = evt.currentTarget;
+  const draggingEl = container.querySelector(':scope > .group.dragging');
+  if(!draggingEl) return; // dragging a group from a different craft type — not allowed
+  evt.preventDefault();
+  evt.stopPropagation();
+  evt.dataTransfer.dropEffect = 'move';
+  const afterEl = craftGroupDragAfterElement(container, evt.clientY);
+  if(afterEl == null) container.appendChild(draggingEl);
+  else container.insertBefore(draggingEl, afterEl);
+};
+window.craftGroupDrop = async function(evt){
+  if(!craftGroupDragActive) return;
+  evt.preventDefault();
+  evt.stopPropagation();
+  const container = evt.currentTarget;
+  const sec = CRAFT_SECTIONS.find(s => s.key === container.dataset.craftGroupsSection);
+  if(!sec) return;
+  const newOrderLabels = [...container.querySelectorAll(':scope > .group')].map(div => div.dataset.craftGroupLabel);
+  sec.groups.sort((a, b) => newOrderLabels.indexOf(a.label) - newOrderLabels.indexOf(b.label));
+  await resequenceCraftSection(sec);
+  renderCrafting();
+};
+
 document.getElementById('craft-search').addEventListener('input', applyCraftFilters);
 document.getElementById('craft-reset-all').addEventListener('click', async () => {
   if (isViewingOther) return;
@@ -4956,8 +5637,1122 @@ document.getElementById('craft-reset-all').addEventListener('click', async () =>
   renderCrafting();
 });
 
+/* =========================================================================
+   RACES & RACIAL SPECIAL ABILITIES
+   Replaces the free-text "Race" field with a dropdown of editor-managed
+   races. Racial abilities now use the SAME shape as a Spell — tags, cost,
+   upkeep, damage/heal/buff on-use + per-round, and the shield/rollmod/
+   aoe/special "extra effects" builder — reusing the exact same generic
+   helpers (formatCost, formatEffect, EE_DEFAULTS, formatExtraEffect, the
+   SHIELD_/ROLLMOD_/AOE_ label maps) that the Spell and Warrior Skill
+   modals already use. The "Special Abilities" field on the sheet just
+   shows the assigned abilities' NAMES (like a spell list) — click one to
+   open its full detail in a read-only (or, for editors, editable) modal,
+   same interaction as clicking a spell or warrior skill name.
+   Abilities are a standalone pool, NOT existing Spells-system entries —
+   the same ability can be assigned to more than one race via the
+   "race_abilities" join table. Managed by the same global "spell_editors"
+   role used for Schools of Magic (no separate race-editor role for now).
+   ========================================================================= */
+
+let RACES = [];                  // [{key, name}]
+let RACIAL_ABILITIES = [];       // [{id, name}] — meta lives in abilityMeta, same split as spells/warrior skills
+let abilityMeta = {};            // ability id -> {desc, tags, effectTypes, cost, upkeep, damage, damageUpkeep, heal, healUpkeep, buff, buffUpkeep, extraEffects}
+let RACE_ABILITY_MAP = {};       // race_key -> [ability_id, ...]
+const RACIAL_ABILITY_INDEX = {}; // ability_id -> {id, name}
+
+function canManageRaces(){ return isSpellEditor; }
+
+function getAbilityMeta(id){
+  const m = abilityMeta[id];
+  return {
+    desc: (m && m.desc) || '',
+    tags: (m && m.tags) || [],
+    effectTypes: (m && m.effectTypes) || [],
+    cost: (m && m.cost) || {body:0, mind:0, spirit:0},
+    upkeep: (m && m.upkeep) || {body:0, mind:0, spirit:0},
+    damage: (m && m.damage) || {body:0, mind:0, spirit:0},
+    damageUpkeep: (m && m.damageUpkeep) || {body:0, mind:0, spirit:0},
+    heal: (m && m.heal) || {body:0, mind:0, spirit:0},
+    healUpkeep: (m && m.healUpkeep) || {body:0, mind:0, spirit:0},
+    buff: (m && m.buff) || {body:0, mind:0, spirit:0},
+    buffUpkeep: (m && m.buffUpkeep) || {body:0, mind:0, spirit:0},
+    extraEffects: (m && m.extraEffects) || [],
+    flavor: (m && m.flavor) || {},
+  };
+}
+
+async function loadRacesAndAbilities(){
+  try{
+    const [{ data: raceRows, error: raceErr }, { data: abilityRows, error: abilityErr }, { data: linkRows, error: linkErr }] = await Promise.all([
+      supabaseClient.from('races').select('*').order('sort_order', { ascending: true }),
+      supabaseClient.from('racial_abilities').select('*').order('sort_order', { ascending: true }),
+      supabaseClient.from('race_abilities').select('*'),
+    ]);
+    if(raceErr) throw raceErr;
+    if(abilityErr) throw abilityErr;
+    if(linkErr) throw linkErr;
+
+    RACES = (raceRows || []).map(row => ({ key: row.key, name: row.name }));
+
+    RACIAL_ABILITIES = (abilityRows || []).map(row => ({ id: row.id, name: row.name }));
+    Object.keys(RACIAL_ABILITY_INDEX).forEach(k => delete RACIAL_ABILITY_INDEX[k]);
+    RACIAL_ABILITIES.forEach(a => { RACIAL_ABILITY_INDEX[a.id] = a; });
+
+    const nextMeta = {};
+    (abilityRows || []).forEach(row => {
+      nextMeta[row.id] = {
+        desc: row.description || '',
+        tags: row.tags || [],
+        effectTypes: row.effect_types || [],
+        cost: row.cost || {body:0, mind:0, spirit:0},
+        upkeep: row.upkeep || {body:0, mind:0, spirit:0},
+        damage: row.damage || {body:0, mind:0, spirit:0},
+        damageUpkeep: row.damage_upkeep || {body:0, mind:0, spirit:0},
+        heal: row.heal || {body:0, mind:0, spirit:0},
+        healUpkeep: row.heal_upkeep || {body:0, mind:0, spirit:0},
+        buff: row.buff || {body:0, mind:0, spirit:0},
+        buffUpkeep: row.buff_upkeep || {body:0, mind:0, spirit:0},
+        extraEffects: row.extra_effects || [],
+        flavor: row.flavor || {},
+      };
+    });
+    abilityMeta = nextMeta;
+
+    const map = {};
+    (linkRows || []).forEach(row => {
+      if(!map[row.race_key]) map[row.race_key] = [];
+      map[row.race_key].push(row.ability_id);
+    });
+    RACE_ABILITY_MAP = map;
+  }catch(e){
+    console.error('Could not load races/racial abilities from cloud:', e);
+    // Non-fatal — the tables may not exist yet if this is a fresh setup.
+  }
+}
+
+async function saveAbilityMetaRow(id, meta){
+  const payload = {
+    id,
+    description: meta.desc,
+    tags: meta.tags,
+    effect_types: meta.effectTypes,
+    cost: meta.cost,
+    upkeep: meta.upkeep,
+    damage: meta.damage,
+    damage_upkeep: meta.damageUpkeep,
+    heal: meta.heal,
+    heal_upkeep: meta.healUpkeep,
+    buff: meta.buff,
+    buff_upkeep: meta.buffUpkeep,
+    extra_effects: meta.extraEffects,
+    flavor: meta.flavor,
+    updated_by: currentUser ? currentUser.id : null,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabaseClient.from('racial_abilities').update(payload).eq('id', id);
+  if(error) throw error;
+  abilityMeta[id] = meta;
+}
+
+/* ---------- RACE DROPDOWN (character sheet) ---------- */
+function renderRaceSelectOptions(){
+  const sel = document.getElementById('ci-race');
+  if(!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— Select Race —</option>' +
+    RACES.map(r => `<option value="${escapeHtml(r.key)}">${escapeHtml(r.name)}</option>`).join('');
+  if(current && RACES.some(r => r.key === current)) sel.value = current;
+}
+
+/* ---------- SPECIAL ABILITIES DISPLAY (character sheet) ----------
+   Just clickable names, like a compact spell list — click one to see the
+   full cost/damage/effects/description in the ability modal. */
+function renderRaceAbilitiesDisplay(){
+  const wrap = document.getElementById('ci-abilities-display');
+  if(!wrap) return;
+  const raceKey = state.charInfo ? state.charInfo.race : '';
+  const race = RACES.find(r => r.key === raceKey);
+  if(!race){
+    wrap.innerHTML = `<span class="racial-abilities-empty">Select a race above to see its special abilities.</span>`;
+    return;
+  }
+  const abilities = (RACE_ABILITY_MAP[raceKey] || []).map(id => RACIAL_ABILITY_INDEX[id]).filter(Boolean);
+  if(!abilities.length){
+    wrap.innerHTML = `<span class="racial-abilities-empty">${escapeHtml(race.name)} has no special abilities listed yet.</span>`;
+    return;
+  }
+  wrap.innerHTML = abilities.map(a => {
+    const emoteFlag = getAbilityEmoteText(a.id) ? `<span class="spell-emote-flag" title="You have emote text saved for this ability — click the name to view/edit it">💬</span>` : '';
+    return `<span class="spell-name racial-ability-link" onclick="openAbilityModal(event,'${a.id}')">${escapeHtml(a.name)}</span>${emoteFlag}`;
+  }).join('');
+}
+
+function updateRaceAdminLinksVisibility(){
+  const el = document.getElementById('race-admin-links');
+  if(el) el.style.display = canManageRaces() ? 'flex' : 'none';
+}
+
+/* ---------- MANAGE RACIAL ABILITIES (global editors only) ----------
+   Just a name + delete list here — click a name (or "Edit Details") to
+   open the full ability modal for cost/damage/effects/description. */
+window.openAbilitiesModal = function(){
+  if(!canManageRaces()) return;
+  document.getElementById('new-ability-name').value = '';
+  document.getElementById('abilities-modal-status').textContent = '';
+  renderAbilitiesManageList();
+  document.getElementById('abilities-modal-backdrop').classList.add('open');
+};
+window.closeAbilitiesModal = function(){
+  document.getElementById('abilities-modal-backdrop').classList.remove('open');
+};
+
+function renderAbilitiesManageList(){
+  const listEl = document.getElementById('abilities-manage-list');
+  const emptyEl = document.getElementById('abilities-manage-empty');
+  if(!listEl) return;
+  if(!RACIAL_ABILITIES.length){
+    listEl.innerHTML = '';
+    if(emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+  if(emptyEl) emptyEl.style.display = 'none';
+  listEl.innerHTML = RACIAL_ABILITIES.map(a => `
+    <div class="rollbuff-row" data-id="${escapeHtml(a.id)}">
+      <button type="button" class="rollbuff-remove" title="Delete" onclick="deleteRacialAbility('${a.id}')">✕</button>
+      <div style="margin-bottom:8px;padding-right:20px;">
+        <label style="display:block;font-size:14px;color:var(--parchment-dim);margin-bottom:4px;">Name</label>
+        <input type="text" value="${escapeHtml(a.name)}" onchange="updateRacialAbilityName('${a.id}',this.value)">
+      </div>
+      <button type="button" class="manage-tag-groups-btn" onclick="openAbilityModal(event,'${a.id}')">Edit Details (cost / damage / effects / description)</button>
+    </div>`).join('');
+}
+
+window.createRacialAbility = async function(){
+  if(!canManageRaces()) return;
+  const nameEl = document.getElementById('new-ability-name');
+  const statusEl = document.getElementById('abilities-modal-status');
+  const saveBtn = document.getElementById('abilities-modal-save');
+  const name = nameEl.value.trim();
+  if(!name){ statusEl.textContent = 'Please enter a name.'; return; }
+  const id = uniqueKey(slugify(name), new Set(RACIAL_ABILITIES.map(a => a.id)));
+  saveBtn.disabled = true;
+  statusEl.textContent = 'Saving...';
+  try{
+    const { error } = await supabaseClient.from('racial_abilities').insert({
+      id, name, sort_order: RACIAL_ABILITIES.length,
+      created_by: currentUser ? currentUser.id : null,
+    });
+    if(error) throw error;
+    await loadRacesAndAbilities();
+    renderAbilitiesManageList();
+    renderRaceAbilitiesDisplay();
+    nameEl.value = '';
+    statusEl.textContent = '';
+  }catch(e){
+    console.error(e);
+    statusEl.textContent = 'Error: ' + (e.message || 'could not save.');
+  }finally{
+    saveBtn.disabled = false;
+  }
+};
+
+window.updateRacialAbilityName = async function(id, value){
+  if(!canManageRaces()) return;
+  const ability = RACIAL_ABILITIES.find(a => a.id === id);
+  if(!ability) return;
+  ability.name = value;
+  try{
+    const { error } = await supabaseClient.from('racial_abilities').update({ name: value }).eq('id', id);
+    if(error) throw error;
+    renderRaceAbilitiesDisplay();
+    renderRacesManageList();
+  }catch(e){
+    alert('Could not save: ' + (e.message || e));
+  }
+};
+
+window.deleteRacialAbility = async function(id){
+  if(!canManageRaces()) return;
+  const ability = RACIAL_ABILITIES.find(a => a.id === id);
+  if(!ability) return;
+  if(!confirm(`Delete "${ability.name}"? This removes it from every race it's assigned to. This cannot be undone.`)) return;
+  try{
+    const { error } = await supabaseClient.from('racial_abilities').delete().eq('id', id);
+    if(error) throw error;
+    await loadRacesAndAbilities();
+    renderAbilitiesManageList();
+    renderRaceAbilitiesDisplay();
+  }catch(e){
+    alert('Could not delete this ability: ' + (e.message || e));
+  }
+};
+
+/* ---------- MANAGE RACES (global editors only) ---------- */
+window.openRacesModal = function(){
+  if(!canManageRaces()) return;
+  document.getElementById('new-race-name').value = '';
+  document.getElementById('races-modal-status').textContent = '';
+  renderRacesManageList();
+  document.getElementById('races-modal-backdrop').classList.add('open');
+};
+window.closeRacesModal = function(){
+  document.getElementById('races-modal-backdrop').classList.remove('open');
+};
+
+function renderRacesManageList(){
+  const listEl = document.getElementById('races-manage-list');
+  const emptyEl = document.getElementById('races-manage-empty');
+  if(!listEl) return;
+  if(!RACES.length){
+    listEl.innerHTML = '';
+    if(emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+  if(emptyEl) emptyEl.style.display = 'none';
+  listEl.innerHTML = RACES.map(r => {
+    const assigned = new Set(RACE_ABILITY_MAP[r.key] || []);
+    const optionsHtml = RACIAL_ABILITIES.length
+      ? RACIAL_ABILITIES.map(a => `
+        <div class="ws-prereq-option">
+          <input type="checkbox" id="race-${escapeHtml(r.key)}-ability-${escapeHtml(a.id)}" ${assigned.has(a.id)?'checked':''} onchange="toggleRaceAbility('${r.key}','${a.id}',this.checked)">
+          <label for="race-${escapeHtml(r.key)}-ability-${escapeHtml(a.id)}">${escapeHtml(a.name)}</label>
+          <button type="button" class="mini-admin-link" style="margin-left:8px;" onclick="event.preventDefault(); openAbilityModal(event,'${a.id}')">details</button>
+        </div>`).join('')
+      : `<span class="ws-prereq-empty">No abilities defined yet — add some via "⚙ Manage Abilities" first.</span>`;
+    return `
+    <div class="rollbuff-row" data-key="${escapeHtml(r.key)}">
+      <button type="button" class="rollbuff-remove" title="Delete" onclick="deleteRace('${r.key}')">✕</button>
+      <div style="margin-bottom:8px;padding-right:20px;">
+        <label style="display:block;font-size:14px;color:var(--parchment-dim);margin-bottom:4px;">Name</label>
+        <input type="text" value="${escapeHtml(r.name)}" onchange="updateRaceName('${r.key}',this.value)">
+      </div>
+      <div class="ws-prereq-picker" style="max-height:180px;">${optionsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+window.createRace = async function(){
+  if(!canManageRaces()) return;
+  const nameEl = document.getElementById('new-race-name');
+  const statusEl = document.getElementById('races-modal-status');
+  const saveBtn = document.getElementById('races-modal-save');
+  const name = nameEl.value.trim();
+  if(!name){ statusEl.textContent = 'Please enter a name.'; return; }
+  const key = uniqueKey(slugify(name), new Set(RACES.map(r => r.key)));
+  saveBtn.disabled = true;
+  statusEl.textContent = 'Saving...';
+  try{
+    const { error } = await supabaseClient.from('races').insert({
+      key, name, sort_order: RACES.length, created_by: currentUser ? currentUser.id : null,
+    });
+    if(error) throw error;
+    await loadRacesAndAbilities();
+    renderRacesManageList();
+    renderRaceSelectOptions();
+    nameEl.value = '';
+    statusEl.textContent = '';
+  }catch(e){
+    console.error(e);
+    statusEl.textContent = 'Error: ' + (e.message || 'could not save.');
+  }finally{
+    saveBtn.disabled = false;
+  }
+};
+
+window.updateRaceName = async function(key, value){
+  if(!canManageRaces()) return;
+  const race = RACES.find(r => r.key === key);
+  if(!race) return;
+  race.name = value;
+  try{
+    const { error } = await supabaseClient.from('races').update({ name: value }).eq('key', key);
+    if(error) throw error;
+    renderRaceSelectOptions();
+    renderRaceAbilitiesDisplay();
+  }catch(e){
+    alert('Could not save: ' + (e.message || e));
+  }
+};
+
+window.deleteRace = async function(key){
+  if(!canManageRaces()) return;
+  const race = RACES.find(r => r.key === key);
+  if(!race) return;
+  if(!confirm(`Delete "${race.name}" permanently? Any character currently set to this race will show it as blank. This cannot be undone.`)) return;
+  try{
+    const { error } = await supabaseClient.from('races').delete().eq('key', key);
+    if(error) throw error;
+    await loadRacesAndAbilities();
+    renderRacesManageList();
+    renderRaceSelectOptions();
+    renderRaceAbilitiesDisplay();
+  }catch(e){
+    alert('Could not delete this race: ' + (e.message || e));
+  }
+};
+
+window.toggleRaceAbility = async function(raceKey, abilityId, checked){
+  if(!canManageRaces()) return;
+  try{
+    if(checked){
+      const { error } = await supabaseClient.from('race_abilities').insert({ race_key: raceKey, ability_id: abilityId });
+      if(error) throw error;
+    } else {
+      const { error } = await supabaseClient.from('race_abilities').delete().eq('race_key', raceKey).eq('ability_id', abilityId);
+      if(error) throw error;
+    }
+    if(!RACE_ABILITY_MAP[raceKey]) RACE_ABILITY_MAP[raceKey] = [];
+    RACE_ABILITY_MAP[raceKey] = checked
+      ? Array.from(new Set(RACE_ABILITY_MAP[raceKey].concat([abilityId])))
+      : RACE_ABILITY_MAP[raceKey].filter(id => id !== abilityId);
+    renderRaceAbilitiesDisplay();
+  }catch(e){
+    alert('Could not update: ' + (e.message || e));
+    renderRacesManageList(); // revert the checkbox to reflect actual saved state
+  }
+};
+
+/* ---------- ABILITY EXTRA EFFECTS BUILDER (Shield / Roll Modifier / AOE / Special) ----------
+   Same shape as the spell/warrior-skill versions, its own working array so
+   none of the three modals can stomp on each other. */
+let abilityModalExtraEffects = [];
+window.abilityAddExtraEffect = function(kind){
+  abilityModalExtraEffects.push(EE_DEFAULTS[kind]());
+  abilityRenderExtraEffectsList();
+};
+window.abilityRemoveExtraEffect = function(idx){
+  abilityModalExtraEffects.splice(idx, 1);
+  abilityRenderExtraEffectsList();
+};
+window.abilityUpdateExtraEffectField = function(idx, field, value){
+  if(!abilityModalExtraEffects[idx]) return;
+  abilityModalExtraEffects[idx][field] = value;
+};
+window.abilityUpdateExtraEffectNumberField = function(idx, field, value){
+  const v = parseFloat(value);
+  abilityUpdateExtraEffectField(idx, field, isNaN(v) ? 0 : v);
+};
+function abilityEeNoteField(idx, field, value, placeholder, dis){
+  const v = escapeHtml(value || '');
+  return `<div class="grow-wrap ee-note-wrap" data-replicated-value="${v}"><textarea class="ee-note" rows="1" ${dis} oninput="abilityUpdateExtraEffectField(${idx},'${field}',this.value); syncGrowWrap(this)" placeholder="${placeholder}">${v}</textarea></div>`;
+}
+function abilityExtraEffectRowHtml(ee, idx, disabled){
+  const dis = disabled ? 'disabled' : '';
+  let fields = '';
+  if(ee.kind === 'shield'){
+    fields = `
+      <div class="ee-field"><label>Amount</label><input type="number" ${dis} value="${ee.amount||0}" oninput="abilityUpdateExtraEffectNumberField(${idx},'amount',this.value)"></div>
+      <div class="ee-field"><label>Damage Type</label>
+        <select ${dis} onchange="abilityUpdateExtraEffectField(${idx},'damageType',this.value)">
+          ${Object.entries(SHIELD_DAMAGE_TYPE_LABELS).map(([k,l])=>`<option value="${k}" ${ee.damageType===k?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+      <div class="ee-field"><label>Trigger</label>
+        <select ${dis} onchange="abilityUpdateExtraEffectField(${idx},'trigger',this.value)">
+          ${Object.entries(SHIELD_TRIGGER_LABELS).map(([k,l])=>`<option value="${k}" ${(ee.trigger||'until-depleted')===k?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+      <div style="flex:1 1 100%;"><label style="display:block;font-size:13px;color:var(--parchment-dim);margin-bottom:3px;">Note (optional)</label>${abilityEeNoteField(idx,'note',ee.note,"e.g. min 0, doesn't stack",dis)}</div>`;
+  } else if(ee.kind === 'rollmod'){
+    fields = `
+      <div class="ee-field"><label>Applies To</label>
+        <select ${dis} onchange="abilityUpdateExtraEffectField(${idx},'target',this.value)">
+          ${Object.entries(ROLLMOD_TARGET_LABELS).map(([k,l])=>`<option value="${k}" ${ee.target===k?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+      <div class="ee-field"><label>Amount</label><input type="number" ${dis} value="${ee.amount||0}" oninput="abilityUpdateExtraEffectNumberField(${idx},'amount',this.value)" placeholder="+1 or -1"></div>
+      <div style="flex:1 1 100%;"><label style="display:block;font-size:13px;color:var(--parchment-dim);margin-bottom:3px;">Note (optional)</label>${abilityEeNoteField(idx,'note',ee.note,"e.g. cannot stack",dis)}</div>`;
+  } else if(ee.kind === 'aoe'){
+    fields = `
+      <div class="ee-field"><label>Shape</label>
+        <select ${dis} onchange="abilityUpdateExtraEffectField(${idx},'shape',this.value)">
+          ${Object.entries(AOE_SHAPE_LABELS).map(([k,l])=>`<option value="${k}" ${ee.shape===k?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+      <div class="ee-field" style="flex:1 1 auto;"><label>Size / Range</label><input type="text" ${dis} value="${escapeHtml(ee.size||'')}" oninput="abilityUpdateExtraEffectField(${idx},'size',this.value)" placeholder="e.g. 10ft radius, local vicinity"></div>`;
+  } else if(ee.kind === 'special'){
+    fields = `
+      <div class="ee-field" style="flex:1 1 220px;"><label>Label</label><input type="text" ${dis} value="${escapeHtml(ee.label||'')}" oninput="abilityUpdateExtraEffectField(${idx},'label',this.value)" placeholder="e.g. Stagger, Rally, Redirect"></div>
+      <div style="flex:1 1 100%;"><label style="display:block;font-size:13px;color:var(--parchment-dim);margin-bottom:3px;">Details</label>${abilityEeNoteField(idx,'text',ee.text,"Short description of the effect",dis)}</div>`;
+  }
+  return `<div class="extra-effect-row">
+    <span class="ee-kind-label">${EE_KIND_LABEL[ee.kind] || ee.kind}</span>
+    ${fields}
+    ${disabled ? '' : `<button type="button" class="ee-remove-btn" title="Remove" onclick="abilityRemoveExtraEffect(${idx})">✕</button>`}
+  </div>`;
+}
+function abilityRenderExtraEffectsList(disabled){
+  const container = document.getElementById('ability-extra-effects-list');
+  const empty = document.getElementById('ability-extra-effects-empty');
+  if(!container) return;
+  if(!abilityModalExtraEffects.length){
+    container.innerHTML = '';
+    if(empty) empty.style.display = 'block';
+  } else {
+    if(empty) empty.style.display = 'none';
+    container.innerHTML = abilityModalExtraEffects.map((ee, idx) => abilityExtraEffectRowHtml(ee, idx, disabled)).join('');
+    container.querySelectorAll('.ee-note').forEach(syncGrowWrap);
+  }
+}
+
+window.updateAbilityEffectSectionVisibility = function(){
+  const activeEffects = Array.from(document.querySelectorAll('#ability-modal-backdrop .effect-type-option input:checked')).map(el => el.dataset.effect);
+  document.querySelectorAll('[data-ability-effect-section]').forEach(section => {
+    section.style.display = activeEffects.includes(section.dataset.abilityEffectSection) ? '' : 'none';
+  });
+};
+
+/* ---------- CASTING DETAILS (flavor) — ability modal copy ----------
+   Reuses the same generic parseFlavorFromText/getDisplayFlavor helpers
+   the spell modal uses; only the field ids differ. */
+const ABILITY_FLAVOR_FIELD_IDS = ['ability-modal-flavor-incantation','ability-modal-flavor-movements','ability-modal-flavor-autohit','ability-modal-flavor-friendlyfire','ability-modal-flavor-duration'];
+function abilitySyncFlavorGrowWraps(){
+  ABILITY_FLAVOR_FIELD_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) syncGrowWrap(el);
+  });
+}
+window.abilityParseFlavorFromDescription = function(){
+  const desc = document.getElementById('ability-modal-desc').value;
+  const parsed = parseFlavorFromText(desc);
+  document.getElementById('ability-modal-flavor-incantation').value = parsed.incantation || '';
+  document.getElementById('ability-modal-flavor-movements').value = parsed.movements || '';
+  document.getElementById('ability-modal-flavor-autohit').value = parsed.autoHit || '';
+  document.getElementById('ability-modal-flavor-friendlyfire').value = parsed.friendlyFire || '';
+  document.getElementById('ability-modal-flavor-duration').value = parsed.duration || '';
+  abilitySyncFlavorGrowWraps();
+};
+
+/* ---------- PERSONAL EMOTE TEXT — ability modal copy ----------
+   Same idea as the spell version: personal, per-character, saved in
+   state.abilityEmoteText (never in the shared ability data), keyed by
+   the ability's own id so it stays attached even if abilities get
+   reordered or reassigned between races. */
+function getAbilityEmoteText(id){
+  return (state.abilityEmoteText && state.abilityEmoteText[id]) || '';
+}
+window.onAbilityEmoteTextChange = function(){
+  if (isViewingOther || editLocked) return;
+  if (!currentModalAbilityId) return;
+  if (!state.abilityEmoteText || typeof state.abilityEmoteText !== 'object') state.abilityEmoteText = {};
+  const val = document.getElementById('ability-modal-emote-text').value;
+  if (val) state.abilityEmoteText[currentModalAbilityId] = val;
+  else delete state.abilityEmoteText[currentModalAbilityId];
+  persist();
+};
+
+/* ---------- ABILITY DETAIL / EDIT MODAL ---------- */
+let currentModalAbilityId = null;
+
+window.openAbilityModal = function(evt, id){
+  if(evt){ evt.preventDefault(); evt.stopPropagation(); }
+  const a = RACIAL_ABILITY_INDEX[id];
+  if(!a) return;
+  currentModalAbilityId = id;
+  const meta = getAbilityMeta(id);
+  document.getElementById('ability-modal-title').textContent = a.name;
+  document.getElementById('ability-modal-tags').value = meta.tags.join(', ');
+  document.getElementById('ability-modal-cost-body').value = meta.cost.body || '';
+  document.getElementById('ability-modal-cost-mind').value = meta.cost.mind || '';
+  document.getElementById('ability-modal-cost-spirit').value = meta.cost.spirit || '';
+  document.getElementById('ability-modal-upkeep-body').value = meta.upkeep.body || '';
+  document.getElementById('ability-modal-upkeep-mind').value = meta.upkeep.mind || '';
+  document.getElementById('ability-modal-upkeep-spirit').value = meta.upkeep.spirit || '';
+  document.getElementById('ability-modal-damage-body').value = meta.damage.body || '';
+  document.getElementById('ability-modal-damage-mind').value = meta.damage.mind || '';
+  document.getElementById('ability-modal-damage-spirit').value = meta.damage.spirit || '';
+  document.getElementById('ability-modal-damage-upkeep-body').value = meta.damageUpkeep.body || '';
+  document.getElementById('ability-modal-damage-upkeep-mind').value = meta.damageUpkeep.mind || '';
+  document.getElementById('ability-modal-damage-upkeep-spirit').value = meta.damageUpkeep.spirit || '';
+  document.getElementById('ability-modal-heal-body').value = meta.heal.body || '';
+  document.getElementById('ability-modal-heal-mind').value = meta.heal.mind || '';
+  document.getElementById('ability-modal-heal-spirit').value = meta.heal.spirit || '';
+  document.getElementById('ability-modal-heal-upkeep-body').value = meta.healUpkeep.body || '';
+  document.getElementById('ability-modal-heal-upkeep-mind').value = meta.healUpkeep.mind || '';
+  document.getElementById('ability-modal-heal-upkeep-spirit').value = meta.healUpkeep.spirit || '';
+  document.getElementById('ability-modal-buff-body').value = meta.buff.body || '';
+  document.getElementById('ability-modal-buff-mind').value = meta.buff.mind || '';
+  document.getElementById('ability-modal-buff-spirit').value = meta.buff.spirit || '';
+  document.getElementById('ability-modal-buff-upkeep-body').value = meta.buffUpkeep.body || '';
+  document.getElementById('ability-modal-buff-upkeep-mind').value = meta.buffUpkeep.mind || '';
+  document.getElementById('ability-modal-buff-upkeep-spirit').value = meta.buffUpkeep.spirit || '';
+  document.getElementById('ability-modal-desc').value = meta.desc;
+
+  const emoteLocked = isViewingOther || editLocked;
+  const abilityPrecastCb = document.getElementById('ability-modal-precast');
+  abilityPrecastCb.checked = isPrecastAbility(id);
+  abilityPrecastCb.disabled = emoteLocked;
+  const emoteField = document.getElementById('ability-modal-emote-text');
+  emoteField.value = getAbilityEmoteText(id);
+  emoteField.disabled = emoteLocked;
+  document.getElementById('ability-modal-emote-readonly-hint').style.display = emoteLocked ? 'block' : 'none';
+  syncGrowWrap(emoteField);
+
+  const flavor = getDisplayFlavor(meta);
+  document.getElementById('ability-modal-flavor-incantation').value = flavor.incantation || '';
+  document.getElementById('ability-modal-flavor-movements').value = flavor.movements || '';
+  document.getElementById('ability-modal-flavor-autohit').value = flavor.autoHit || '';
+  document.getElementById('ability-modal-flavor-friendlyfire').value = flavor.friendlyFire || '';
+  document.getElementById('ability-modal-flavor-duration').value = flavor.duration || '';
+  abilitySyncFlavorGrowWraps();
+
+  abilityModalExtraEffects = (meta.extraEffects || []).map(ee => ({...ee}));
+
+  document.getElementById('ability-modal-effect-damage').checked = meta.effectTypes.includes('damage');
+  document.getElementById('ability-modal-effect-heal').checked = meta.effectTypes.includes('heal');
+  document.getElementById('ability-modal-effect-buff').checked = meta.effectTypes.includes('buff');
+  updateAbilityEffectSectionVisibility();
+
+  const editableIds = ['ability-modal-tags',
+    'ability-modal-cost-body','ability-modal-cost-mind','ability-modal-cost-spirit',
+    'ability-modal-upkeep-body','ability-modal-upkeep-mind','ability-modal-upkeep-spirit',
+    'ability-modal-effect-damage','ability-modal-effect-heal','ability-modal-effect-buff',
+    'ability-modal-damage-body','ability-modal-damage-mind','ability-modal-damage-spirit',
+    'ability-modal-damage-upkeep-body','ability-modal-damage-upkeep-mind','ability-modal-damage-upkeep-spirit',
+    'ability-modal-heal-body','ability-modal-heal-mind','ability-modal-heal-spirit',
+    'ability-modal-heal-upkeep-body','ability-modal-heal-upkeep-mind','ability-modal-heal-upkeep-spirit',
+    'ability-modal-buff-body','ability-modal-buff-mind','ability-modal-buff-spirit',
+    'ability-modal-buff-upkeep-body','ability-modal-buff-upkeep-mind','ability-modal-buff-upkeep-spirit','ability-modal-desc',
+    'ability-modal-flavor-incantation','ability-modal-flavor-movements','ability-modal-flavor-autohit',
+    'ability-modal-flavor-friendlyfire','ability-modal-flavor-duration','ability-flavor-parse-btn',
+    'ability-ee-add-shield','ability-ee-add-rollmod','ability-ee-add-aoe','ability-ee-add-special'];
+  const hasRights = canManageRaces();
+  const canEdit = hasRights && !editLocked;
+  editableIds.forEach(elId => { document.getElementById(elId).disabled = !canEdit; });
+  document.getElementById('ability-modal-save').style.display = canEdit ? '' : 'none';
+  document.getElementById('ability-modal-delete').style.display = canEdit ? '' : 'none';
+  document.getElementById('ability-modal-readonly-hint').style.display = canEdit ? 'none' : 'block';
+  document.getElementById('ability-modal-readonly-hint').textContent = hasRights && editLocked
+    ? 'Editing is locked. Click the lock button in the toolbar to unlock it before editing racial abilities.'
+    : "You don't have edit rights for the shared racial ability data. Ask the tracker owner to add you as an editor if you should be able to change this.";
+
+  abilityRenderExtraEffectsList(!canEdit);
+
+  document.getElementById('ability-modal-backdrop').classList.add('open');
+  syncGrowWrap(document.getElementById('ability-modal-desc'));
+};
+
+window.closeAbilityModal = function(){
+  document.getElementById('ability-modal-backdrop').classList.remove('open');
+  currentModalAbilityId = null;
+  renderRaceAbilitiesDisplay();
+  renderPrecastDisplay();
+};
+
+window.saveAbilityModal = async function(){
+  const a = currentModalAbilityId ? RACIAL_ABILITY_INDEX[currentModalAbilityId] : null;
+  if(!a || !canManageRaces() || editLocked) return;
+  const tags = document.getElementById('ability-modal-tags').value
+    .split(',').map(t=>t.trim().toLowerCase()).filter(Boolean);
+  const num = (elId) => { const v = parseFloat(document.getElementById(elId).value); return isNaN(v) ? 0 : v; };
+  const effectTypes = ['damage','heal','buff'].filter(t => document.getElementById(`ability-modal-effect-${t}`).checked);
+  const meta = {
+    desc: document.getElementById('ability-modal-desc').value,
+    tags,
+    effectTypes,
+    cost: { body: num('ability-modal-cost-body'), mind: num('ability-modal-cost-mind'), spirit: num('ability-modal-cost-spirit') },
+    upkeep: { body: num('ability-modal-upkeep-body'), mind: num('ability-modal-upkeep-mind'), spirit: num('ability-modal-upkeep-spirit') },
+    damage: { body: num('ability-modal-damage-body'), mind: num('ability-modal-damage-mind'), spirit: num('ability-modal-damage-spirit') },
+    damageUpkeep: { body: num('ability-modal-damage-upkeep-body'), mind: num('ability-modal-damage-upkeep-mind'), spirit: num('ability-modal-damage-upkeep-spirit') },
+    heal: { body: num('ability-modal-heal-body'), mind: num('ability-modal-heal-mind'), spirit: num('ability-modal-heal-spirit') },
+    healUpkeep: { body: num('ability-modal-heal-upkeep-body'), mind: num('ability-modal-heal-upkeep-mind'), spirit: num('ability-modal-heal-upkeep-spirit') },
+    buff: { body: num('ability-modal-buff-body'), mind: num('ability-modal-buff-mind'), spirit: num('ability-modal-buff-spirit') },
+    buffUpkeep: { body: num('ability-modal-buff-upkeep-body'), mind: num('ability-modal-buff-upkeep-mind'), spirit: num('ability-modal-buff-upkeep-spirit') },
+    flavor: {
+      incantation: document.getElementById('ability-modal-flavor-incantation').value.trim(),
+      movements: document.getElementById('ability-modal-flavor-movements').value.trim(),
+      autoHit: document.getElementById('ability-modal-flavor-autohit').value.trim(),
+      friendlyFire: document.getElementById('ability-modal-flavor-friendlyfire').value.trim(),
+      duration: document.getElementById('ability-modal-flavor-duration').value.trim(),
+    },
+    extraEffects: abilityModalExtraEffects.filter(ee => formatExtraEffect(ee) !== ''),
+  };
+  const saveBtn = document.getElementById('ability-modal-save');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving...';
+  try{
+    await saveAbilityMetaRow(currentModalAbilityId, meta);
+    closeAbilityModal();
+  }catch(e){
+    alert('Could not save to the shared racial ability database: ' + (e.message || e));
+  }finally{
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save';
+  }
+};
+
+window.deleteCurrentModalAbility = async function(){
+  if(!currentModalAbilityId) return;
+  const a = RACIAL_ABILITY_INDEX[currentModalAbilityId];
+  if(!a || !canManageRaces()) return;
+  if(!confirm(`Delete "${a.name}" for everyone? This removes it from every race it's assigned to. This cannot be undone.`)) return;
+  try{
+    const { error } = await supabaseClient.from('racial_abilities').delete().eq('id', currentModalAbilityId);
+    if(error) throw error;
+    await loadRacesAndAbilities();
+    closeAbilityModal();
+    renderAbilitiesManageList();
+    renderRaceAbilitiesDisplay();
+  }catch(e){
+    alert('Could not delete this ability: ' + (e.message || e));
+  }
+};
+
+/* =========================================================================
+   ITEM VIEW MODAL (read-only, shared by Inventory + Weapons)
+   Always available — no editLocked/isViewingOther gate — since it's just
+   for looking at an item's description (and, for weapons, damage stats).
+   Actually changing anything still requires unlocked editing on your own
+   sheet, via the "✏ Edit" button this shows when that's allowed.
+   ========================================================================= */
+let itemViewEditOpener = null;
+function openItemViewModal(data){
+  document.getElementById('item-view-title').textContent = data.name || '(unnamed)';
+  document.getElementById('item-view-qty').textContent = `Quantity: ${data.qty || 1}`;
+
+  const dmgWrap = document.getElementById('item-view-damage');
+  if(data.isWeapon){
+    dmgWrap.style.display = '';
+    document.getElementById('item-view-dmg-body').textContent = data.dmgBody || 0;
+    document.getElementById('item-view-dmg-mind').textContent = data.dmgMind || 0;
+    document.getElementById('item-view-dmg-spirit').textContent = data.dmgSpirit || 0;
+  } else {
+    dmgWrap.style.display = 'none';
+  }
+
+  document.getElementById('item-view-desc').textContent = data.desc || 'No description written yet.';
+
+  itemViewEditOpener = data.editOpener || null;
+  const editBtn = document.getElementById('item-view-edit-btn');
+  editBtn.style.display = (itemViewEditOpener && !isViewingOther && !editLocked) ? '' : 'none';
+
+  document.getElementById('item-view-modal-backdrop').classList.add('open');
+}
+window.closeItemViewModal = function(){
+  document.getElementById('item-view-modal-backdrop').classList.remove('open');
+  itemViewEditOpener = null;
+};
+window.openItemViewEdit = function(){
+  const opener = itemViewEditOpener;
+  closeItemViewModal();
+  if(opener) opener();
+};
+
+/* =========================================================================
+   INVENTORY (personal, per-character — NOT shared/cloud reference data)
+   Same qty + name shape as a crafting recipe's materials list, but this
+   lives entirely in `state.inventoryItems` like Roll Buffs, since it's
+   each character's own carried items rather than something editors
+   manage for everyone. The old free-text inventory field still exists
+   (state.charInfo.inventory) — nothing pre-existing is deleted, it's just
+   relocated into this modal as "Legacy Inventory" so nobody loses what
+   they already typed there.
+
+   CUSTOM GROUPS — items can be sorted into user-defined groups
+   (state.inventoryGroups: {id,name}[], item.group holds a group id or
+   '' for ungrouped). Weapons below use the exact same pattern against
+   state.weaponGroups, sharing the generic helpers just below.
+   ========================================================================= */
+
+function makeGroupId(){
+  return 'grp_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+}
+
+/* ---------- SHARED GROUPING HELPERS (used by Inventory & Weapons) ----------
+   Bucket a flat item list into { groupId -> items[] } + leftover ungrouped,
+   in group-array order, then hand back render-ready HTML. `rowFn` builds a
+   single item's markup; `pillFn` builds a single item's compact pill for
+   the main sheet. Kept generic so Inventory and Weapons don't duplicate
+   this logic despite having slightly different row/pill shapes. */
+function bucketItemsByGroup(items, groups){
+  const byGroup = new Map();
+  const ungrouped = [];
+  items.forEach(it => {
+    const gid = it.group && groups.some(g => g.id === it.group) ? it.group : '';
+    if(!gid){ ungrouped.push(it); return; }
+    if(!byGroup.has(gid)) byGroup.set(gid, []);
+    byGroup.get(gid).push(it);
+  });
+  return { byGroup, ungrouped };
+}
+function renderGroupedEditRows(items, groups, rowFn){
+  const { byGroup, ungrouped } = bucketItemsByGroup(items, groups);
+  let html = '';
+  groups.forEach(g => {
+    const groupItems = byGroup.get(g.id) || [];
+    html += groupHeaderHtml(g, groupItems.length);
+    html += groupItems.map(it => rowFn(it)).join('');
+  });
+  if(ungrouped.length){
+    if(groups.length) html += `<div class="inv-group-header inv-group-header-ungrouped"><span class="inv-group-name">Ungrouped</span></div>`;
+    html += ungrouped.map(it => rowFn(it)).join('');
+  }
+  return html;
+}
+function renderGroupedDisplayPills(items, groups, pillFn){
+  const { byGroup, ungrouped } = bucketItemsByGroup(items, groups);
+  let html = '';
+  groups.forEach(g => {
+    const groupItems = byGroup.get(g.id) || [];
+    if(!groupItems.length) return;
+    html += `<div class="inv-display-group"><span class="inv-display-group-label">${escapeHtml(g.name)}</span><div class="inv-display-group-items">${groupItems.map(pillFn).join('')}</div></div>`;
+  });
+  if(ungrouped.length){
+    html += groups.length
+      ? `<div class="inv-display-group"><span class="inv-display-group-label">Ungrouped</span><div class="inv-display-group-items">${ungrouped.map(pillFn).join('')}</div></div>`
+      : ungrouped.map(pillFn).join('');
+  }
+  return html;
+}
+
+function makeInventoryItemId(){
+  return 'inv_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+}
+
+/* Which rows currently have their description/stats expanded — UI-only,
+   not persisted, resets on page reload (same idea as collapsed sections). */
+let inventoryExpandedIds = new Set();
+window.toggleInventoryItemExpanded = function(id){
+  if(inventoryExpandedIds.has(id)) inventoryExpandedIds.delete(id);
+  else inventoryExpandedIds.add(id);
+  renderInventoryList();
+};
+
+/* ---------- MAIN SHEET DISPLAY ---------- */
+function renderInventoryDisplay(){
+  const wrap = document.getElementById('inventory-display');
+  if(!wrap) return;
+  const items = Array.isArray(state.inventoryItems) ? state.inventoryItems : [];
+  const groups = Array.isArray(state.inventoryGroups) ? state.inventoryGroups : [];
+  if(!items.length){
+    wrap.innerHTML = `<span class="racial-abilities-empty">No items yet — click "Manage Inventory" to add some.</span>`;
+    return;
+  }
+  const pillFn = it => `<span class="inventory-item-pill" onclick="openInventoryItemDetail('${it.id}')" ${it.desc ? `title="${escapeHtml(it.desc)}"` : ''}>${it.qty || 1}× ${escapeHtml(it.name || '(unnamed)')}</span>`;
+  wrap.innerHTML = renderGroupedDisplayPills(items, groups, pillFn);
+}
+
+/* ---------- MANAGE INVENTORY MODAL ---------- */
+window.openInventoryModal = function(){
+  if (isViewingOther || editLocked) return;
+  document.getElementById('inventory-modal-backdrop').classList.add('open');
+  renderInventoryList();
+  syncGrowWrap(document.getElementById('ci-inventory'));
+};
+/* Clicking an item's name always opens a plain read-only view — works
+   even with editing locked or while viewing someone else's sheet, since
+   it's just looking, not changing anything. "Manage Inventory" (edit
+   mode) is the separate, lock-gated flow for actually changing things. */
+window.openInventoryItemDetail = function(id){
+  const item = (state.inventoryItems || []).find(it => it.id === id);
+  if(!item) return;
+  openItemViewModal({ name: item.name, qty: item.qty, desc: item.desc, editOpener: () => openInventoryItemForEdit(id) });
+};
+function openInventoryItemForEdit(id){
+  if (isViewingOther || editLocked) return;
+  inventoryExpandedIds.add(id);
+  openInventoryModal();
+  requestAnimationFrame(() => {
+    document.querySelector(`#inventory-list [data-item-id="${id}"]`)?.scrollIntoView({ behavior:'smooth', block:'center' });
+  });
+}
+window.closeInventoryModal = function(){
+  document.getElementById('inventory-modal-backdrop').classList.remove('open');
+  renderInventoryDisplay();
+};
+
+function inventoryItemRowHtml(item, disabled, groups){
+  const dis = disabled ? 'disabled' : '';
+  const desc = escapeHtml(item.desc || '');
+  const expanded = inventoryExpandedIds.has(item.id);
+  const groupOptions = `<option value="">No Group</option>` + (groups || []).map(g => `<option value="${escapeHtml(g.id)}" ${item.group === g.id ? 'selected' : ''}>${escapeHtml(g.name)}</option>`).join('');
+  return `<div class="extra-effect-row" data-item-id="${escapeHtml(item.id)}">
+    <div class="ee-field" style="flex:0 0 70px;"><label>Qty</label><input type="number" min="1" step="1" ${dis} value="${item.qty || 1}" oninput="updateInventoryItemQty('${item.id}',this.value)"></div>
+    <div class="ee-field" style="flex:1 1 220px;"><label>Item</label><input type="text" ${dis} value="${escapeHtml(item.name||'')}" oninput="updateInventoryItemField('${item.id}','name',this.value)" placeholder="e.g. Rope (50ft)"></div>
+    <div class="ee-field" style="flex:0 0 140px;"><label>Group</label><select ${dis} onchange="updateInventoryItemGroup('${item.id}',this.value)">${groupOptions}</select></div>
+    <button type="button" class="ee-detail-toggle" onclick="toggleInventoryItemExpanded('${item.id}')">${expanded ? '▾' : '▸'} Description</button>
+    ${disabled ? '' : `<button type="button" class="ee-remove-btn" title="Remove" onclick="removeInventoryItem('${item.id}')">✕</button>`}
+    ${expanded ? `<div class="grow-wrap ee-note-wrap" data-replicated-value="${desc}"><textarea class="ee-note" rows="1" ${dis} oninput="updateInventoryItemField('${item.id}','desc',this.value); syncGrowWrap(this)" placeholder="Description (optional)">${desc}</textarea></div>` : ''}
+  </div>`;
+}
+
+function renderInventoryList(){
+  const container = document.getElementById('inventory-list');
+  const empty = document.getElementById('inventory-list-empty');
+  if(!container) return;
+  const items = Array.isArray(state.inventoryItems) ? state.inventoryItems : [];
+  const groups = Array.isArray(state.inventoryGroups) ? state.inventoryGroups : [];
+  const disabled = isViewingOther || editLocked;
+  if(!items.length){
+    container.innerHTML = '';
+    if(empty) empty.style.display = 'block';
+  } else {
+    if(empty) empty.style.display = 'none';
+    container.innerHTML = renderGroupedEditRows(items, groups, it => inventoryItemRowHtml(it, disabled, groups));
+    container.querySelectorAll('.ee-note').forEach(syncGrowWrap);
+  }
+}
+/* renderGroupedEditRows calls groupHeaderHtml(g, count) without the
+   rename/remove fn names baked in (they differ between Inventory and
+   Weapons), so it's resolved here per-group instead of hardcoding into
+   the shared helper. */
+function groupHeaderHtml(g, count){
+  const disabled = isViewingOther || editLocked;
+  // Inventory vs Weapons is disambiguated by which modal is currently
+  // open — both lists never render at the same time, so we check which
+  // group array this group object came from.
+  const isInventoryGroup = (state.inventoryGroups || []).includes(g);
+  const renameFn = isInventoryGroup ? 'renameInventoryGroup' : 'renameWeaponGroup';
+  const removeFn = isInventoryGroup ? 'removeInventoryGroup' : 'removeWeaponGroup';
+  return `<div class="inv-group-header" data-group-id="${escapeHtml(g.id)}">
+    <span class="inv-group-name">${escapeHtml(g.name)}</span>
+    <span class="inv-group-count">${count} item${count === 1 ? '' : 's'}</span>
+    ${disabled ? '' : `<button type="button" class="ee-detail-toggle" onclick="${renameFn}('${g.id}')">✏ Rename</button>
+    <button type="button" class="ee-remove-btn" title="Delete group (items become ungrouped, not deleted)" onclick="${removeFn}('${g.id}')">✕</button>`}
+  </div>`;
+}
+
+window.addInventoryItem = function(){
+  if (isViewingOther || editLocked) return;
+  if(!Array.isArray(state.inventoryItems)) state.inventoryItems = [];
+  if(!Array.isArray(state.weaponItems)) state.weaponItems = [];
+  state.inventoryItems.push({ id: makeInventoryItemId(), qty: 1, name: '', desc: '', group: '' });
+  persist();
+  renderInventoryList();
+};
+
+window.addInventoryGroup = function(){
+  if (isViewingOther || editLocked) return;
+  const name = prompt('Name this inventory group:');
+  if(!name || !name.trim()) return;
+  if(!Array.isArray(state.inventoryGroups)) state.inventoryGroups = [];
+  state.inventoryGroups.push({ id: makeGroupId(), name: name.trim() });
+  persist();
+  renderInventoryList();
+};
+window.renameInventoryGroup = function(id){
+  if (isViewingOther || editLocked) return;
+  const g = (state.inventoryGroups || []).find(x => x.id === id);
+  if(!g) return;
+  const name = prompt('Rename group:', g.name);
+  if(!name || !name.trim()) return;
+  g.name = name.trim();
+  persist();
+  renderInventoryList();
+};
+window.removeInventoryGroup = function(id){
+  if (isViewingOther || editLocked) return;
+  if(!confirm('Delete this group? Items in it will become ungrouped (not deleted).')) return;
+  state.inventoryGroups = (state.inventoryGroups || []).filter(g => g.id !== id);
+  (state.inventoryItems || []).forEach(it => { if(it.group === id) it.group = ''; });
+  persist();
+  renderInventoryList();
+  renderInventoryDisplay();
+};
+window.updateInventoryItemGroup = function(id, groupId){
+  if (isViewingOther || editLocked) return;
+  updateInventoryItemField(id, 'group', groupId || '');
+  renderInventoryList();
+};
+
+window.removeInventoryItem = function(id){
+  if (isViewingOther || editLocked) return;
+  state.inventoryItems = (state.inventoryItems || []).filter(it => it.id !== id);
+  persist();
+  renderInventoryList();
+};
+
+window.updateInventoryItemField = function(id, field, value){
+  if (isViewingOther || editLocked) return;
+  const item = (state.inventoryItems || []).find(it => it.id === id);
+  if(!item) return;
+  item[field] = value;
+  persist();
+};
+
+window.updateInventoryItemQty = function(id, value){
+  let n = parseInt(value, 10);
+  if(isNaN(n) || n < 1) n = 1;
+  updateInventoryItemField(id, 'qty', n);
+};
+
+/* =========================================================================
+   WEAPONS (personal, per-character — same shape/behavior as Inventory
+   above, kept as its own separate list/state key rather than merging
+   with inventory, since players will likely want to track them
+   separately even though the UI pattern is identical). Weapon SKILLS are
+   now covered by the Warrior Skills system, so this is just weapons
+   themselves (qty + name), not a skills tracker. Custom groups work the
+   same as Inventory's, against state.weaponGroups (see shared helpers
+   above the Inventory section: bucketItemsByGroup, renderGroupedEditRows,
+   renderGroupedDisplayPills).
+   ========================================================================= */
+
+function makeWeaponItemId(){
+  return 'wpn_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+}
+
+let weaponsExpandedIds = new Set();
+window.toggleWeaponItemExpanded = function(id){
+  if(weaponsExpandedIds.has(id)) weaponsExpandedIds.delete(id);
+  else weaponsExpandedIds.add(id);
+  renderWeaponsList();
+};
+
+function renderWeaponsDisplay(){
+  const wrap = document.getElementById('weapons-display');
+  if(!wrap) return;
+  const items = Array.isArray(state.weaponItems) ? state.weaponItems : [];
+  const groups = Array.isArray(state.weaponGroups) ? state.weaponGroups : [];
+  if(!items.length){
+    wrap.innerHTML = `<span class="racial-abilities-empty">No weapons yet — click "Manage Weapons" to add some.</span>`;
+    return;
+  }
+  const pillFn = it => {
+    const dmgParts = [];
+    if(it.dmgBody) dmgParts.push(`B ${it.dmgBody}`);
+    if(it.dmgMind) dmgParts.push(`M ${it.dmgMind}`);
+    if(it.dmgSpirit) dmgParts.push(`S ${it.dmgSpirit}`);
+    const dmgStr = dmgParts.length ? ` (${dmgParts.join(' / ')})` : '';
+    return `<span class="inventory-item-pill" onclick="openWeaponItemDetail('${it.id}')" ${it.desc ? `title="${escapeHtml(it.desc)}"` : ''}>${it.qty || 1}× ${escapeHtml(it.name || '(unnamed)')}${escapeHtml(dmgStr)}</span>`;
+  };
+  wrap.innerHTML = renderGroupedDisplayPills(items, groups, pillFn);
+}
+
+window.openWeaponsModal = function(){
+  if (isViewingOther || editLocked) return;
+  document.getElementById('weapons-modal-backdrop').classList.add('open');
+  renderWeaponsList();
+  syncGrowWrap(document.getElementById('ci-weapons'));
+};
+window.openWeaponItemDetail = function(id){
+  const item = (state.weaponItems || []).find(it => it.id === id);
+  if(!item) return;
+  openItemViewModal({ name: item.name, qty: item.qty, desc: item.desc, dmgBody: item.dmgBody, dmgMind: item.dmgMind, dmgSpirit: item.dmgSpirit, isWeapon: true, editOpener: () => openWeaponItemForEdit(id) });
+};
+function openWeaponItemForEdit(id){
+  if (isViewingOther || editLocked) return;
+  weaponsExpandedIds.add(id);
+  openWeaponsModal();
+  requestAnimationFrame(() => {
+    document.querySelector(`#weapons-list [data-item-id="${id}"]`)?.scrollIntoView({ behavior:'smooth', block:'center' });
+  });
+}
+window.closeWeaponsModal = function(){
+  document.getElementById('weapons-modal-backdrop').classList.remove('open');
+  renderWeaponsDisplay();
+};
+
+function weaponItemRowHtml(item, disabled, groups){
+  const dis = disabled ? 'disabled' : '';
+  const desc = escapeHtml(item.desc || '');
+  const expanded = weaponsExpandedIds.has(item.id);
+  const groupOptions = `<option value="">No Group</option>` + (groups || []).map(g => `<option value="${escapeHtml(g.id)}" ${item.group === g.id ? 'selected' : ''}>${escapeHtml(g.name)}</option>`).join('');
+  return `<div class="extra-effect-row" data-item-id="${escapeHtml(item.id)}">
+    <div class="ee-field" style="flex:0 0 70px;"><label>Qty</label><input type="number" min="1" step="1" ${dis} value="${item.qty || 1}" oninput="updateWeaponItemQty('${item.id}',this.value)"></div>
+    <div class="ee-field" style="flex:1 1 200px;"><label>Weapon</label><input type="text" ${dis} value="${escapeHtml(item.name||'')}" oninput="updateWeaponItemField('${item.id}','name',this.value)" placeholder="e.g. Steel Longsword"></div>
+    <div class="ee-field" style="flex:0 0 140px;"><label>Group</label><select ${dis} onchange="updateWeaponItemGroup('${item.id}',this.value)">${groupOptions}</select></div>
+    <button type="button" class="ee-detail-toggle" onclick="toggleWeaponItemExpanded('${item.id}')">${expanded ? '▾' : '▸'} Damage &amp; Description</button>
+    ${disabled ? '' : `<button type="button" class="ee-remove-btn" title="Remove" onclick="removeWeaponItem('${item.id}')">✕</button>`}
+    ${expanded ? `
+    <div class="item-detail-row">
+      <div class="ee-field" style="flex:0 0 90px;"><label>Body Dmg</label><input type="number" step="1" ${dis} value="${item.dmgBody || 0}" oninput="updateWeaponItemNumberField('${item.id}','dmgBody',this.value)"></div>
+      <div class="ee-field" style="flex:0 0 90px;"><label>Mind Dmg</label><input type="number" step="1" ${dis} value="${item.dmgMind || 0}" oninput="updateWeaponItemNumberField('${item.id}','dmgMind',this.value)"></div>
+      <div class="ee-field" style="flex:0 0 90px;"><label>Spirit Dmg</label><input type="number" step="1" ${dis} value="${item.dmgSpirit || 0}" oninput="updateWeaponItemNumberField('${item.id}','dmgSpirit',this.value)"></div>
+    </div>
+    <div class="grow-wrap ee-note-wrap" data-replicated-value="${desc}"><textarea class="ee-note" rows="1" ${dis} oninput="updateWeaponItemField('${item.id}','desc',this.value); syncGrowWrap(this)" placeholder="Description (optional)">${desc}</textarea></div>` : ''}
+  </div>`;
+}
+
+function renderWeaponsList(){
+  const container = document.getElementById('weapons-list');
+  const empty = document.getElementById('weapons-list-empty');
+  if(!container) return;
+  const items = Array.isArray(state.weaponItems) ? state.weaponItems : [];
+  const groups = Array.isArray(state.weaponGroups) ? state.weaponGroups : [];
+  const disabled = isViewingOther || editLocked;
+  if(!items.length){
+    container.innerHTML = '';
+    if(empty) empty.style.display = 'block';
+  } else {
+    if(empty) empty.style.display = 'none';
+    container.innerHTML = renderGroupedEditRows(items, groups, it => weaponItemRowHtml(it, disabled, groups));
+    container.querySelectorAll('.ee-note').forEach(syncGrowWrap);
+  }
+}
+
+window.addWeaponItem = function(){
+  if (isViewingOther || editLocked) return;
+  if(!Array.isArray(state.weaponItems)) state.weaponItems = [];
+  state.weaponItems.push({ id: makeWeaponItemId(), qty: 1, name: '', desc: '', dmgBody: 0, dmgMind: 0, dmgSpirit: 0, group: '' });
+  persist();
+  renderWeaponsList();
+};
+
+window.addWeaponGroup = function(){
+  if (isViewingOther || editLocked) return;
+  const name = prompt('Name this weapon group:');
+  if(!name || !name.trim()) return;
+  if(!Array.isArray(state.weaponGroups)) state.weaponGroups = [];
+  state.weaponGroups.push({ id: makeGroupId(), name: name.trim() });
+  persist();
+  renderWeaponsList();
+};
+window.renameWeaponGroup = function(id){
+  if (isViewingOther || editLocked) return;
+  const g = (state.weaponGroups || []).find(x => x.id === id);
+  if(!g) return;
+  const name = prompt('Rename group:', g.name);
+  if(!name || !name.trim()) return;
+  g.name = name.trim();
+  persist();
+  renderWeaponsList();
+};
+window.removeWeaponGroup = function(id){
+  if (isViewingOther || editLocked) return;
+  if(!confirm('Delete this group? Weapons in it will become ungrouped (not deleted).')) return;
+  state.weaponGroups = (state.weaponGroups || []).filter(g => g.id !== id);
+  (state.weaponItems || []).forEach(it => { if(it.group === id) it.group = ''; });
+  persist();
+  renderWeaponsList();
+  renderWeaponsDisplay();
+};
+window.updateWeaponItemGroup = function(id, groupId){
+  if (isViewingOther || editLocked) return;
+  updateWeaponItemField(id, 'group', groupId || '');
+  renderWeaponsList();
+};
+
+window.removeWeaponItem = function(id){
+  if (isViewingOther || editLocked) return;
+  state.weaponItems = (state.weaponItems || []).filter(it => it.id !== id);
+  persist();
+  renderWeaponsList();
+};
+
+window.updateWeaponItemField = function(id, field, value){
+  if (isViewingOther || editLocked) return;
+  const item = (state.weaponItems || []).find(it => it.id === id);
+  if(!item) return;
+  item[field] = value;
+  persist();
+};
+
+window.updateWeaponItemQty = function(id, value){
+  let n = parseInt(value, 10);
+  if(isNaN(n) || n < 1) n = 1;
+  updateWeaponItemField(id, 'qty', n);
+};
+
+window.updateWeaponItemNumberField = function(id, field, value){
+  const n = parseFloat(value);
+  updateWeaponItemField(id, field, isNaN(n) ? 0 : n);
+};
+
+
 document.addEventListener('keydown', (e) => {
-  if(e.key === 'Escape'){ closeSpellModal(); closeRollBuffModal(); closeWsModal(); closeDisciplinesModal(); closeAddWsModal(); closeDiceModal(); closeCraftModal(); closeAddCraftModal(); }
+  if(e.key === 'Escape'){ closeSpellModal(); closeRollBuffModal(); closeWsModal(); closeDisciplinesModal(); closeAddWsModal(); closeDiceModal(); closeCraftModal(); closeAddCraftModal(); closeAbilitiesModal(); closeRacesModal(); closeAbilityModal(); closeInventoryModal(); closeWeaponsModal(); closeItemViewModal(); }
 });
 
 document.getElementById('modal-desc').addEventListener('input', function(){ syncGrowWrap(this); });
@@ -4969,12 +6764,11 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 let currentUser = null;
 
 const CHAR_INFO_FIELDS = [
-  'name','race','rank','tradeskill','abilities','weakness','inventory','weapons',
+  'name','race','rank','weakness','inventory','weapons',
   'body_base','mind_base','spirit_base','armor_base','rank_stat_base',
   'body_current','mind_current','spirit_current','armor_current','rank_stat_current',
   'reset_time',
   /* NEW TRACKING KEYS */
-  'precast_actions',
   'body_precast','mind_precast','spirit_precast','armor_precast','rank_stat_precast'
 ];
 
@@ -4996,7 +6790,14 @@ let state = {
   craftCollapsed: {}, // craft type key -> collapsed state (same idea as `collapsed` for schools)
   showJewelry: false,
   showBlacksmithing: false,
-  showAlchemy: false
+  showAlchemy: false,
+  abilityEmoteText: {}, // racial ability id -> this character's own personal "how I use it" text
+  inventoryItems: [], // {id, qty, name, group}[] — personal structured inventory, replaces free-text (kept as charInfo.inventory / "Legacy Inventory")
+  weaponItems: [], // {id, qty, name, group}[] — personal structured weapons list, replaces free-text (kept as charInfo.weapons / "Legacy Weapons")
+  inventoryGroups: [], // {id, name}[] — custom sort groups for inventoryItems, order = array order
+  weaponGroups: [], // {id, name}[] — custom sort groups for weaponItems, order = array order
+  precastSpells: [], // spell id[] — this character's Precast spells (added via ⭐), order = array order
+  precastAbilities: [] // racial ability id[] — this character's Precast abilities (added via ⭐), order = array order
 };
 
 /* ---------- BROWSING STATE VARIABLES ---------- */
@@ -5125,7 +6926,14 @@ async function loadFromCloud(){
     state = data.data || state;
     if(!state.charInfo) state.charInfo = {};
     if(!Array.isArray(state.rollBuffs)) state.rollBuffs = [];
+    if(!Array.isArray(state.inventoryItems)) state.inventoryItems = [];
+    if(!Array.isArray(state.weaponItems)) state.weaponItems = [];
+    if(!Array.isArray(state.inventoryGroups)) state.inventoryGroups = [];
+    if(!Array.isArray(state.weaponGroups)) state.weaponGroups = [];
+    if(!Array.isArray(state.precastSpells)) state.precastSpells = [];
+    if(!Array.isArray(state.precastAbilities)) state.precastAbilities = [];
     if(!state.emoteText || typeof state.emoteText !== 'object') state.emoteText = {};
+    if(!state.abilityEmoteText || typeof state.abilityEmoteText !== 'object') state.abilityEmoteText = {};
     if(!state.wsProgress) state.wsProgress = {};
     if(!state.wsCollapsed) state.wsCollapsed = {};
     if(!state.craftLearned) state.craftLearned = {};
@@ -5211,6 +7019,17 @@ function scheduleAlignEditLock(){
 window.addEventListener('resize', scheduleAlignEditLock);
 window.addEventListener('scroll', scheduleAlignEditLock, { passive: true });
 
+/* Old character saves (and, going forward, any raw value that doesn't
+   match a known race key) stored the race as free text; current saves
+   store the race's key from the `races` table. This resolves either to
+   a display name, falling back to the raw stored value so nothing shows
+   up blank for older/unmatched data. */
+function getRaceDisplayName(raceValue){
+  if(!raceValue) return '';
+  const r = RACES.find(x => x.key === raceValue);
+  return r ? r.name : raceValue;
+}
+
 async function fetchOtherCharacters() {
   const selectEl = document.getElementById('other-char-select');
   const listContainer = document.getElementById('directory-list-container');
@@ -5236,7 +7055,8 @@ async function fetchOtherCharacters() {
         const charData = row.data || {};
         const charInfo = charData.charInfo || {};
         const charName = charInfo.name ? charInfo.name.trim() : "Unnamed Character";
-        const charClassRace = (charInfo.race || charInfo.rank) ? ` (${charInfo.race || ''} ${charInfo.rank || ''})`.trim() : '';
+        const charRaceName = getRaceDisplayName(charInfo.race);
+        const charClassRace = (charRaceName || charInfo.rank) ? ` (${charRaceName || ''} ${charInfo.rank || ''})`.trim() : '';
 
         const option = document.createElement('option');
         option.value = row.user_id;
@@ -5245,7 +7065,7 @@ async function fetchOtherCharacters() {
 
         const card = document.createElement('button');
         card.style.cssText = "background: rgba(0,0,0,0.2); border: 1px solid var(--hairline); color: var(--parchment); padding: 10px; border-radius: 6px; text-align: left; cursor: pointer; font-family: inherit; transition: border-color 0.2s;";
-        card.innerHTML = `<strong style="color: var(--light-accent); display:block; margin-bottom:2px;">${escapeHtml(charName)}</strong><span style="font-size:16px; color:var(--parchment-dim);">${escapeHtml(charInfo.race || 'No Race')} · ${escapeHtml(charInfo.rank || 'No Rank')}</span>`;
+        card.innerHTML = `<strong style="color: var(--light-accent); display:block; margin-bottom:2px;">${escapeHtml(charName)}</strong><span style="font-size:16px; color:var(--parchment-dim);">${escapeHtml(charRaceName || 'No Race')} · ${escapeHtml(charInfo.rank || 'No Rank')}</span>`;
         
         card.addEventListener('mouseenter', () => card.style.borderColor = "var(--gold)");
         card.addEventListener('mouseleave', () => card.style.borderColor = "var(--hairline)");
@@ -5282,7 +7102,14 @@ function switchToAlternativeSheet(targetUserId) {
     state = JSON.parse(JSON.stringify(foundRow.data));
     if(!state.charInfo) state.charInfo = {};
     if(!Array.isArray(state.rollBuffs)) state.rollBuffs = [];
+    if(!Array.isArray(state.inventoryItems)) state.inventoryItems = [];
+    if(!Array.isArray(state.weaponItems)) state.weaponItems = [];
+    if(!Array.isArray(state.inventoryGroups)) state.inventoryGroups = [];
+    if(!Array.isArray(state.weaponGroups)) state.weaponGroups = [];
+    if(!Array.isArray(state.precastSpells)) state.precastSpells = [];
+    if(!Array.isArray(state.precastAbilities)) state.precastAbilities = [];
     if(!state.emoteText || typeof state.emoteText !== 'object') state.emoteText = {};
+    if(!state.abilityEmoteText || typeof state.abilityEmoteText !== 'object') state.abilityEmoteText = {};
     if(!state.wsProgress) state.wsProgress = {};
     if(!state.wsCollapsed) state.wsCollapsed = {};
     if(!state.craftLearned) state.craftLearned = {};
@@ -5316,7 +7143,14 @@ function returnToOwnSheet() {
     myStoredState = null;
   }
   if(!Array.isArray(state.rollBuffs)) state.rollBuffs = [];
+  if(!Array.isArray(state.inventoryItems)) state.inventoryItems = [];
+  if(!Array.isArray(state.weaponItems)) state.weaponItems = [];
+  if(!Array.isArray(state.inventoryGroups)) state.inventoryGroups = [];
+  if(!Array.isArray(state.weaponGroups)) state.weaponGroups = [];
+  if(!Array.isArray(state.precastSpells)) state.precastSpells = [];
+  if(!Array.isArray(state.precastAbilities)) state.precastAbilities = [];
   if(!state.emoteText || typeof state.emoteText !== 'object') state.emoteText = {};
+    if(!state.abilityEmoteText || typeof state.abilityEmoteText !== 'object') state.abilityEmoteText = {};
   if(!state.wsProgress) state.wsProgress = {};
   if(!state.wsCollapsed) state.wsCollapsed = {};
     if(!state.craftLearned) state.craftLearned = {};
@@ -5418,7 +7252,14 @@ function load(){
       if(parsed.hasOwnProperty('showAlchemy')) state.showAlchemy = parsed.showAlchemy;
       state.charInfo = parsed.charInfo || {};
       state.rollBuffs = Array.isArray(parsed.rollBuffs) ? parsed.rollBuffs : [];
+      state.inventoryItems = Array.isArray(parsed.inventoryItems) ? parsed.inventoryItems : [];
+      state.weaponItems = Array.isArray(parsed.weaponItems) ? parsed.weaponItems : [];
+      state.inventoryGroups = Array.isArray(parsed.inventoryGroups) ? parsed.inventoryGroups : [];
+      state.weaponGroups = Array.isArray(parsed.weaponGroups) ? parsed.weaponGroups : [];
+      state.precastSpells = Array.isArray(parsed.precastSpells) ? parsed.precastSpells : [];
+      state.precastAbilities = Array.isArray(parsed.precastAbilities) ? parsed.precastAbilities : [];
       state.emoteText = (parsed.emoteText && typeof parsed.emoteText === 'object') ? parsed.emoteText : {};
+      state.abilityEmoteText = (parsed.abilityEmoteText && typeof parsed.abilityEmoteText === 'object') ? parsed.abilityEmoteText : {};
       state.wsProgress = parsed.wsProgress || {};
       state.wsCollapsed = parsed.wsCollapsed || {};
       state.craftLearned = parsed.craftLearned || {};
@@ -5443,6 +7284,10 @@ function populateCharInfoFields(){
     if(el) el.value = state.charInfo[key] || '';
   });
   autosizeAllTextareas();
+  renderRaceAbilitiesDisplay();
+  renderInventoryDisplay();
+  renderWeaponsDisplay();
+  renderPrecastDisplay();
 }
 
 /* ---------- AUTOGROW TEXTAREAS ----------
@@ -5453,7 +7298,7 @@ function populateCharInfoFields(){
    toggle, with no JS measurement or timing races involved.
    The only job left for JS is keeping the mirror's text (data-replicated-
    value) in sync with the textarea's actual value. */
-const AUTOSIZE_TEXTAREA_SELECTOR = '.charsheet-field textarea, .rollbuff-field-desc textarea, #modal-desc, #modal-emote-text';
+const AUTOSIZE_TEXTAREA_SELECTOR = '.charsheet-field textarea, .rollbuff-field-desc textarea, #modal-desc, #modal-emote-text, #ability-modal-desc, #ability-modal-emote-text';
 
 function syncGrowWrap(el){
   const wrap = el && el.closest ? el.closest('.grow-wrap') : null;
@@ -6103,6 +7948,8 @@ function makeRollBuffId(){
 window.addRollBuff = function(){
   if (isViewingOther || editLocked) return;
   if(!Array.isArray(state.rollBuffs)) state.rollBuffs = [];
+  if(!Array.isArray(state.inventoryItems)) state.inventoryItems = [];
+  if(!Array.isArray(state.weaponItems)) state.weaponItems = [];
   state.rollBuffs.push({ id: makeRollBuffId(), types:[], value:'', abbr:'', desc:'' });
   persist();
   renderRollBuffList();
@@ -6687,7 +8534,14 @@ function importCharacter() {
       state = parsed;
       if(!state.charInfo) state.charInfo = {};
       if(!Array.isArray(state.rollBuffs)) state.rollBuffs = [];
+      if(!Array.isArray(state.inventoryItems)) state.inventoryItems = [];
+      if(!Array.isArray(state.weaponItems)) state.weaponItems = [];
+      if(!Array.isArray(state.inventoryGroups)) state.inventoryGroups = [];
+      if(!Array.isArray(state.weaponGroups)) state.weaponGroups = [];
+      if(!Array.isArray(state.precastSpells)) state.precastSpells = [];
+      if(!Array.isArray(state.precastAbilities)) state.precastAbilities = [];
       if(!state.emoteText || typeof state.emoteText !== 'object') state.emoteText = {};
+    if(!state.abilityEmoteText || typeof state.abilityEmoteText !== 'object') state.abilityEmoteText = {};
       if(!state.wsProgress) state.wsProgress = {};
       if(!state.wsCollapsed) state.wsCollapsed = {};
     if(!state.craftLearned) state.craftLearned = {};
@@ -6948,7 +8802,7 @@ document.getElementById('reset-all').addEventListener('click', async () => {
     });
   });
 
-  state = { learned: resetLearned, savant:{}, oracle:{}, collapsed:{}, showLight: state.showLight, showDark: state.showDark, showLegacy: state.showLegacy, showDeity: state.showDeity, showJewelry: state.showJewelry, showBlacksmithing: state.showBlacksmithing, showAlchemy: state.showAlchemy, charInfo: {}, rollBuffs: [],
+  state = { learned: resetLearned, savant:{}, oracle:{}, collapsed:{}, showLight: state.showLight, showDark: state.showDark, showLegacy: state.showLegacy, showDeity: state.showDeity, showJewelry: state.showJewelry, showBlacksmithing: state.showBlacksmithing, showAlchemy: state.showAlchemy, charInfo: {}, rollBuffs: [], inventoryItems: [], weaponItems: [],
     // Your personal emote text is creative writing tied to the spell, not a
     // checkmark — "Reset all checks" shouldn't wipe out text you wrote, so
     // (like warrior skill progress below) it's carried over as-is.
@@ -6957,7 +8811,8 @@ document.getElementById('reset-all').addEventListener('click', async () => {
     // checks" only resets spells, so their progress/collapsed state is
     // carried over as-is.
     wsProgress: state.wsProgress, wsCollapsed: state.wsCollapsed,
-    craftLearned: state.craftLearned, craftCollapsed: state.craftCollapsed };
+    craftLearned: state.craftLearned, craftCollapsed: state.craftCollapsed,
+    abilityEmoteText: state.abilityEmoteText };
   await persist();
   populateCharInfoFields();
   renderRollBuffDisplay();
@@ -6991,9 +8846,11 @@ window.addEventListener('beforeunload', function(e){
   await loadWarriorSkillMeta();     // fetch shared warrior skill data (desc/tags/damage/etc.) from the cloud
   await loadCraftingRecipes();      // fetch Jewelry/Blacksmithing/Alchemy recipes from the cloud
   await loadCraftMeta();            // fetch shared recipe data (desc/tags/materials/DC/etc.) from the cloud
+  await loadRacesAndAbilities();    // fetch Races + their racial special abilities from the cloud
   renderTagFilters();
   renderWsTagFilters();
   renderCraftTagFilters();
+  renderRaceSelectOptions();        // populate the Race dropdown before load() sets its value
   load();                    // renders the grid with the loaded spell metadata
   applyEditLockState();      // apply saved lock preference before anything can be touched
   applyCharsheetCollapsedState();
