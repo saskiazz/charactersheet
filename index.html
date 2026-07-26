@@ -1080,8 +1080,7 @@
     .wrap{padding-left:14px;padding-right:14px;}
     .toolbar{position:static;backdrop-filter:none;}
     .grid{grid-template-columns:1fr;}
-    .charsheet{padding:16px;}
-    .charsheet-grid{column-count:1;}
+    .charsheet{padding:16px;min-width:0 !important;width:auto !important;resize:none;}
     .stat-row{gap:8px;}
     .stat-mini{min-width:70px;}
     .stat-mini input[type=text]{font-size:16px;padding:6px 4px;}
@@ -1089,9 +1088,6 @@
     .stat-pill{min-width:0;padding:10px 8px;}
     .stat-pill .num{font-size:25px;}
     .stat-pill .lbl{font-size:13px;}
-  }
-  @media (max-width:900px){
-    .charsheet-grid{column-count:1;}
   }
 
   /* CHARACTER SHEET */
@@ -1102,6 +1098,7 @@
     padding:26px 30px 30px;
     margin-bottom:26px;
     box-shadow:inset 3px 0 0 var(--gold), var(--shadow-soft);
+    box-sizing:border-box;
   }
   .charsheet-title{
     font-family:'Cinzel', Garamond, serif;
@@ -1129,18 +1126,140 @@
     flex-shrink:0;
   }
   .charsheet-chevron.open{transform:rotate(90deg);}
+  /* Two independent columns instead of a CSS Grid. A grid row stretches
+     every cell in that row to match its tallest sibling — which is
+     exactly the "dead space" problem: a short block would get forced to
+     the height of a much taller block sharing its row. Two side-by-side
+     flex columns (align-items:flex-start so neither stretches to match
+     the other's overall height) means each block only ever takes the
+     height its own content needs — completely unrelated to what's in the
+     other column. Blocks fill column 0 top-to-bottom first, then column 1
+     (see renderCharsheetColumns()), so it's still perfectly stable — a
+     block only moves when *you* explicitly reorder it, never as a side
+     effect of some other block's content changing size. */
   .charsheet-grid{
-    column-count:2;
-    column-gap:28px;
+    display:flex;
+    align-items:flex-start;
+    gap:20px;
   }
   .charsheet-grid.collapsed{display:none;}
+  .cs-column{
+    flex:1 1 0;
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+  }
+  @media (max-width:800px){
+    .charsheet-grid{flex-direction:column;}
+    .cs-column{width:100%;}
+  }
+  /* Drag handle that sets how many blocks fit in column 0 before the rest
+     spill to column 1 — see getColumnSplitIndex()/initCharsheetColumnResize().
+     Only shown in "🧩 Rearrange" mode, and only on wide-enough screens
+     where there are actually two columns to balance. */
+  .cs-column-resize-handle{
+    display:none;
+    align-items:center;
+    justify-content:center;
+    height:22px;
+    margin-top:-6px;
+    border:1px dashed var(--hairline);
+    border-radius:6px;
+    color:var(--parchment-dim);
+    font-size:13px;
+    letter-spacing:3px;
+    cursor:ns-resize;
+    user-select:none;
+    touch-action:none;
+  }
+  .cs-column-resize-handle:hover{border-color:var(--gold);color:var(--light-accent);}
+  .charsheet-grid.layout-edit-mode .cs-column-resize-handle{display:flex;}
+  @media (max-width:800px){
+    .cs-column-resize-handle{display:none !important;}
+  }
+  /* ---------- REORDERABLE BLOCKS ----------
+     Each .cs-block groups a set of related fields (see the HTML) so the
+     whole group can be moved as one unit. Normally this is invisible —
+     no border/background/header — so the sheet looks like a plain list
+     of fields, same as before. The card look (background, border, drag
+     handle, ▲▼ buttons) only appears while "🧩 Rearrange" is toggled on,
+     via .layout-edit-mode — see toggleCharsheetLayoutMode(). Order is
+     saved to localStorage per device regardless of whether the card look
+     is currently showing — see saveCharsheetBlockOrder(). */
+  .cs-block{
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+  }
+  .charsheet-grid.layout-edit-mode .cs-block{
+    background:rgba(0,0,0,0.16);
+    border:1px solid var(--hairline);
+    border-radius:var(--radius-md);
+    padding:14px 16px 16px;
+    box-sizing:border-box;
+  }
+  .cs-block.dragging{opacity:0.4;}
+  .cs-block-header{
+    display:none;
+    align-items:center;
+    gap:8px;
+    margin-bottom:12px;
+    padding-bottom:9px;
+    border-bottom:1px solid var(--hairline);
+    cursor:grab;
+    user-select:none;
+  }
+  .charsheet-grid.layout-edit-mode .cs-block-header{display:flex;}
+  .cs-block-header:active{cursor:grabbing;}
+  .cs-drag-handle{font-size:15px;color:var(--parchment-dim);letter-spacing:1px;flex-shrink:0;}
+  .cs-block-title{
+    font-family:'Cinzel', Garamond, serif;
+    font-size:14.5px;
+    font-weight:700;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--gold);
+    flex:1;
+  }
+  .cs-block-move-btns{display:flex;gap:4px;flex-shrink:0;}
+  .cs-move-btn{
+    background:transparent;
+    border:1px solid var(--hairline);
+    color:var(--parchment-dim);
+    font-size:11px;
+    line-height:1;
+    padding:4px 6px;
+    border-radius:5px;
+    cursor:pointer;
+    transition:all .15s;
+  }
+  .cs-move-btn:hover{border-color:var(--gold);color:var(--light-accent);}
+  .cs-move-btn:disabled{opacity:0.3;cursor:default;}
+  .cs-move-btn:disabled:hover{border-color:var(--hairline);color:var(--parchment-dim);}
+  .cs-layout-toggle{
+    background:transparent;
+    border:1px solid var(--hairline);
+    color:var(--parchment-dim);
+    font-family:'Crimson Pro',serif;
+    font-size:14px;
+    letter-spacing:0.03em;
+    padding:6px 12px;
+    border-radius:var(--radius-sm);
+    cursor:pointer;
+    transition:all .15s;
+    text-transform:none;
+  }
+  .cs-layout-toggle:hover{border-color:var(--gold);color:var(--light-accent);}
+  .cs-layout-toggle.active{background:var(--gold);border-color:var(--gold);color:#1a1408;font-weight:700;}
+  .cs-block-body{display:flex;flex-direction:column;gap:16px;flex:1;}
+  .cs-inline-row{display:flex;flex-wrap:wrap;gap:14px;}
+  .cs-inline-row .charsheet-field{flex:1 1 140px;margin-bottom:0;}
   .charsheet-field{
     display:flex;
     flex-direction:column;
     gap:6px;
-    break-inside:avoid;
-    -webkit-column-break-inside:avoid;
-    margin-bottom:18px;
+    margin-bottom:0;
   }
   .charsheet-field.wide{width:100%;}
   .charsheet-field label{
@@ -1411,6 +1530,22 @@
   .armor-reset-badge.locked{cursor:default;opacity:0.65;}
   .armor-reset-badge.locked:hover{border-color:var(--hairline);color:var(--parchment-dim);}
   .armor-reset-badge.locked.counting:hover{border-color:var(--neutral-accent);color:var(--neutral-accent);}
+  .cast-precast-btn{
+    display:block;
+    margin-top:12px;
+    padding:9px 16px;
+    background:linear-gradient(180deg,var(--panel-2),var(--panel));
+    border:1px solid var(--gold);
+    color:var(--light-accent);
+    font-family:'Crimson Pro',serif;
+    font-size:17px;
+    letter-spacing:0.03em;
+    border-radius:var(--radius-sm);
+    cursor:pointer;
+    transition:background .15s, box-shadow .15s;
+  }
+  .cast-precast-btn:hover{background:linear-gradient(180deg,var(--panel),var(--panel-2));box-shadow:0 0 0 3px rgba(201,160,84,0.15);}
+  .cast-precast-btn:disabled{opacity:0.45;cursor:default;box-shadow:none;}
   .armor-reset-edit{
     margin-top:4px;
     width:100%;
@@ -1980,93 +2115,172 @@
   <div class="charsheet">
     <div class="charsheet-title" onclick="toggleCharsheetCollapsed()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCharsheetCollapsed()}">
       <span>Character Sheet</span>
-      <span class="charsheet-chevron" id="charsheet-chevron">▸</span>
+      <span style="display:flex;align-items:center;gap:14px;">
+        <button type="button" class="cs-layout-toggle always-enabled" id="cs-layout-toggle" onclick="event.stopPropagation(); toggleCharsheetLayoutMode();" title="Show the block outlines and ▲▼/drag controls so you can rearrange the sheet">🧩 Rearrange</button>
+        <button type="button" class="cs-layout-toggle always-enabled" id="cs-layout-reset-btn" onclick="event.stopPropagation(); resetCharsheetBlockOrderToStandard();" title="Back to the standard block arrangement (set by editors)">↺ Reset to Standard</button>
+        <button type="button" class="cs-layout-toggle always-enabled" id="cs-layout-admin-link" style="display:none;" onclick="event.stopPropagation(); openCharsheetLayoutModal();" title="Set the standard arrangement everyone starts with (global editors only)">⚙ Manage Default Layout</button>
+        <span class="charsheet-chevron" id="charsheet-chevron">▸</span>
+      </span>
     </div>
     <div class="charsheet-grid" id="charsheet-grid">
-      <div class="charsheet-field">
-        <label for="ci-name">Name</label>
-        <input type="text" id="ci-name" data-ci="name" oninput="onCharInfoChange()">
-      </div>
-      <div class="charsheet-field">
-        <label for="ci-race">Race</label>
-        <select id="ci-race" data-ci="race" onchange="onCharInfoChange(); renderRaceAbilitiesDisplay();">
-          <option value="">— Select Race —</option>
-        </select>
-        <div class="charsheet-admin-links" id="race-admin-links" style="display:none;">
-          <button type="button" class="mini-admin-link" onclick="openAbilitiesModal()">⚙ Manage Abilities</button>
-          <button type="button" class="mini-admin-link" onclick="openRacesModal()">⚙ Manage Races</button>
+      <div class="cs-column" id="cs-column-0">
+
+      <div class="cs-block" id="cs-block-identity">
+        <div class="cs-block-header">
+          <span class="cs-drag-handle">⠿</span>
+          <span class="cs-block-title">Identity</span>
+          <span class="cs-block-move-btns">
+            <button type="button" class="cs-move-btn always-enabled" onclick="moveCharsheetBlock('identity',-1)" title="Move up">▲</button>
+            <button type="button" class="cs-move-btn always-enabled" onclick="moveCharsheetBlock('identity',1)" title="Move down">▼</button>
+          </span>
         </div>
-      </div>
-      <div class="charsheet-field">
-        <label for="ci-rank">Rank</label>
-        <select id="ci-rank" data-ci="rank" onchange="onRankChange(); onCharInfoChange();">
-          <option value="">— Select Rank —</option>
-        </select>
-        <div class="charsheet-admin-links">
-          <button type="button" class="mini-admin-link always-enabled" id="rank-view-link" onclick="openRankViewModal()">ℹ View Rank Details</button>
-          <button type="button" class="mini-admin-link" id="rank-admin-link" style="display:none;" onclick="openRanksModal()">⚙ Manage Ranks</button>
-        </div>
-      </div>
-      <div class="charsheet-field wide">
-        <label>Base Stats <span class="modal-hint" style="text-transform:none;letter-spacing:0;">(Body/Mind/Spirit/Rank auto-fill from Rank — click +2 under a stat for a one-time Labyrinth secret bonus; Armor stays manual)</span></label>
-        <div class="stat-row">
-          <div class="stat-mini">
-            <label for="ci-body-base">Body</label>
-            <input type="text" id="ci-body-base" data-ci="body_base" readonly title="Auto-filled from Rank + Secret Bonus">
-            <button type="button" class="secret-bonus-btn" id="secret-bonus-body" onclick="toggleSecretBonus('body')" title="Secret Bonus: one-time +2 to Body from a Labyrinth secret">+2</button>
+        <div class="cs-block-body">
+          <div class="cs-inline-row">
+            <div class="charsheet-field">
+              <label for="ci-name">Name</label>
+              <input type="text" id="ci-name" data-ci="name" oninput="onCharInfoChange()">
+            </div>
+            <div class="charsheet-field">
+              <label for="ci-race">Race</label>
+              <select id="ci-race" data-ci="race" onchange="onCharInfoChange(); renderRaceAbilitiesDisplay();">
+                <option value="">— Select Race —</option>
+              </select>
+              <div class="charsheet-admin-links" id="race-admin-links" style="display:none;">
+                <button type="button" class="mini-admin-link" onclick="openAbilitiesModal()">⚙ Manage Abilities</button>
+                <button type="button" class="mini-admin-link" onclick="openRacesModal()">⚙ Manage Races</button>
+              </div>
+            </div>
+            <div class="charsheet-field">
+              <label for="ci-rank">Rank</label>
+              <select id="ci-rank" data-ci="rank" onchange="onRankChange(); onCharInfoChange();">
+                <option value="">— Select Rank —</option>
+              </select>
+              <div class="charsheet-admin-links">
+                <button type="button" class="mini-admin-link always-enabled" id="rank-view-link" onclick="openRankViewModal()">ℹ View Rank Details</button>
+                <button type="button" class="mini-admin-link" id="rank-admin-link" style="display:none;" onclick="openRanksModal()">⚙ Manage Ranks</button>
+              </div>
+            </div>
           </div>
-          <div class="stat-mini">
-            <label for="ci-mind-base">Mind</label>
-            <input type="text" id="ci-mind-base" data-ci="mind_base" readonly title="Auto-filled from Rank + Secret Bonus">
-            <button type="button" class="secret-bonus-btn" id="secret-bonus-mind" onclick="toggleSecretBonus('mind')" title="Secret Bonus: one-time +2 to Mind from a Labyrinth secret">+2</button>
-          </div>
-          <div class="stat-mini">
-            <label for="ci-spirit-base">Spirit</label>
-            <input type="text" id="ci-spirit-base" data-ci="spirit_base" readonly title="Auto-filled from Rank + Secret Bonus">
-            <button type="button" class="secret-bonus-btn" id="secret-bonus-spirit" onclick="toggleSecretBonus('spirit')" title="Secret Bonus: one-time +2 to Spirit from a Labyrinth secret">+2</button>
-          </div>
-          <div class="stat-mini"><label for="ci-armor-base">Armor</label><input type="text" id="ci-armor-base" data-ci="armor_base" oninput="onCharInfoChange()"></div>
-          <div class="stat-mini"><label for="ci-rank-base">Rank</label><input type="text" id="ci-rank-base" data-ci="rank_stat_base" readonly title="Auto-filled from the selected Rank's Combat Modifier"></div>
-        </div>
-        <input type="hidden" id="ci-secret-bonus" data-ci="secret_bonus_stat">
-      </div>
-      <div class="charsheet-field wide">
-        <label>Current Stats</label>
-        <div class="stat-row">
-          <div class="stat-mini"><label for="ci-body-cur">Body</label><input type="text" id="ci-body-cur" data-ci="body_current" oninput="onCharInfoChange()"></div>
-          <div class="stat-mini"><label for="ci-mind-cur">Mind</label><input type="text" id="ci-mind-cur" data-ci="mind_current" oninput="onCharInfoChange()"></div>
-          <div class="stat-mini"><label for="ci-spirit-cur">Spirit</label><input type="text" id="ci-spirit-cur" data-ci="spirit_current" oninput="onCharInfoChange()"></div>
-          <div class="stat-mini">
-            <label for="ci-armor-cur">Armor</label>
-            <input type="text" id="ci-armor-cur" data-ci="armor_current" oninput="onCharInfoChange()">
-            <span class="armor-reset-badge" id="armor-reset-badge" onclick="toggleArmorResetEdit()" title="No reset timer is running — click to manually set one (e.g. for a spell that doesn't last exactly 24h)">No cooldown</span>
-            <input type="datetime-local" id="armor-reset-edit" class="armor-reset-edit" style="display:none;" onchange="onArmorResetEditChange()" onblur="closeArmorResetEdit()">
-            <input type="hidden" id="ci-armor-reset-time" data-ci="armor_reset_time">
-          </div>
-          <div class="stat-mini"><label for="ci-rank-cur">Rank</label><input type="text" id="ci-rank-cur" data-ci="rank_stat_current" oninput="onCharInfoChange()"></div>
-          <div class="stat-mini reset-time"><label for="ci-reset-time">Reset Time</label><input type="datetime-local" id="ci-reset-time" data-ci="reset_time" oninput="onCharInfoChange()"></div>
         </div>
       </div>
-      <div class="charsheet-field wide">
-        <label>Special Abilities <span class="modal-hint" style="text-transform:none;letter-spacing:0;">(automatic, based on Race)</span></label>
-        <div id="ci-abilities-display" class="racial-abilities-display"></div>
-      </div>
-      <div class="charsheet-field wide">
-        <label for="ci-weakness">Weakness</label>
-        <div class="grow-wrap"><textarea id="ci-weakness" data-ci="weakness" oninput="onCharInfoChange(); syncGrowWrap(this)"></textarea></div>
-      </div>
-      <div class="charsheet-field wide">
-        <label>Inventory</label>
-        <div id="inventory-display" class="racial-abilities-display inventory-display-stacked"></div>
-        <div class="charsheet-admin-links">
-          <button type="button" class="mini-admin-link" onclick="openInventoryModal()">⚙ Manage Inventory</button>
+
+      <div class="cs-block" id="cs-block-stats">
+        <div class="cs-block-header">
+          <span class="cs-drag-handle">⠿</span>
+          <span class="cs-block-title">Stats</span>
+          <span class="cs-block-move-btns">
+            <button type="button" class="cs-move-btn always-enabled" onclick="moveCharsheetBlock('stats',-1)" title="Move up">▲</button>
+            <button type="button" class="cs-move-btn always-enabled" onclick="moveCharsheetBlock('stats',1)" title="Move down">▼</button>
+          </span>
+        </div>
+        <div class="cs-block-body">
+          <div class="charsheet-field wide">
+            <label>Base Stats <span class="modal-hint" style="text-transform:none;letter-spacing:0;">(Body/Mind/Spirit/Rank auto-fill from Rank — click +2 under a stat for a one-time Labyrinth secret bonus; Armor stays manual)</span></label>
+            <div class="stat-row">
+              <div class="stat-mini">
+                <label for="ci-body-base">Body</label>
+                <input type="text" id="ci-body-base" data-ci="body_base" readonly title="Auto-filled from Rank + Secret Bonus">
+                <button type="button" class="secret-bonus-btn" id="secret-bonus-body" onclick="toggleSecretBonus('body')" title="Secret Bonus: one-time +2 to Body from a Labyrinth secret">+2</button>
+              </div>
+              <div class="stat-mini">
+                <label for="ci-mind-base">Mind</label>
+                <input type="text" id="ci-mind-base" data-ci="mind_base" readonly title="Auto-filled from Rank + Secret Bonus">
+                <button type="button" class="secret-bonus-btn" id="secret-bonus-mind" onclick="toggleSecretBonus('mind')" title="Secret Bonus: one-time +2 to Mind from a Labyrinth secret">+2</button>
+              </div>
+              <div class="stat-mini">
+                <label for="ci-spirit-base">Spirit</label>
+                <input type="text" id="ci-spirit-base" data-ci="spirit_base" readonly title="Auto-filled from Rank + Secret Bonus">
+                <button type="button" class="secret-bonus-btn" id="secret-bonus-spirit" onclick="toggleSecretBonus('spirit')" title="Secret Bonus: one-time +2 to Spirit from a Labyrinth secret">+2</button>
+              </div>
+              <div class="stat-mini"><label for="ci-armor-base">Armor</label><input type="text" id="ci-armor-base" data-ci="armor_base" oninput="onCharInfoChange()"></div>
+              <div class="stat-mini"><label for="ci-rank-base">Rank</label><input type="text" id="ci-rank-base" data-ci="rank_stat_base" readonly title="Auto-filled from the selected Rank's Combat Modifier"></div>
+            </div>
+            <input type="hidden" id="ci-secret-bonus" data-ci="secret_bonus_stat">
+          </div>
+          <div class="charsheet-field wide">
+            <label>Current Stats</label>
+            <div class="stat-row">
+              <div class="stat-mini"><label for="ci-body-cur">Body</label><input type="text" id="ci-body-cur" data-ci="body_current" oninput="onCharInfoChange()"></div>
+              <div class="stat-mini"><label for="ci-mind-cur">Mind</label><input type="text" id="ci-mind-cur" data-ci="mind_current" oninput="onCharInfoChange()"></div>
+              <div class="stat-mini"><label for="ci-spirit-cur">Spirit</label><input type="text" id="ci-spirit-cur" data-ci="spirit_current" oninput="onCharInfoChange()"></div>
+              <div class="stat-mini">
+                <label for="ci-armor-cur">Armor</label>
+                <input type="text" id="ci-armor-cur" data-ci="armor_current" oninput="onCharInfoChange()">
+                <span class="armor-reset-badge" id="armor-reset-badge" onclick="toggleArmorResetEdit()" title="No reset timer is running — click to manually set one (e.g. for a spell that doesn't last exactly 24h)">No cooldown</span>
+                <input type="datetime-local" id="armor-reset-edit" class="armor-reset-edit" style="display:none;" onchange="onArmorResetEditChange()" onblur="closeArmorResetEdit()">
+                <input type="hidden" id="ci-armor-reset-time" data-ci="armor_reset_time">
+              </div>
+              <div class="stat-mini"><label for="ci-rank-cur">Rank</label><input type="text" id="ci-rank-cur" data-ci="rank_stat_current" oninput="onCharInfoChange()"></div>
+              <div class="stat-mini reset-time"><label for="ci-reset-time">Reset Time</label><input type="datetime-local" id="ci-reset-time" data-ci="reset_time" oninput="onCharInfoChange()"></div>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="charsheet-field wide">
-        <label>Weapons</label>
-        <div id="weapons-display" class="racial-abilities-display inventory-display-stacked"></div>
-        <div class="charsheet-admin-links">
-          <button type="button" class="mini-admin-link" onclick="openWeaponsModal()">⚙ Manage Weapons</button>
+
+      <div class="cs-column-resize-handle" id="cs-column-resize-handle" title="Drag to change how many blocks fit in the left column before the rest continue in the right column">⠿ ⠿ ⠿</div>
+
+      </div>
+
+      <div class="cs-column" id="cs-column-1">
+
+      <div class="cs-block" id="cs-block-abilities">
+        <div class="cs-block-header">
+          <span class="cs-drag-handle">⠿</span>
+          <span class="cs-block-title">Special Abilities</span>
+          <span class="cs-block-move-btns">
+            <button type="button" class="cs-move-btn always-enabled" onclick="moveCharsheetBlock('abilities',-1)" title="Move up">▲</button>
+            <button type="button" class="cs-move-btn always-enabled" onclick="moveCharsheetBlock('abilities',1)" title="Move down">▼</button>
+          </span>
+        </div>
+        <div class="cs-block-body">
+          <div class="charsheet-field wide">
+            <label>Special Abilities <span class="modal-hint" style="text-transform:none;letter-spacing:0;">(automatic, based on Race)</span></label>
+            <div id="ci-abilities-display" class="racial-abilities-display"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cs-block" id="cs-block-weakness">
+        <div class="cs-block-header">
+          <span class="cs-drag-handle">⠿</span>
+          <span class="cs-block-title">Weakness</span>
+          <span class="cs-block-move-btns">
+            <button type="button" class="cs-move-btn always-enabled" onclick="moveCharsheetBlock('weakness',-1)" title="Move up">▲</button>
+            <button type="button" class="cs-move-btn always-enabled" onclick="moveCharsheetBlock('weakness',1)" title="Move down">▼</button>
+          </span>
+        </div>
+        <div class="cs-block-body">
+          <div class="charsheet-field wide">
+            <label for="ci-weakness">Weakness</label>
+            <div class="grow-wrap"><textarea id="ci-weakness" data-ci="weakness" oninput="onCharInfoChange(); syncGrowWrap(this)"></textarea></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cs-block" id="cs-block-items">
+        <div class="cs-block-header">
+          <span class="cs-drag-handle">⠿</span>
+          <span class="cs-block-title">Gear</span>
+          <span class="cs-block-move-btns">
+            <button type="button" class="cs-move-btn always-enabled" onclick="moveCharsheetBlock('items',-1)" title="Move up">▲</button>
+            <button type="button" class="cs-move-btn always-enabled" onclick="moveCharsheetBlock('items',1)" title="Move down">▼</button>
+          </span>
+        </div>
+        <div class="cs-block-body">
+          <div class="charsheet-field wide">
+            <label>Inventory</label>
+            <div id="inventory-display" class="racial-abilities-display inventory-display-stacked"></div>
+            <div class="charsheet-admin-links">
+              <button type="button" class="mini-admin-link" onclick="openInventoryModal()">⚙ Manage Inventory</button>
+            </div>
+          </div>
+          <div class="charsheet-field wide">
+            <label>Weapons</label>
+            <div id="weapons-display" class="racial-abilities-display inventory-display-stacked"></div>
+            <div class="charsheet-admin-links">
+              <button type="button" class="mini-admin-link" onclick="openWeaponsModal()">⚙ Manage Weapons</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -2076,35 +2290,76 @@
            you've added to Precast. Star one (in its list row or its
            modal) to add it here; click a name to open its full details,
            including your emote text. -->
-      <div class="charsheet-field wide">
-        <label>Precast <span class="modal-hint" style="text-transform:none;letter-spacing:0;">(⭐ a spell or ability to add it to Precast)</span></label>
-        <div id="precast-display" class="racial-abilities-display inventory-display-stacked"></div>
-      </div>
-      <div class="charsheet-field wide">
-        <label>Stats After Precast</label>
-        <div class="stat-row">
-          <div class="stat-mini"><label for="ci-body-precast">Body</label><input type="text" id="ci-body-precast" data-ci="body_precast" oninput="onCharInfoChange()"></div>
-          <div class="stat-mini"><label for="ci-mind-precast">Mind</label><input type="text" id="ci-mind-precast" data-ci="mind_precast" oninput="onCharInfoChange()"></div>
-          <div class="stat-mini"><label for="ci-spirit-precast">Spirit</label><input type="text" id="ci-spirit-precast" data-ci="spirit_precast" oninput="onCharInfoChange()"></div>
-          <div class="stat-mini"><label for="ci-armor-precast">Armor</label><input type="text" id="ci-armor-precast" data-ci="armor_precast" oninput="onCharInfoChange()"></div>
-          <div class="stat-mini"><label for="ci-rank-precast">Rank</label><input type="text" id="ci-rank-precast" data-ci="rank_stat_precast" oninput="onCharInfoChange()"></div>
+      <div class="cs-block" id="cs-block-precast">
+        <div class="cs-block-header">
+          <span class="cs-drag-handle">⠿</span>
+          <span class="cs-block-title">Precast</span>
+          <span class="cs-block-move-btns">
+            <button type="button" class="cs-move-btn always-enabled" onclick="moveCharsheetBlock('precast',-1)" title="Move up">▲</button>
+            <button type="button" class="cs-move-btn always-enabled" onclick="moveCharsheetBlock('precast',1)" title="Move down">▼</button>
+          </span>
+        </div>
+        <div class="cs-block-body">
+          <div class="charsheet-field wide">
+            <label>Precast <span class="modal-hint" style="text-transform:none;letter-spacing:0;">(⭐ a spell or ability to add it to Precast)</span></label>
+            <div id="precast-display" class="racial-abilities-display inventory-display-stacked"></div>
+          </div>
+          <div class="charsheet-field wide">
+            <label>Stats After Precast</label>
+            <div class="stat-row">
+              <div class="stat-mini"><label for="ci-body-precast">Body</label><input type="text" id="ci-body-precast" data-ci="body_precast" oninput="onCharInfoChange()"></div>
+              <div class="stat-mini"><label for="ci-mind-precast">Mind</label><input type="text" id="ci-mind-precast" data-ci="mind_precast" oninput="onCharInfoChange()"></div>
+              <div class="stat-mini"><label for="ci-spirit-precast">Spirit</label><input type="text" id="ci-spirit-precast" data-ci="spirit_precast" oninput="onCharInfoChange()"></div>
+              <div class="stat-mini"><label for="ci-armor-precast">Armor</label><input type="text" id="ci-armor-precast" data-ci="armor_precast" oninput="onCharInfoChange()"></div>
+              <div class="stat-mini"><label for="ci-rank-precast">Rank</label><input type="text" id="ci-rank-precast" data-ci="rank_stat_precast" oninput="onCharInfoChange()"></div>
+            </div>
+            <button type="button" id="cast-precast-btn" class="cast-precast-btn" onclick="castPrecast()" title="Copies these Precast numbers into Current Stats — same as changing Current Stats by hand, so the Rank and Armor reset timers both start fresh from now">⚡ Cast Precast</button>
+          </div>
         </div>
       </div>
 
       <!-- ROLL BUFFS / DEBUFFS -->
-      <div class="charsheet-field wide">
-        <label>Roll Buffs / Debuffs</label>
-        <div class="rollbuff-display" id="rollbuff-display"></div>
-        <button type="button" class="rollbuff-manage-btn" onclick="openRollBuffModal()">⚙ Manage Roll Buffs</button>
+      <div class="cs-block" id="cs-block-rollbuffs">
+        <div class="cs-block-header">
+          <span class="cs-drag-handle">⠿</span>
+          <span class="cs-block-title">Roll Buffs / Debuffs</span>
+          <span class="cs-block-move-btns">
+            <button type="button" class="cs-move-btn always-enabled" onclick="moveCharsheetBlock('rollbuffs',-1)" title="Move up">▲</button>
+            <button type="button" class="cs-move-btn always-enabled" onclick="moveCharsheetBlock('rollbuffs',1)" title="Move down">▼</button>
+          </span>
+        </div>
+        <div class="cs-block-body">
+          <div class="charsheet-field wide">
+            <label>Roll Buffs / Debuffs</label>
+            <div class="rollbuff-display" id="rollbuff-display"></div>
+            <button type="button" class="rollbuff-manage-btn" onclick="openRollBuffModal()">⚙ Manage Roll Buffs</button>
+          </div>
+        </div>
       </div>
 
-      <div class="charsheet-field wide">
-        <label class="modal-label personal-label" style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;">
-          <input type="checkbox" id="ci-share-emotes" checked onchange="onShareEmotesChange()" style="margin-top:3px;">
-          <span>Share my personal emote text with people viewing my sheet <span class="modal-hint">(on by default — turn this off if you'd rather keep your spell/ability emotes private; this only affects what OTHER people can see, you'll always see your own)</span></span>
-        </label>
+      <div class="cs-block" id="cs-block-settings">
+        <div class="cs-block-header">
+          <span class="cs-drag-handle">⠿</span>
+          <span class="cs-block-title">Settings</span>
+          <span class="cs-block-move-btns">
+            <button type="button" class="cs-move-btn always-enabled" onclick="moveCharsheetBlock('settings',-1)" title="Move up">▲</button>
+            <button type="button" class="cs-move-btn always-enabled" onclick="moveCharsheetBlock('settings',1)" title="Move down">▼</button>
+          </span>
+        </div>
+        <div class="cs-block-body">
+          <div class="charsheet-field wide">
+            <label class="modal-label personal-label" style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;">
+              <input type="checkbox" id="ci-share-emotes" checked onchange="onShareEmotesChange()" style="margin-top:3px;">
+              <span>Share my personal emote text with people viewing my sheet <span class="modal-hint">(on by default — turn this off if you'd rather keep your spell/ability emotes private; this only affects what OTHER people can see, you'll always see your own)</span></span>
+            </label>
+          </div>
+        </div>
       </div>
+
+      </div>
+
     </div>
+
 
     <!-- RESTRICTED PREGNANCY PANEL — a separate little menu, deliberately
          kept outside .charsheet-grid and outside `state`. It is hidden by
@@ -2586,6 +2841,22 @@
     <div class="modal-actions" style="justify-content:flex-end;">
       <button type="button" onclick="closeSchoolOrderModal()">Cancel</button>
       <button type="button" id="school-order-save" onclick="saveSchoolOrder()">Save Order</button>
+    </div>
+  </div>
+</div>
+
+<div id="charsheet-layout-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeCharsheetLayoutModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeCharsheetLayoutModal()">✕</button>
+    <h2>Manage Default Character Sheet Layout</h2>
+    <p class="modal-subtitle">Sets the block arrangement everyone starts with. Drag to reorder, then Save. Anyone who has already rearranged their own sheet (via 🧩 Rearrange) keeps seeing their own arrangement regardless — they can always get back to whatever you set here with "↺ Reset to Standard".</p>
+
+    <ul id="charsheet-layout-order-list" class="school-order-list"></ul>
+    <p id="charsheet-layout-order-status" style="font-size:13px;color:var(--parchment-dim);font-style:italic;min-height:1.2em;margin-top:10px;"></p>
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button type="button" onclick="closeCharsheetLayoutModal()">Cancel</button>
+      <button type="button" id="charsheet-layout-order-save" onclick="saveCharsheetLayoutOrder()">Save Order</button>
     </div>
   </div>
 </div>
@@ -3346,7 +3617,7 @@ async function checkSpellEditorStatus(){
   isWsEditor = false;
   isCraftEditor = false;
   oracleSchools = new Set();
-  if(!currentUser){ updateTagGroupsButtonVisibility(); updateSchoolAdminButtonVisibility(); updateDisciplineAdminButtonVisibility(); updateRaceAdminLinksVisibility(); updateRankAdminLinksVisibility(); return; }
+  if(!currentUser){ updateTagGroupsButtonVisibility(); updateSchoolAdminButtonVisibility(); updateDisciplineAdminButtonVisibility(); updateRaceAdminLinksVisibility(); updateRankAdminLinksVisibility(); updateCharsheetLayoutAdminLinkVisibility(); return; }
   try{
     const { data, error } = await supabaseClient
       .from('spell_editors')
@@ -3383,6 +3654,7 @@ async function checkSpellEditorStatus(){
   updateDisciplineAdminButtonVisibility();
   updateRaceAdminLinksVisibility();
   updateRankAdminLinksVisibility();
+  updateCharsheetLayoutAdminLinkVisibility();
   render();
   if(currentView === 'warrior') renderWarrior();
   if(currentView === 'crafting') renderCrafting();
@@ -6580,6 +6852,32 @@ window.closeArmorResetEdit = function(){
   if(badge) badge.style.display = '';
 };
 
+/* ---------- CAST PRECAST ----------
+   One-click version of what a player would otherwise do by hand: copy
+   each Stats-After-Precast number into the matching Current Stat. Those
+   Current Stat inputs already call onCharInfoChange() on every edit,
+   which detects a change and (re)starts the Rank-based reset timer for
+   Body/Mind/Spirit/Rank and the independent 24h Armor timer — so writing
+   the new values in via DOM then calling onCharInfoChange() once gets
+   exactly the same "as if typed by hand" behavior for both timers,
+   without duplicating that logic here. */
+window.castPrecast = function(){
+  if(isViewingOther || editLocked) return;
+  const pairs = [
+    ['ci-body-precast', 'ci-body-cur'],
+    ['ci-mind-precast', 'ci-mind-cur'],
+    ['ci-spirit-precast', 'ci-spirit-cur'],
+    ['ci-armor-precast', 'ci-armor-cur'],
+    ['ci-rank-precast', 'ci-rank-cur'],
+  ];
+  pairs.forEach(([fromId, toId]) => {
+    const fromEl = document.getElementById(fromId);
+    const toEl = document.getElementById(toId);
+    if(fromEl && toEl) toEl.value = fromEl.value;
+  });
+  onCharInfoChange();
+};
+
 /* ---------- ABILITY EXTRA EFFECTS BUILDER (Shield / Roll Modifier / AOE / Special) ----------
    Same shape as the spell/warrior-skill versions, its own working array so
    none of the three modals can stomp on each other. */
@@ -7326,7 +7624,7 @@ window.updateWeaponItemNumberField = function(id, field, value){
 
 
 document.addEventListener('keydown', (e) => {
-  if(e.key === 'Escape'){ closeSpellModal(); closeRollBuffModal(); closeWsModal(); closeDisciplinesModal(); closeAddWsModal(); closeDiceModal(); closeCraftModal(); closeAddCraftModal(); closeAbilitiesModal(); closeRacesModal(); closeAbilityModal(); closeInventoryModal(); closeWeaponsModal(); closeItemViewModal(); closeRanksModal(); closeRankViewModal(); }
+  if(e.key === 'Escape'){ closeSpellModal(); closeRollBuffModal(); closeWsModal(); closeDisciplinesModal(); closeAddWsModal(); closeDiceModal(); closeCraftModal(); closeAddCraftModal(); closeAbilitiesModal(); closeRacesModal(); closeAbilityModal(); closeInventoryModal(); closeWeaponsModal(); closeItemViewModal(); closeRanksModal(); closeRankViewModal(); closeCharsheetLayoutModal(); }
 });
 
 document.getElementById('modal-desc').addEventListener('input', function(){ syncGrowWrap(this); });
@@ -7372,7 +7670,9 @@ let state = {
   weaponGroups: [], // {id, name}[] — custom sort groups for weaponItems, order = array order
   precastSpells: [], // spell id[] — this character's Precast spells (added via ⭐), order = array order
   precastAbilities: [], // racial ability id[] — this character's Precast abilities (added via ⭐), order = array order
-  shareEmotes: true // whether OTHER people viewing this sheet can see this character's personal emote text (spells & abilities). Defaults to on; the owner can opt out. Never affects the owner's own view of their own sheet.
+  shareEmotes: true, // whether OTHER people viewing this sheet can see this character's personal emote text (spells & abilities). Defaults to on; the owner can opt out. Never affects the owner's own view of their own sheet.
+  charsheetBlockOrder: [], // this character's personal character-sheet block arrangement (empty = "use the editor-set standard arrangement"). Saved per-character like everything else in `state`, so viewing someone else's sheet shows THEIR arrangement, and only the owner can change it — see getEffectiveCharsheetBlockOrder()/resetCharsheetBlockOrderToStandard().
+  charsheetColumnSplitHeight: null // this character's personal "how many blocks fit in the left column" preference, set by dragging the handle below column 0 (null = split the count evenly). Saved alongside charsheetBlockOrder — see getColumnSplitIndex().
 };
 
 /* ---------- BROWSING STATE VARIABLES ---------- */
@@ -7515,6 +7815,8 @@ async function loadFromCloud(){
     if(!state.wsCollapsed) state.wsCollapsed = {};
     if(!state.craftLearned) state.craftLearned = {};
     if(!state.craftCollapsed) state.craftCollapsed = {};
+    if(!Array.isArray(state.charsheetBlockOrder)) state.charsheetBlockOrder = [];
+    if(typeof state.charsheetColumnSplitHeight !== 'number') state.charsheetColumnSplitHeight = null;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     document.getElementById('filter-light').checked = !!state.showLight;
     document.getElementById('filter-dark').checked = !!state.showDark;
@@ -7527,6 +7829,7 @@ async function loadFromCloud(){
     populateCharInfoFields();
     renderRollBuffDisplay();
     render();
+    applyCharsheetBlockOrder();
     if(currentView === 'warrior') renderWarrior();
     if(currentView === 'crafting') renderCrafting();
     setCloudDirty(false);
@@ -7694,6 +7997,8 @@ function switchToAlternativeSheet(targetUserId) {
     if(!state.wsCollapsed) state.wsCollapsed = {};
     if(!state.craftLearned) state.craftLearned = {};
     if(!state.craftCollapsed) state.craftCollapsed = {};
+    if(!Array.isArray(state.charsheetBlockOrder)) state.charsheetBlockOrder = [];
+    if(typeof state.charsheetColumnSplitHeight !== 'number') state.charsheetColumnSplitHeight = null;
     
     document.getElementById('filter-light').checked = !!state.showLight;
     document.getElementById('filter-dark').checked = !!state.showDark;
@@ -7707,6 +8012,7 @@ function switchToAlternativeSheet(targetUserId) {
     populateCharInfoFields();
     renderRollBuffDisplay();
     render();
+    applyCharsheetBlockOrder();
     if(currentView === 'warrior') renderWarrior();
     if(currentView === 'crafting') renderCrafting();
     applyEditLockState(); 
@@ -7737,6 +8043,8 @@ function returnToOwnSheet() {
   if(!state.wsCollapsed) state.wsCollapsed = {};
     if(!state.craftLearned) state.craftLearned = {};
     if(!state.craftCollapsed) state.craftCollapsed = {};
+  if(!Array.isArray(state.charsheetBlockOrder)) state.charsheetBlockOrder = [];
+  if(typeof state.charsheetColumnSplitHeight !== 'number') state.charsheetColumnSplitHeight = null;
   
   document.getElementById('filter-light').checked = !!state.showLight;
   document.getElementById('filter-dark').checked = !!state.showDark;
@@ -7750,6 +8058,7 @@ function returnToOwnSheet() {
   populateCharInfoFields();
   renderRollBuffDisplay();
   render();
+  applyCharsheetBlockOrder();
   if(currentView === 'warrior') renderWarrior();
     if(currentView === 'crafting') renderCrafting();
   applyEditLockState(); 
@@ -7848,6 +8157,8 @@ function load(){
       state.wsCollapsed = parsed.wsCollapsed || {};
       state.craftLearned = parsed.craftLearned || {};
       state.craftCollapsed = parsed.craftCollapsed || {};
+      state.charsheetBlockOrder = Array.isArray(parsed.charsheetBlockOrder) ? parsed.charsheetBlockOrder : [];
+      state.charsheetColumnSplitHeight = (typeof parsed.charsheetColumnSplitHeight === 'number') ? parsed.charsheetColumnSplitHeight : null;
     }catch(e){console.error(e);}
   }
   document.getElementById('filter-light').checked = state.showLight;
@@ -9126,8 +9437,11 @@ function importCharacter() {
       if(!state.wsCollapsed) state.wsCollapsed = {};
     if(!state.craftLearned) state.craftLearned = {};
     if(!state.craftCollapsed) state.craftCollapsed = {};
+      if(!Array.isArray(state.charsheetBlockOrder)) state.charsheetBlockOrder = [];
+      if(typeof state.charsheetColumnSplitHeight !== 'number') state.charsheetColumnSplitHeight = null;
       persist();
       render();
+      applyCharsheetBlockOrder();
       if(currentView === 'warrior') renderWarrior();
     if(currentView === 'crafting') renderCrafting();
       
@@ -9269,6 +9583,10 @@ function toggleReadOnly(readOnly) {
       el.removeAttribute('disabled');
     }
   });
+  // The blanket "always-enabled" re-enable above would otherwise also
+  // re-enable a block's ▲ on the first block or ▼ on the last one, which
+  // should stay disabled regardless of lock state — reconcile that here.
+  if(typeof updateCharsheetMoveButtons === 'function') updateCharsheetMoveButtons();
   
   if (!readOnly) { render(); if(currentView === 'warrior') renderWarrior();
     if(currentView === 'crafting') renderCrafting(); }
@@ -9332,6 +9650,392 @@ window.toggleCharsheetCollapsed = function(){
   localStorage.setItem('spellbook_charsheet_collapsed', charsheetCollapsed ? 'true' : 'false');
   applyCharsheetCollapsedState();
 };
+
+/* ---------- REORDERABLE CHARACTER SHEET BLOCKS ----------
+   Unlike the collapse states above, this IS part of `state` (see
+   state.charsheetBlockOrder) — i.e. saved per-character to the cloud like
+   everything else on the sheet. That's what makes it work the way you'd
+   expect: viewing someone else's sheet shows the arrangement THEY chose
+   (loaded as part of their state — see switchToAlternativeSheet()), and
+   since isViewingOther already blocks persisting, a viewer can look but
+   never actually change another character's arrangement.
+
+   An empty state.charsheetBlockOrder means "no personal override — use
+   the editor-set standard arrangement", which is CHARSHEET_LAYOUT_DEFAULT_ORDER
+   (loaded from the `charsheet_layout_default` table, same idea as the
+   Schools' sort_order default). "↺ Reset to Standard" just clears the
+   personal override back to that.
+
+   getEffectiveCharsheetBlockOrder() is the single source of truth for
+   what to actually display — both the ▲▼ buttons and drag/drop compute
+   from it, mutate a copy, then hand it to saveCharsheetBlockOrder(). */
+const CHARSHEET_ALL_BLOCK_IDS = ['identity','stats','abilities','weakness','items','precast','rollbuffs','settings'];
+const CHARSHEET_BLOCK_LABELS = {
+  identity: 'Identity', stats: 'Stats', abilities: 'Special Abilities', weakness: 'Weakness',
+  items: 'Gear', precast: 'Precast', rollbuffs: 'Roll Buffs / Debuffs', settings: 'Settings'
+};
+let CHARSHEET_LAYOUT_DEFAULT_ORDER = CHARSHEET_ALL_BLOCK_IDS.slice(); // overwritten once loadCharsheetLayoutDefault() resolves; this is just the fallback if that table isn't set up yet or the fetch fails
+
+function canManageCharsheetLayout(){ return isSpellEditor; } // same global-editor role reused for Schools/Races/Ranks — no separate role for this
+
+function updateCharsheetLayoutAdminLinkVisibility(){
+  const el = document.getElementById('cs-layout-admin-link');
+  if(el) el.style.display = canManageCharsheetLayout() ? '' : 'none';
+}
+
+async function loadCharsheetLayoutDefault(){
+  try{
+    const { data, error } = await supabaseClient.from('charsheet_layout_default').select('block_order').eq('id', 1).single();
+    if(error) throw error;
+    if(data && Array.isArray(data.block_order) && data.block_order.length){
+      const known = new Set(CHARSHEET_ALL_BLOCK_IDS);
+      const filtered = data.block_order.filter(id => known.has(id));
+      CHARSHEET_ALL_BLOCK_IDS.forEach(id => { if(!filtered.includes(id)) filtered.push(id); });
+      CHARSHEET_LAYOUT_DEFAULT_ORDER = filtered;
+    }
+  }catch(e){
+    console.error('Could not load the default character-sheet layout from cloud (using the built-in fallback order):', e);
+  }
+}
+
+/* Normally the blocks are invisible (no border/background/header) so the
+   sheet reads exactly like a plain list of fields. Toggling this on shows
+   the card outlines plus each block's drag handle and ▲▼ buttons, purely
+   as a temporary "I want to rearrange things now" mode — it isn't
+   persisted, so the sheet always opens back up in its plain look. Not
+   available while viewing someone else's sheet — see
+   updateCharsheetLayoutControlsForViewingState(). */
+window.toggleCharsheetLayoutMode = function(){
+  if(isViewingOther) return;
+  const grid = document.getElementById('charsheet-grid');
+  const btn = document.getElementById('cs-layout-toggle');
+  if(!grid) return;
+  const active = grid.classList.toggle('layout-edit-mode');
+  if(btn){
+    btn.classList.toggle('active', active);
+    btn.textContent = active ? '✓ Done Rearranging' : '🧩 Rearrange';
+  }
+};
+
+function getEffectiveCharsheetBlockOrder(){
+  const known = new Set(CHARSHEET_ALL_BLOCK_IDS);
+  const personal = Array.isArray(state.charsheetBlockOrder) ? state.charsheetBlockOrder.filter(id => known.has(id)) : [];
+  const base = personal.length ? personal : CHARSHEET_LAYOUT_DEFAULT_ORDER.slice();
+  // Any block missing from either — e.g. "weakness" added after someone
+  // already had a personal order saved — falls back to the end instead
+  // of just vanishing from the sheet.
+  CHARSHEET_ALL_BLOCK_IDS.forEach(id => { if(!base.includes(id)) base.push(id); });
+  return base;
+}
+
+function saveCharsheetBlockOrder(newOrder){
+  if(isViewingOther) return; // never write to someone else's sheet
+  state.charsheetBlockOrder = newOrder;
+  persist(true);
+}
+
+window.resetCharsheetBlockOrderToStandard = function(){
+  if(isViewingOther) return;
+  state.charsheetBlockOrder = [];
+  state.charsheetColumnSplitHeight = null;
+  persist(true);
+  renderCharsheetColumns();
+};
+
+/* Decides how many of `order`'s blocks go in column 0 before the rest
+   spill into column 1. With no custom target height set, splits the
+   count evenly. With one set (via the drag handle), fills column 0 with
+   blocks — measuring each one's actual current rendered height,
+   regardless of which column it's presently sitting in — until adding
+   the next would exceed that target, always keeping at least one block
+   in column 0 so it's never left empty. */
+function getColumnSplitIndex(order, twoCol){
+  if(!twoCol) return order.length;
+  const targetHeight = state.charsheetColumnSplitHeight;
+  if(!(typeof targetHeight === 'number' && targetHeight > 0)){
+    return Math.ceil(order.length / 2);
+  }
+  let total = 0;
+  let count = 0;
+  for(let i = 0; i < order.length; i++){
+    const el = document.getElementById('cs-block-' + order[i]);
+    const h = el ? el.offsetHeight : 0;
+    if(count > 0 && total + h > targetHeight) break;
+    total += h;
+    count++;
+  }
+  return Math.max(1, count);
+}
+
+function renderCharsheetColumns(){
+  const colA = document.getElementById('cs-column-0');
+  const colB = document.getElementById('cs-column-1');
+  if(!colA || !colB) return;
+  const order = getEffectiveCharsheetBlockOrder();
+  const twoCol = window.matchMedia('(min-width:800px)').matches;
+  // Fill column 0 top-to-bottom first, then column 1 — e.g. with 8 blocks,
+  // #1-4 go down the left column and #5-8 down the right — rather than
+  // alternating left/right/left/right. If the person has dragged the
+  // resize handle to set a target height, use that to decide the split
+  // instead of just always splitting the count in half.
+  const splitAt = getColumnSplitIndex(order, twoCol);
+  order.forEach((id, i) => {
+    const el = document.getElementById('cs-block-' + id);
+    if(!el) return;
+    const target = (!twoCol || i < splitAt) ? colA : colB;
+    target.appendChild(el); // re-appending an existing node just moves it
+  });
+  colB.style.display = twoCol ? '' : 'none';
+  const handle = document.getElementById('cs-column-resize-handle');
+  if(handle) colA.appendChild(handle); // keep it pinned at the bottom of column 0, after all its blocks
+  updateCharsheetMoveButtons(order);
+  updateCharsheetLayoutControlsForViewingState();
+}
+
+// Kept as a named function (rather than inlining renderCharsheetColumns
+// directly) since it's called from several load/switch sites by this name.
+function applyCharsheetBlockOrder(){
+  renderCharsheetColumns();
+}
+
+// Disable "move up" on the very first block and "move down" on the very
+// last, based on the logical order array (not DOM position, since blocks
+// are split across two columns) — so it's obvious there's nowhere
+// further to go rather than the button silently doing nothing.
+function updateCharsheetMoveButtons(order){
+  order = order || getEffectiveCharsheetBlockOrder();
+  order.forEach((id, i) => {
+    const block = document.getElementById('cs-block-' + id);
+    if(!block) return;
+    const btns = block.querySelectorAll('.cs-move-btn');
+    if(btns[0]) btns[0].disabled = (i === 0);
+    if(btns[1]) btns[1].disabled = (i === order.length - 1);
+  });
+}
+
+// Viewing someone else's sheet should never let you touch their layout —
+// disable the Rearrange/Reset controls, and if edit mode somehow got left
+// on from your own sheet, force it off so the card look/drag handles
+// never show while looking at someone else's arrangement.
+function updateCharsheetLayoutControlsForViewingState(){
+  const rearrangeBtn = document.getElementById('cs-layout-toggle');
+  const resetBtn = document.getElementById('cs-layout-reset-btn');
+  if(rearrangeBtn){
+    rearrangeBtn.disabled = isViewingOther;
+    rearrangeBtn.title = isViewingOther
+      ? "You can only rearrange your own sheet."
+      : 'Show the block outlines and ▲▼/drag controls so you can rearrange the sheet';
+  }
+  if(resetBtn) resetBtn.disabled = isViewingOther;
+  const grid = document.getElementById('charsheet-grid');
+  if(isViewingOther && grid && grid.classList.contains('layout-edit-mode')){
+    grid.classList.remove('layout-edit-mode');
+    if(rearrangeBtn){ rearrangeBtn.classList.remove('active'); rearrangeBtn.textContent = '🧩 Rearrange'; }
+  }
+}
+
+window.moveCharsheetBlock = function(blockId, dir){
+  if(isViewingOther) return;
+  const order = getEffectiveCharsheetBlockOrder();
+  const idx = order.indexOf(blockId);
+  const newIdx = idx + dir;
+  if(idx === -1 || newIdx < 0 || newIdx >= order.length) return;
+  const tmp = order[idx];
+  order[idx] = order[newIdx];
+  order[newIdx] = tmp;
+  saveCharsheetBlockOrder(order);
+  renderCharsheetColumns();
+};
+
+let csDragSrcBlock = null;
+function handleCsDragStart(e){
+  if(isViewingOther) return;
+  const block = e.currentTarget.closest('.cs-block');
+  if(!block) return;
+  csDragSrcBlock = block;
+  block.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', block.id);
+}
+function handleCsDragEnd(e){
+  const block = e.currentTarget.closest('.cs-block');
+  if(block) block.classList.remove('dragging');
+  csDragSrcBlock = null;
+}
+function handleCsDragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+function handleCsDrop(e){
+  e.preventDefault();
+  if(isViewingOther) return;
+  const targetBlock = e.currentTarget;
+  if(!csDragSrcBlock || !targetBlock || csDragSrcBlock === targetBlock) return;
+  const srcId = csDragSrcBlock.id.replace('cs-block-', '');
+  const tgtId = targetBlock.id.replace('cs-block-', '');
+  const order = getEffectiveCharsheetBlockOrder();
+  const srcIdx = order.indexOf(srcId);
+  const tgtIdx = order.indexOf(tgtId);
+  if(srcIdx === -1 || tgtIdx === -1) return;
+  order.splice(srcIdx, 1);
+  const newTgtIdx = order.indexOf(tgtId);
+  order.splice(srcIdx < tgtIdx ? newTgtIdx + 1 : newTgtIdx, 0, srcId);
+  saveCharsheetBlockOrder(order);
+  renderCharsheetColumns();
+}
+function initCharsheetBlockDnD(){
+  document.querySelectorAll('#charsheet-grid .cs-block-header').forEach(header => {
+    header.setAttribute('draggable', 'true');
+    header.addEventListener('dragstart', handleCsDragStart);
+    header.addEventListener('dragend', handleCsDragEnd);
+  });
+  document.querySelectorAll('#charsheet-grid .cs-block').forEach(block => {
+    block.addEventListener('dragover', handleCsDragOver);
+    block.addEventListener('drop', handleCsDrop);
+  });
+  // Crossing the 800px two-column breakpoint changes how blocks should be
+  // distributed (single column vs. alternating) — redo it on resize,
+  // lightly debounced since it's cheap for 8 blocks anyway.
+  let csResizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(csResizeTimer);
+    csResizeTimer = setTimeout(renderCharsheetColumns, 150);
+  });
+}
+
+/* ---------- MANAGE DEFAULT CHARACTER SHEET LAYOUT (global editors only) ----------
+   Mirrors "Manage Default School Order" — editors drag to set the
+   standard arrangement everyone starts with; anyone who has already
+   customized their own (state.charsheetBlockOrder is non-empty) keeps
+   seeing their own choice regardless, exactly like schoolOrder. */
+let editingCharsheetLayoutOrder = [];
+let dragCharsheetLayoutKey = null;
+
+window.openCharsheetLayoutModal = function(){
+  if(!canManageCharsheetLayout()) return;
+  editingCharsheetLayoutOrder = CHARSHEET_LAYOUT_DEFAULT_ORDER.slice();
+  renderCharsheetLayoutOrderList();
+  document.getElementById('charsheet-layout-order-status').textContent = '';
+  document.getElementById('charsheet-layout-modal-backdrop').classList.add('open');
+};
+window.closeCharsheetLayoutModal = function(){
+  document.getElementById('charsheet-layout-modal-backdrop').classList.remove('open');
+};
+
+function renderCharsheetLayoutOrderList(){
+  const list = document.getElementById('charsheet-layout-order-list');
+  if(!list) return;
+  list.innerHTML = editingCharsheetLayoutOrder.map(key => `<li class="school-order-item" draggable="true" data-key="${key}"
+    ondragstart="handleCharsheetLayoutOrderDragStart(event,'${key}')"
+    ondragend="handleCharsheetLayoutOrderDragEnd()"
+    ondragover="handleCharsheetLayoutOrderDragOver(event,'${key}')"
+    ondragleave="this.classList.remove('drag-over')"
+    ondrop="handleCharsheetLayoutOrderDrop(event,'${key}')">
+    <span class="drag-handle">⠿</span><span>${escapeHtml(CHARSHEET_BLOCK_LABELS[key] || key)}</span>
+  </li>`).join('');
+}
+
+window.handleCharsheetLayoutOrderDragStart = function(e, key){
+  dragCharsheetLayoutKey = key;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', key);
+  e.currentTarget.classList.add('dragging');
+};
+window.handleCharsheetLayoutOrderDragEnd = function(){
+  document.querySelectorAll('#charsheet-layout-order-list .school-order-item.dragging').forEach(el => el.classList.remove('dragging'));
+  document.querySelectorAll('#charsheet-layout-order-list .school-order-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+  dragCharsheetLayoutKey = null;
+};
+window.handleCharsheetLayoutOrderDragOver = function(e, key){
+  e.preventDefault();
+  if(key === dragCharsheetLayoutKey) return;
+  e.currentTarget.classList.add('drag-over');
+};
+window.handleCharsheetLayoutOrderDrop = function(e, targetKey){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const draggedKey = (e.dataTransfer && e.dataTransfer.getData('text/plain')) || dragCharsheetLayoutKey;
+  if(!draggedKey || draggedKey === targetKey) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const before = (e.clientY - rect.top) < rect.height / 2;
+
+  const fromIdx = editingCharsheetLayoutOrder.indexOf(draggedKey);
+  if(fromIdx === -1) return;
+  editingCharsheetLayoutOrder.splice(fromIdx, 1);
+  let toIdx = editingCharsheetLayoutOrder.indexOf(targetKey);
+  if(toIdx === -1) toIdx = editingCharsheetLayoutOrder.length;
+  else if(!before) toIdx += 1;
+  editingCharsheetLayoutOrder.splice(toIdx, 0, draggedKey);
+
+  renderCharsheetLayoutOrderList();
+};
+
+window.saveCharsheetLayoutOrder = async function(){
+  if(!canManageCharsheetLayout()) return;
+  const statusEl = document.getElementById('charsheet-layout-order-status');
+  const saveBtn = document.getElementById('charsheet-layout-order-save');
+  saveBtn.disabled = true;
+  statusEl.textContent = 'Saving...';
+  try{
+    const { error } = await supabaseClient.from('charsheet_layout_default')
+      .update({ block_order: editingCharsheetLayoutOrder, updated_by: currentUser ? currentUser.id : null })
+      .eq('id', 1);
+    if(error) throw error;
+    await loadCharsheetLayoutDefault();
+    renderCharsheetColumns();
+    closeCharsheetLayoutModal();
+  }catch(e){
+    console.error(e);
+    statusEl.textContent = 'Error: ' + (e.message || 'could not save.');
+  }finally{
+    saveBtn.disabled = false;
+  }
+};
+
+/* ---------- LEFT-COLUMN "HEIGHT" DRAG HANDLE ----------
+   Not a real resize — the sheet itself always stays height:auto (nothing
+   is ever clipped, so the true minimum needed to show everything is
+   automatic). Instead this drag handle sets a target height purely used
+   to decide how many blocks fit in column 0 before the rest spill into
+   column 1 (see getColumnSplitIndex()) — drag it down for more on the
+   left, up for fewer. Saved per-character alongside the block order (see
+   state.charsheetColumnSplitHeight) so it round-trips the same way. */
+function initCharsheetColumnResize(){
+  const handle = document.getElementById('cs-column-resize-handle');
+  const colA = document.getElementById('cs-column-0');
+  if(!handle || !colA) return;
+
+  let dragging = false;
+  let startY = 0;
+  let startHeight = 0;
+
+  function startDrag(clientY){
+    dragging = true;
+    startY = clientY;
+    startHeight = (typeof state.charsheetColumnSplitHeight === 'number' && state.charsheetColumnSplitHeight > 0)
+      ? state.charsheetColumnSplitHeight
+      : colA.getBoundingClientRect().height;
+  }
+  function moveDrag(clientY){
+    if(!dragging) return;
+    const next = Math.max(40, Math.round(startHeight + (clientY - startY)));
+    state.charsheetColumnSplitHeight = next;
+    renderCharsheetColumns();
+  }
+  function endDrag(){
+    if(!dragging) return;
+    dragging = false;
+    if(!isViewingOther) persist(true);
+  }
+
+  handle.addEventListener('mousedown', (e) => { if(isViewingOther) return; e.preventDefault(); startDrag(e.clientY); });
+  window.addEventListener('mousemove', (e) => moveDrag(e.clientY));
+  window.addEventListener('mouseup', endDrag);
+
+  handle.addEventListener('touchstart', (e) => { if(isViewingOther) return; startDrag(e.touches[0].clientY); }, { passive:true });
+  window.addEventListener('touchmove', (e) => { if(dragging) moveDrag(e.touches[0].clientY); }, { passive:true });
+  window.addEventListener('touchend', endDrag);
+}
 
 function applyFilterBarCollapsedState(){
   const bar = document.getElementById('spell-filter-bar');
@@ -9484,12 +10188,16 @@ window.addEventListener('beforeunload', function(e){
   await loadCraftMeta();            // fetch shared recipe data (desc/tags/materials/DC/etc.) from the cloud
   await loadRacesAndAbilities();    // fetch Races + their racial special abilities from the cloud
   await loadRanks();                // fetch Ranks (base stats + reset hours + description) from the cloud
+  await loadCharsheetLayoutDefault(); // fetch the editor-set standard character-sheet block arrangement
   renderTagFilters();
   renderWsTagFilters();
   renderCraftTagFilters();
   renderRaceSelectOptions();        // populate the Race dropdown before load() sets its value
   renderRankSelectOptions();        // populate the Rank dropdown before load() sets its value
   load();                    // renders the grid with the loaded spell metadata
+  applyCharsheetBlockOrder();       // restore the user's saved block arrangement before locking/rendering anything else
+  initCharsheetBlockDnD();
+  initCharsheetColumnResize();
   applyEditLockState();      // apply saved lock preference before anything can be touched
   applyCharsheetCollapsedState();
   applyFilterBarCollapsedState();
