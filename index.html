@@ -228,7 +228,9 @@
     border-radius:var(--radius-sm);
     font-family:'Crimson Pro',serif;
     font-size:19px;
-    width:280px;
+    flex:1 1 200px;
+    min-width:0;
+    max-width:280px;
     transition:border-color .15s;
   }
   .toolbar input[type=text]:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,160,84,0.15);}
@@ -253,6 +255,8 @@
     font-family:'Crimson Pro',serif;
     font-size:17.5px;
     cursor:pointer;
+    flex:0 1 200px;
+    min-width:0;
     max-width:230px;
     transition:border-color .15s;
   }
@@ -323,6 +327,47 @@
     margin:0 4px;
   }
   #save-note{font-size:16px;color:var(--parchment-dim);font-style:italic;min-width:90px;text-align:left;}
+
+  /* TOOLBAR "TOOLS" MENU — keeps only search + the primary reset button
+     visible at the top level of the toolbar on every screen size. Every
+     other action (expand/collapse/reset-order/filters/jump-to/export/
+     import/manage buttons) lives inside a single dropdown menu behind the
+     "Tools" toggle, so the toolbar always reads as 2 primary actions +
+     1 menu button instead of a wall of buttons. */
+  .toolbar-tools{position:relative;display:inline-flex;}
+  .toolbar-tools-toggle{
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .toolbar-tools-menu{
+    display:none;
+    position:absolute;
+    top:calc(100% + 8px);
+    right:0;
+    z-index:60;
+    flex-direction:column;
+    align-items:stretch;
+    gap:6px;
+    min-width:230px;
+    max-width:min(320px,calc(100vw - 40px));
+    background:linear-gradient(180deg,var(--panel-2),var(--panel));
+    border:1px solid var(--hairline);
+    border-radius:var(--radius-md);
+    padding:10px;
+    box-shadow:var(--shadow-lift);
+  }
+  .toolbar-tools-menu:not(.collapsed){display:flex;}
+  .toolbar-tools-menu .toolbar-sep{
+    border-left:none;
+    border-top:1px solid var(--hairline);
+    height:0;
+    width:100%;
+    margin:2px 0;
+  }
+  .toolbar-tools-menu select,
+  .toolbar-tools-menu button{width:100%;text-align:left;}
+  @media (max-width:480px){
+    .toolbar-tools-menu{right:auto;left:0;}
+  }
 
   /* SPELL FILTER BAR */
   .spell-filter-bar{
@@ -1040,6 +1085,10 @@
     .stat-row{gap:8px;}
     .stat-mini{min-width:70px;}
     .stat-mini input[type=text]{font-size:16px;padding:6px 4px;}
+    .statbar{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .stat-pill{min-width:0;padding:10px 8px;}
+    .stat-pill .num{font-size:25px;}
+    .stat-pill .lbl{font-size:13px;}
   }
   @media (max-width:900px){
     .charsheet-grid{column-count:1;}
@@ -1311,6 +1360,70 @@
     text-align:center;
   }
   .stat-mini input[type=text]:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,160,84,0.15);}
+  .stat-mini input[type=text][readonly]{
+    background:rgba(0,0,0,0.14);
+    color:var(--parchment-dim);
+    cursor:default;
+  }
+  .stat-mini input[type=text][readonly]:focus{box-shadow:none;border-color:var(--hairline);}
+  .secret-bonus-btn{
+    margin-top:4px;
+    width:100%;
+    background:transparent;
+    border:1px solid var(--hairline);
+    color:var(--parchment-dim);
+    font-family:'Crimson Pro',serif;
+    font-size:13px;
+    letter-spacing:0.04em;
+    padding:3px 4px;
+    border-radius:6px;
+    cursor:pointer;
+    transition:all .15s;
+  }
+  .secret-bonus-btn:hover{border-color:var(--gold);color:var(--light-accent);}
+  .secret-bonus-btn.active{
+    background:var(--gold);
+    border-color:var(--gold);
+    color:#1a1408;
+    font-weight:700;
+  }
+  .armor-reset-badge{
+    display:block;
+    margin-top:4px;
+    width:100%;
+    text-align:center;
+    background:transparent;
+    border:1px solid var(--hairline);
+    color:var(--parchment-dim);
+    font-size:12px;
+    letter-spacing:0.02em;
+    padding:3px 4px;
+    border-radius:6px;
+    box-sizing:border-box;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    cursor:pointer;
+    transition:border-color .15s, color .15s;
+  }
+  .armor-reset-badge:hover{border-color:var(--gold);color:var(--light-accent);}
+  .armor-reset-badge.counting{color:var(--neutral-accent);border-color:var(--neutral-accent);}
+  .armor-reset-badge.locked{cursor:default;opacity:0.65;}
+  .armor-reset-badge.locked:hover{border-color:var(--hairline);color:var(--parchment-dim);}
+  .armor-reset-badge.locked.counting:hover{border-color:var(--neutral-accent);color:var(--neutral-accent);}
+  .armor-reset-edit{
+    margin-top:4px;
+    width:100%;
+    background:rgba(0,0,0,0.28);
+    border:1px solid var(--gold);
+    color:var(--parchment);
+    padding:3px 4px;
+    border-radius:6px;
+    font-family:'Crimson Pro',Georgia,serif;
+    font-size:12.5px;
+    box-sizing:border-box;
+    color-scheme:dark;
+  }
   .stat-mini.reset-time{min-width:200px;flex:1.6;}
   .stat-mini input[type=datetime-local]{
     background:rgba(0,0,0,0.28);
@@ -1886,17 +1999,36 @@
       </div>
       <div class="charsheet-field">
         <label for="ci-rank">Rank</label>
-        <input type="text" id="ci-rank" data-ci="rank" oninput="onCharInfoChange()">
+        <select id="ci-rank" data-ci="rank" onchange="onRankChange(); onCharInfoChange();">
+          <option value="">— Select Rank —</option>
+        </select>
+        <div class="charsheet-admin-links">
+          <button type="button" class="mini-admin-link always-enabled" id="rank-view-link" onclick="openRankViewModal()">ℹ View Rank Details</button>
+          <button type="button" class="mini-admin-link" id="rank-admin-link" style="display:none;" onclick="openRanksModal()">⚙ Manage Ranks</button>
+        </div>
       </div>
       <div class="charsheet-field wide">
-        <label>Base Stats</label>
+        <label>Base Stats <span class="modal-hint" style="text-transform:none;letter-spacing:0;">(Body/Mind/Spirit/Rank auto-fill from Rank — click +2 under a stat for a one-time Labyrinth secret bonus; Armor stays manual)</span></label>
         <div class="stat-row">
-          <div class="stat-mini"><label for="ci-body-base">Body</label><input type="text" id="ci-body-base" data-ci="body_base" oninput="onCharInfoChange()"></div>
-          <div class="stat-mini"><label for="ci-mind-base">Mind</label><input type="text" id="ci-mind-base" data-ci="mind_base" oninput="onCharInfoChange()"></div>
-          <div class="stat-mini"><label for="ci-spirit-base">Spirit</label><input type="text" id="ci-spirit-base" data-ci="spirit_base" oninput="onCharInfoChange()"></div>
+          <div class="stat-mini">
+            <label for="ci-body-base">Body</label>
+            <input type="text" id="ci-body-base" data-ci="body_base" readonly title="Auto-filled from Rank + Secret Bonus">
+            <button type="button" class="secret-bonus-btn" id="secret-bonus-body" onclick="toggleSecretBonus('body')" title="Secret Bonus: one-time +2 to Body from a Labyrinth secret">+2</button>
+          </div>
+          <div class="stat-mini">
+            <label for="ci-mind-base">Mind</label>
+            <input type="text" id="ci-mind-base" data-ci="mind_base" readonly title="Auto-filled from Rank + Secret Bonus">
+            <button type="button" class="secret-bonus-btn" id="secret-bonus-mind" onclick="toggleSecretBonus('mind')" title="Secret Bonus: one-time +2 to Mind from a Labyrinth secret">+2</button>
+          </div>
+          <div class="stat-mini">
+            <label for="ci-spirit-base">Spirit</label>
+            <input type="text" id="ci-spirit-base" data-ci="spirit_base" readonly title="Auto-filled from Rank + Secret Bonus">
+            <button type="button" class="secret-bonus-btn" id="secret-bonus-spirit" onclick="toggleSecretBonus('spirit')" title="Secret Bonus: one-time +2 to Spirit from a Labyrinth secret">+2</button>
+          </div>
           <div class="stat-mini"><label for="ci-armor-base">Armor</label><input type="text" id="ci-armor-base" data-ci="armor_base" oninput="onCharInfoChange()"></div>
-          <div class="stat-mini"><label for="ci-rank-base">Rank</label><input type="text" id="ci-rank-base" data-ci="rank_stat_base" oninput="onCharInfoChange()"></div>
+          <div class="stat-mini"><label for="ci-rank-base">Rank</label><input type="text" id="ci-rank-base" data-ci="rank_stat_base" readonly title="Auto-filled from the selected Rank's Combat Modifier"></div>
         </div>
+        <input type="hidden" id="ci-secret-bonus" data-ci="secret_bonus_stat">
       </div>
       <div class="charsheet-field wide">
         <label>Current Stats</label>
@@ -1904,7 +2036,13 @@
           <div class="stat-mini"><label for="ci-body-cur">Body</label><input type="text" id="ci-body-cur" data-ci="body_current" oninput="onCharInfoChange()"></div>
           <div class="stat-mini"><label for="ci-mind-cur">Mind</label><input type="text" id="ci-mind-cur" data-ci="mind_current" oninput="onCharInfoChange()"></div>
           <div class="stat-mini"><label for="ci-spirit-cur">Spirit</label><input type="text" id="ci-spirit-cur" data-ci="spirit_current" oninput="onCharInfoChange()"></div>
-          <div class="stat-mini"><label for="ci-armor-cur">Armor</label><input type="text" id="ci-armor-cur" data-ci="armor_current" oninput="onCharInfoChange()"></div>
+          <div class="stat-mini">
+            <label for="ci-armor-cur">Armor</label>
+            <input type="text" id="ci-armor-cur" data-ci="armor_current" oninput="onCharInfoChange()">
+            <span class="armor-reset-badge" id="armor-reset-badge" onclick="toggleArmorResetEdit()" title="No reset timer is running — click to manually set one (e.g. for a spell that doesn't last exactly 24h)">No cooldown</span>
+            <input type="datetime-local" id="armor-reset-edit" class="armor-reset-edit" style="display:none;" onchange="onArmorResetEditChange()" onblur="closeArmorResetEdit()">
+            <input type="hidden" id="ci-armor-reset-time" data-ci="armor_reset_time">
+          </div>
           <div class="stat-mini"><label for="ci-rank-cur">Rank</label><input type="text" id="ci-rank-cur" data-ci="rank_stat_current" oninput="onCharInfoChange()"></div>
           <div class="stat-mini reset-time"><label for="ci-reset-time">Reset Time</label><input type="datetime-local" id="ci-reset-time" data-ci="reset_time" oninput="onCharInfoChange()"></div>
         </div>
@@ -2040,33 +2178,35 @@
 
   <div class="toolbar">
     <input type="text" id="search" placeholder="Search a spell or school...">
-    <button id="reset-all">Reset all checks</button>
+    <button id="reset-all">🔄 Reset all checks</button>
 
-    <div class="toolbar-sep"></div>
+    <div class="toolbar-tools">
+      <button type="button" class="toolbar-tools-toggle" id="toolbar-more-toggle-spells" onclick="toggleToolbarMore('spells')" aria-haspopup="true" aria-expanded="false">🧰 Tools ▾</button>
 
-    <button id="expand-all" onclick="setAllSchoolsCollapsed(false)">Expand all schools</button>
-    <button id="collapse-all" onclick="setAllSchoolsCollapsed(true)">Collapse all schools</button>
-    <button id="reset-school-order" onclick="resetSchoolOrder()" title="Back to the default school order (this device only)">Reset school order</button>
+      <div class="toolbar-tools-menu collapsed" id="toolbar-more-spells">
+        <button id="expand-all" onclick="setAllSchoolsCollapsed(false)">⤢ Expand all schools</button>
+        <button id="collapse-all" onclick="setAllSchoolsCollapsed(true)">⤡ Collapse all schools</button>
+        <button id="reset-school-order" onclick="resetSchoolOrder()" title="Back to the default school order (this device only)">↺ Reset school order</button>
 
-    <div class="toolbar-sep"></div>
+        <div class="toolbar-sep"></div>
 
-    <button type="button" id="toggle-filters-btn" onclick="toggleFilterBar()" title="Show/hide the cost and tag filters">▸ Filters</button>
-    <select id="jump-school-select" onchange="jumpToSchool(this.value)" title="Jump straight to a school">
-      <option value="">Jump to school…</option>
-    </select>
+        <button type="button" id="toggle-filters-btn" onclick="toggleFilterBar()" title="Show/hide the cost and tag filters">🔍 Filters ▸</button>
 
-    <div class="toolbar-sep"></div>
+        <div class="toolbar-sep"></div>
 
-    <button id="export-char" onclick="exportCharacter()">Copy Export Code</button>
-    <button id="import-char" onclick="importCharacter()">Import Character</button>
+        <button id="export-char" onclick="exportCharacter()">⇪ Copy Export Code</button>
+        <button id="import-char" onclick="importCharacter()">⇩ Import Character</button>
 
-    <div class="toolbar-sep"></div>
+        <div class="toolbar-sep"></div>
 
-    <button type="button" id="manage-schools-btn" class="manage-tag-groups-btn" style="display:none;" onclick="openSchoolsModal()" title="Add a new School of Magic (global editors only)">⚙ Manage Schools</button>
-    <button type="button" id="manage-school-order-btn" class="manage-tag-groups-btn" style="display:none;" onclick="openSchoolOrderModal()" title="Set the default order everyone sees (global editors only)">⚙ Manage School Order</button>
+        <button type="button" id="manage-schools-btn" class="manage-tag-groups-btn" style="display:none;" onclick="openSchoolsModal()" title="Add a new School of Magic (global editors only)">⚙ Manage Schools</button>
+        <button type="button" id="manage-school-order-btn" class="manage-tag-groups-btn" style="display:none;" onclick="openSchoolOrderModal()" title="Set the default order everyone sees (global editors only)">⚙ Manage School Order</button>
+      </div>
+    </div>
 
     <span id="save-note"></span>
   </div>
+
 
   <div class="spell-filter-bar" id="spell-filter-bar">
     <div class="filter-row">
@@ -2101,23 +2241,24 @@
 
     <div class="toolbar">
       <input type="text" id="ws-search" placeholder="Search a warrior skill or discipline...">
-      <button id="ws-reset-all">Reset all rolls</button>
+      <button id="ws-reset-all">🔄 Reset all rolls</button>
 
-      <div class="toolbar-sep"></div>
+      <div class="toolbar-tools">
+        <button type="button" class="toolbar-tools-toggle" id="toolbar-more-toggle-warrior" onclick="toggleToolbarMore('warrior')" aria-haspopup="true" aria-expanded="false">🧰 Tools ▾</button>
 
-      <button id="ws-expand-all" onclick="setAllDisciplinesCollapsed(false)">Expand all disciplines</button>
-      <button id="ws-collapse-all" onclick="setAllDisciplinesCollapsed(true)">Collapse all disciplines</button>
+        <div class="toolbar-tools-menu collapsed" id="toolbar-more-warrior">
+          <button id="ws-expand-all" onclick="setAllDisciplinesCollapsed(false)">⤢ Expand all disciplines</button>
+          <button id="ws-collapse-all" onclick="setAllDisciplinesCollapsed(true)">⤡ Collapse all disciplines</button>
 
-      <div class="toolbar-sep"></div>
+          <div class="toolbar-sep"></div>
 
-      <button type="button" id="ws-toggle-filters-btn" onclick="toggleWsFilterBar()" title="Show/hide the tag filters">▸ Filters</button>
-      <select id="jump-discipline-select" onchange="jumpToDiscipline(this.value)" title="Jump straight to a discipline">
-        <option value="">Jump to discipline…</option>
-      </select>
+          <button type="button" id="ws-toggle-filters-btn" onclick="toggleWsFilterBar()" title="Show/hide the tag filters">🔍 Filters ▸</button>
 
-      <div class="toolbar-sep"></div>
+          <div class="toolbar-sep"></div>
 
-      <button type="button" id="manage-disciplines-btn" class="manage-tag-groups-btn" style="display:none;" onclick="openDisciplinesModal()" title="Add a new Discipline (global editors only)">⚙ Manage Disciplines</button>
+          <button type="button" id="manage-disciplines-btn" class="manage-tag-groups-btn" style="display:none;" onclick="openDisciplinesModal()" title="Add a new Discipline (global editors only)">⚙ Manage Disciplines</button>
+        </div>
+      </div>
 
       <span id="ws-save-note"></span>
     </div>
@@ -2155,19 +2296,20 @@
 
     <div class="toolbar">
       <input type="text" id="craft-search" placeholder="Search a recipe or craft type...">
-      <button id="craft-reset-all">Reset all checks</button>
+      <button id="craft-reset-all">🔄 Reset all checks</button>
 
-      <div class="toolbar-sep"></div>
+      <div class="toolbar-tools">
+        <button type="button" class="toolbar-tools-toggle" id="toolbar-more-toggle-crafting" onclick="toggleToolbarMore('crafting')" aria-haspopup="true" aria-expanded="false">🧰 Tools ▾</button>
 
-      <button id="craft-expand-all" onclick="setAllCraftSectionsCollapsed(false)">Expand all</button>
-      <button id="craft-collapse-all" onclick="setAllCraftSectionsCollapsed(true)">Collapse all</button>
+        <div class="toolbar-tools-menu collapsed" id="toolbar-more-crafting">
+          <button id="craft-expand-all" onclick="setAllCraftSectionsCollapsed(false)">⤢ Expand all</button>
+          <button id="craft-collapse-all" onclick="setAllCraftSectionsCollapsed(true)">⤡ Collapse all</button>
 
-      <div class="toolbar-sep"></div>
+          <div class="toolbar-sep"></div>
 
-      <button type="button" id="craft-toggle-filters-btn" onclick="toggleCraftFilterBar()" title="Show/hide the tag filters">▸ Filters</button>
-      <select id="jump-craft-select" onchange="jumpToCraftSection(this.value)" title="Jump straight to a craft type">
-        <option value="">Jump to craft type…</option>
-      </select>
+          <button type="button" id="craft-toggle-filters-btn" onclick="toggleCraftFilterBar()" title="Show/hide the tag filters">🔍 Filters ▸</button>
+        </div>
+      </div>
 
       <span id="craft-save-note"></span>
     </div>
@@ -2746,6 +2888,37 @@
   </div>
 </div>
 
+<div id="ranks-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeRanksModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeRanksModal()">✕</button>
+    <h2>Manage Ranks</h2>
+    <p class="modal-subtitle">Add ranks — they appear in the Rank dropdown right away. A rank's Body/Mind/Spirit auto-fill a character's Base Stats once that rank is selected (on top of any Secret Bonus), and its Combat Modifier auto-fills the Base Rank stat. Reset Hours controls how long it takes Current Stats to refill, and how far out the Reset Time jumps whenever Current Stats are changed.</p>
+
+    <div id="ranks-manage-list"></div>
+    <p id="ranks-manage-empty" class="rollbuff-list-empty" style="display:none;">No ranks yet. Add one below.</p>
+
+    <label style="display:block;margin-top:14px;">Rank name
+      <input type="text" id="new-rank-name" placeholder="e.g. Recruit" style="width:100%;margin-top:6px;">
+    </label>
+    <p class="modal-hint" style="margin-top:6px;">Add the name here, then fill in its stats, reset hours, and description below.</p>
+    <p id="ranks-modal-status" style="font-size:13px;color:var(--parchment-dim);font-style:italic;min-height:1.2em;margin-top:10px;"></p>
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button type="button" onclick="closeRanksModal()">Close</button>
+      <button type="button" id="ranks-modal-save" onclick="createRank()">+ Add Rank</button>
+    </div>
+  </div>
+</div>
+
+<div id="rank-view-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeRankViewModal()">
+  <div class="modal-box" style="max-width:480px;">
+    <button class="modal-close" onclick="closeRankViewModal()">✕</button>
+    <h2 id="rank-view-title">Rank</h2>
+    <p class="modal-subtitle" id="rank-view-stats"></p>
+    <div id="rank-view-desc" style="white-space:pre-wrap;line-height:1.6;"></div>
+  </div>
+</div>
+
 <div id="ability-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeAbilityModal()">
   <div class="modal-box">
     <button class="modal-close" onclick="closeAbilityModal()">✕</button>
@@ -3173,7 +3346,7 @@ async function checkSpellEditorStatus(){
   isWsEditor = false;
   isCraftEditor = false;
   oracleSchools = new Set();
-  if(!currentUser){ updateTagGroupsButtonVisibility(); updateSchoolAdminButtonVisibility(); updateDisciplineAdminButtonVisibility(); updateRaceAdminLinksVisibility(); return; }
+  if(!currentUser){ updateTagGroupsButtonVisibility(); updateSchoolAdminButtonVisibility(); updateDisciplineAdminButtonVisibility(); updateRaceAdminLinksVisibility(); updateRankAdminLinksVisibility(); return; }
   try{
     const { data, error } = await supabaseClient
       .from('spell_editors')
@@ -3209,6 +3382,7 @@ async function checkSpellEditorStatus(){
   updateSchoolAdminButtonVisibility();
   updateDisciplineAdminButtonVisibility();
   updateRaceAdminLinksVisibility();
+  updateRankAdminLinksVisibility();
   render();
   if(currentView === 'warrior') renderWarrior();
   if(currentView === 'crafting') renderCrafting();
@@ -4403,35 +4577,7 @@ function renderWarrior(){
   renderWsGlobalStats();
   applyWsFilters();
   applyGridLockState();
-  renderWsJumpNav();
 }
-
-/* Keeps the "Jump to discipline…" dropdown in the warrior toolbar in sync
-   with whatever disciplines currently exist, so picking one scrolls straight
-   to it instead of having to scroll the whole grid to find it. */
-function renderWsJumpNav(){
-  const sel = document.getElementById('jump-discipline-select');
-  if(!sel) return;
-  const current = sel.value;
-  sel.innerHTML = '<option value="">Jump to discipline…</option>' +
-    DISCIPLINES.map(d => `<option value="${escapeHtml(d.key)}">${escapeHtml(d.name)}</option>`).join('');
-  sel.value = (current && DISCIPLINES.some(d => d.key === current)) ? current : '';
-}
-
-window.jumpToDiscipline = function(key){
-  if(!key) return;
-  if(isDisciplineCollapsed(key)){
-    state.wsCollapsed[key] = false;
-    persist(false);
-    renderWarrior();
-  }
-  requestAnimationFrame(() => {
-    const el = Array.from(document.querySelectorAll('#ws-grid [data-discipline]')).find(d => d.dataset.discipline === key);
-    if(el) el.scrollIntoView({ behavior:'smooth', block:'start' });
-    const sel = document.getElementById('jump-discipline-select');
-    if(sel) sel.value = '';
-  });
-};
 
 /* ---------- SEARCH + TAG FILTER (flat tag list, no groups — kept simpler
    than the spell side's grouped tag system for now) ---------- */
@@ -5129,7 +5275,7 @@ function renderCraftRecipeItem(r){
   return `
     <li class="spell-item" data-name="${r.name.toLowerCase()}" data-id="${r.id}" ${canReorder ? `draggable="true" ondragstart="craftDragStart(event,'${r.id}')" ondragend="craftDragEnd(event)"` : ''}>
       <input type="checkbox" id="craftcb_${r.id}" ${checked} onchange="onToggleCraft('${r.id}', this.checked)">
-      <label for="craftcb_${r.id}"><span class="spell-name" onclick="openCraftModal(event,'${r.id}')">${escapeHtml(r.name)}</span>${matsHtml ? `<span class="craft-mats">🧱 ${matsHtml}</span>` : ''}${meta.craftingTime ? `<span class="craft-time">⏱ ${escapeHtml(meta.craftingTime)}</span>` : ''}${(meta.dc !== null && meta.dc !== '') ? `<span class="craft-dc">DC ${meta.dc}${(meta.tries !== null && meta.tries !== '') ? ` (${meta.tries} ${meta.tries == 1 ? 'try' : 'tries'})` : ''}</span>` : ''}${tagsHtml}${bundleHtml}</label>
+      <label for="craftcb_${r.id}"><span class="spell-name" onclick="openCraftModal(event,'${r.id}')">${escapeHtml(r.name)}</span>${matsHtml ? `<span class="craft-mats">📦 ${matsHtml}</span>` : ''}${meta.craftingTime ? `<span class="craft-time">⏱ ${escapeHtml(meta.craftingTime)}</span>` : ''}${(meta.dc !== null && meta.dc !== '') ? `<span class="craft-dc">DC ${meta.dc}${(meta.tries !== null && meta.tries !== '') ? ` (${meta.tries} ${meta.tries == 1 ? 'try' : 'tries'})` : ''}</span>` : ''}${tagsHtml}${bundleHtml}</label>
       ${dragHtml}
     </li>`;
 }
@@ -5213,31 +5359,7 @@ function renderCrafting(){
   renderCraftGlobalStats();
   applyCraftFilters();
   applyGridLockState();
-  renderCraftJumpNav(visible);
 }
-
-function renderCraftJumpNav(visibleSections){
-  const sel = document.getElementById('jump-craft-select');
-  if(!sel) return;
-  const current = sel.value;
-  sel.innerHTML = '<option value="">Jump to craft type…</option>' +
-    visibleSections.map(s => `<option value="${escapeHtml(s.key)}">${escapeHtml(s.name)}</option>`).join('');
-  sel.value = (current && visibleSections.some(s => s.key === current)) ? current : '';
-}
-window.jumpToCraftSection = function(key){
-  if(!key) return;
-  if(isCraftSectionCollapsed(key)){
-    state.craftCollapsed[key] = false;
-    persist(false);
-    renderCrafting();
-  }
-  requestAnimationFrame(() => {
-    const el = Array.from(document.querySelectorAll('#craft-grid [data-craft-section]')).find(d => d.dataset.craftSection === key);
-    if(el) el.scrollIntoView({ behavior:'smooth', block:'start' });
-    const sel = document.getElementById('jump-craft-select');
-    if(sel) sel.value = '';
-  });
-};
 
 /* ---------- SEARCH + TAG FILTER ---------- */
 function getAllCraftTags(){
@@ -6026,6 +6148,438 @@ window.toggleRaceAbility = async function(raceKey, abilityId, checked){
   }
 };
 
+/* ---------- RANKS (character sheet) ----------
+   Replaces the free-text "Rank" field with a dropdown of editor-managed
+   ranks — same idea as Races, but instead of granting abilities, a rank
+   carries Body/Mind/Spirit BASE stat values and a "reset hours" duration.
+   Selecting a rank auto-fills the sheet's Base Stats (see onRankChange);
+   a one-time +2 "Secret Bonus" to one of Body/Mind/Spirit (found in the
+   Labyrinth) stacks on top of the rank's numbers. Reset Hours drives two
+   things: (1) whenever Current Body/Mind/Spirit/Rank-stat change, Reset
+   Time is auto-set to now + reset hours (see onCharInfoChange), and (2)
+   once Reset Time has passed, Current Body/Mind/Spirit/Rank-stat auto-
+   refill back to Base (Armor is deliberately excluded — armor buffs are
+   their own ~24h cycle) — see checkAndApplyStatRefill.
+   Managed by the same global "spell_editors" role used for Schools/Races
+   (no separate rank-editor role for now). Required Supabase setup (run
+   once in the SQL editor) — ask for this if it hasn't been provided yet:
+
+     create table ranks (
+       key text primary key,
+       name text not null,
+       description text not null default '',
+       body_base numeric not null default 0,
+       mind_base numeric not null default 0,
+       spirit_base numeric not null default 0,
+       reset_hours numeric,
+       combat_modifier numeric not null default 0,
+       sort_order integer not null default 0,
+       created_by uuid references auth.users(id)
+     );
+     alter table ranks enable row level security;
+     grant select on public.ranks to anon, authenticated;
+     grant insert, update, delete on public.ranks to authenticated;
+     create policy "anyone can read ranks" on ranks for select using (true);
+     create policy "editors can insert ranks" on ranks for insert
+       with check (exists (select 1 from spell_editors se where se.user_id = auth.uid()));
+     create policy "editors can update ranks" on ranks for update
+       using (exists (select 1 from spell_editors se where se.user_id = auth.uid()));
+     create policy "editors can delete ranks" on ranks for delete
+       using (exists (select 1 from spell_editors se where se.user_id = auth.uid()));
+*/
+let RANKS = []; // [{key, name, description, bodyBase, mindBase, spiritBase, resetHours}]
+
+function canManageRanks(){ return isSpellEditor; }
+
+async function loadRanks(){
+  try{
+    const { data, error } = await supabaseClient.from('ranks').select('*').order('sort_order', { ascending: true });
+    if(error) throw error;
+    RANKS = (data || []).map(row => ({
+      key: row.key,
+      name: row.name,
+      description: row.description || '',
+      bodyBase: row.body_base,
+      mindBase: row.mind_base,
+      spiritBase: row.spirit_base,
+      resetHours: row.reset_hours,
+      combatModifier: row.combat_modifier,
+    }));
+  }catch(e){
+    console.error('Could not load ranks from cloud:', e);
+  }
+}
+
+/* Old character saves (and any raw value that doesn't match a known rank
+   key) stored the rank as free text; current saves store the rank's key
+   from the `ranks` table. Mirrors getRaceDisplayName. */
+function getRankDisplayName(rankValue){
+  if(!rankValue) return '';
+  const r = RANKS.find(x => x.key === rankValue);
+  return r ? r.name : rankValue;
+}
+
+function renderRankSelectOptions(){
+  const sel = document.getElementById('ci-rank');
+  if(!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— Select Rank —</option>' +
+    RANKS.map(r => `<option value="${escapeHtml(r.key)}">${escapeHtml(r.name)}</option>`).join('');
+  if(current && RANKS.some(r => r.key === current)) sel.value = current;
+}
+
+function getCurrentRank(){
+  const key = state.charInfo ? state.charInfo.rank : '';
+  return RANKS.find(r => r.key === key);
+}
+
+/* Recomputes Body/Mind/Spirit/Rank Base Stats from the selected Rank plus
+   whichever stat (if any) the Secret Bonus toggle currently points at, and
+   writes the result straight into the (readonly) Base Stats inputs.
+   Called on Rank/Secret Bonus change, and once on every sheet load/switch
+   so edits made later in "Manage Ranks" show up immediately. */
+window.onRankChange = function(){
+  const rankSel = document.getElementById('ci-rank');
+  const secretEl = document.getElementById('ci-secret-bonus');
+  const rank = RANKS.find(r => r.key === (rankSel ? rankSel.value : ''));
+  const secret = secretEl ? secretEl.value : '';
+  const bodyBase = (rank ? Number(rank.bodyBase) || 0 : 0) + (secret === 'body' ? 2 : 0);
+  const mindBase = (rank ? Number(rank.mindBase) || 0 : 0) + (secret === 'mind' ? 2 : 0);
+  const spiritBase = (rank ? Number(rank.spiritBase) || 0 : 0) + (secret === 'spirit' ? 2 : 0);
+  const rankStatBase = rank ? Number(rank.combatModifier) || 0 : 0;
+  const bEl = document.getElementById('ci-body-base');
+  const mEl = document.getElementById('ci-mind-base');
+  const sEl = document.getElementById('ci-spirit-base');
+  const rEl = document.getElementById('ci-rank-base');
+  if(bEl) bEl.value = bodyBase;
+  if(mEl) mEl.value = mindBase;
+  if(sEl) sEl.value = spiritBase;
+  if(rEl) rEl.value = rankStatBase;
+  updateSecretBonusButtons(secret);
+};
+
+/* Compact +2-per-stat toggle replacing what used to be a wide dropdown —
+   only one of Body/Mind/Spirit can hold the one-time Labyrinth secret
+   bonus at a time, so picking a new one clears any previous choice.
+   Clicking the already-active button clears it back to "none". */
+window.toggleSecretBonus = function(stat){
+  const hidden = document.getElementById('ci-secret-bonus');
+  const current = hidden ? hidden.value : '';
+  const next = current === stat ? '' : stat;
+  if(hidden) hidden.value = next;
+  onRankChange();
+  onCharInfoChange();
+};
+
+function updateSecretBonusButtons(activeStat){
+  ['body','mind','spirit'].forEach(stat => {
+    const btn = document.getElementById('secret-bonus-' + stat);
+    if(btn) btn.classList.toggle('active', activeStat === stat);
+  });
+}
+
+/* ---------- RANK VIEW MODAL (read mode — anyone can open this) ---------- */
+window.openRankViewModal = function(){
+  const rank = getCurrentRank();
+  const titleEl = document.getElementById('rank-view-title');
+  const statsEl = document.getElementById('rank-view-stats');
+  const descEl = document.getElementById('rank-view-desc');
+  if(!rank){
+    titleEl.textContent = 'No Rank Selected';
+    statsEl.textContent = '';
+    descEl.innerHTML = `<span class="racial-abilities-empty">Select a rank above to see its details.</span>`;
+  } else {
+    titleEl.textContent = rank.name;
+    const resetText = (rank.resetHours === null || rank.resetHours === undefined || rank.resetHours === '')
+      ? 'Reset time not set yet'
+      : `Resets every ${rank.resetHours}h`;
+    statsEl.textContent = `Body ${rank.bodyBase} · Mind ${rank.mindBase} · Spirit ${rank.spiritBase} · +${rank.combatModifier || 0} Combat Modifier · ${resetText}`;
+    descEl.innerHTML = rank.description
+      ? escapeHtml(rank.description).replace(/\n/g,'<br>')
+      : `<span class="racial-abilities-empty">No description yet.</span>`;
+  }
+  document.getElementById('rank-view-modal-backdrop').classList.add('open');
+};
+window.closeRankViewModal = function(){
+  document.getElementById('rank-view-modal-backdrop').classList.remove('open');
+};
+
+function updateRankAdminLinksVisibility(){
+  const el = document.getElementById('rank-admin-link');
+  if(el) el.style.display = canManageRanks() ? '' : 'none';
+}
+
+/* ---------- MANAGE RANKS (global editors only) ---------- */
+window.openRanksModal = function(){
+  if(!canManageRanks()) return;
+  document.getElementById('new-rank-name').value = '';
+  document.getElementById('ranks-modal-status').textContent = '';
+  renderRanksManageList();
+  document.getElementById('ranks-modal-backdrop').classList.add('open');
+};
+window.closeRanksModal = function(){
+  document.getElementById('ranks-modal-backdrop').classList.remove('open');
+};
+
+function renderRanksManageList(){
+  const listEl = document.getElementById('ranks-manage-list');
+  const emptyEl = document.getElementById('ranks-manage-empty');
+  if(!listEl) return;
+  if(!RANKS.length){
+    listEl.innerHTML = '';
+    if(emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+  if(emptyEl) emptyEl.style.display = 'none';
+  listEl.innerHTML = RANKS.map(r => `
+    <div class="rollbuff-row" data-key="${escapeHtml(r.key)}">
+      <button type="button" class="rollbuff-remove" title="Delete" onclick="deleteRank('${r.key}')">✕</button>
+      <div style="margin-bottom:8px;padding-right:20px;">
+        <label style="display:block;font-size:14px;color:var(--parchment-dim);margin-bottom:4px;">Name</label>
+        <input type="text" value="${escapeHtml(r.name)}" onchange="updateRankField('${r.key}','name',this.value)">
+      </div>
+      <div class="modal-cost-grid" style="margin-bottom:8px;">
+        <div><label>Body Base</label><input type="number" step="1" value="${r.bodyBase}" onchange="updateRankField('${r.key}','body_base',this.value)"></div>
+        <div><label>Mind Base</label><input type="number" step="1" value="${r.mindBase}" onchange="updateRankField('${r.key}','mind_base',this.value)"></div>
+        <div><label>Spirit Base</label><input type="number" step="1" value="${r.spiritBase}" onchange="updateRankField('${r.key}','spirit_base',this.value)"></div>
+      </div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:8px;">
+        <div style="max-width:180px;">
+          <label style="display:block;font-size:14px;color:var(--parchment-dim);margin-bottom:4px;">Reset Hours <span class="modal-hint" style="text-transform:none;letter-spacing:0;">(until stats refill — leave blank if unknown)</span></label>
+          <input type="number" step="0.5" min="0" placeholder="not set" value="${r.resetHours === null || r.resetHours === undefined ? '' : r.resetHours}" onchange="updateRankField('${r.key}','reset_hours',this.value)">
+        </div>
+        <div style="max-width:160px;">
+          <label style="display:block;font-size:14px;color:var(--parchment-dim);margin-bottom:4px;">Combat Modifier</label>
+          <input type="number" step="1" value="${r.combatModifier}" onchange="updateRankField('${r.key}','combat_modifier',this.value)">
+        </div>
+      </div>
+      <div>
+        <label style="display:block;font-size:14px;color:var(--parchment-dim);margin-bottom:4px;">Description</label>
+        <div class="grow-wrap" data-replicated-value="${escapeHtml(r.description)}"><textarea rows="3" onchange="updateRankField('${r.key}','description',this.value)" oninput="syncGrowWrap(this)">${escapeHtml(r.description)}</textarea></div>
+      </div>
+    </div>`).join('');
+  autosizeAllTextareas();
+}
+
+window.createRank = async function(){
+  if(!canManageRanks()) return;
+  const nameEl = document.getElementById('new-rank-name');
+  const statusEl = document.getElementById('ranks-modal-status');
+  const saveBtn = document.getElementById('ranks-modal-save');
+  const name = nameEl.value.trim();
+  if(!name){ statusEl.textContent = 'Enter a name first.'; return; }
+  const key = uniqueKey(slugify(name), new Set(RANKS.map(r => r.key)));
+  saveBtn.disabled = true;
+  try{
+    const { error } = await supabaseClient.from('ranks').insert({
+      key, name, sort_order: RANKS.length, created_by: currentUser ? currentUser.id : null,
+    });
+    if(error) throw error;
+    await loadRanks();
+    renderRanksManageList();
+    renderRankSelectOptions();
+    nameEl.value = '';
+    statusEl.textContent = `Added "${name}".`;
+  }catch(e){
+    statusEl.textContent = 'Could not add rank: ' + (e.message || e);
+  }finally{
+    saveBtn.disabled = false;
+  }
+};
+
+const RANK_FIELD_TO_LOCAL_KEY = { name: 'name', description: 'description', body_base: 'bodyBase', mind_base: 'mindBase', spirit_base: 'spiritBase', reset_hours: 'resetHours', combat_modifier: 'combatModifier' };
+window.updateRankField = async function(key, field, value){
+  if(!canManageRanks()) return;
+  const rank = RANKS.find(r => r.key === key);
+  if(!rank) return;
+  const localKey = RANK_FIELD_TO_LOCAL_KEY[field];
+  const isNumeric = field !== 'name' && field !== 'description';
+  const trimmed = typeof value === 'string' ? value.trim() : value;
+  const newValue = isNumeric ? (trimmed === '' ? null : (Number(value) || 0)) : value;
+  const prevValue = rank[localKey];
+  rank[localKey] = newValue;
+  try{
+    const { error } = await supabaseClient.from('ranks').update({ [field]: newValue }).eq('key', key);
+    if(error) throw error;
+    if(field === 'name') renderRankSelectOptions();
+    // Re-run the auto-fill in case the currently selected character is this rank.
+    onRankChange();
+  }catch(e){
+    rank[localKey] = prevValue;
+    alert('Could not update: ' + (e.message || e));
+    renderRanksManageList();
+  }
+};
+
+window.deleteRank = async function(key){
+  if(!canManageRanks()) return;
+  const rank = RANKS.find(r => r.key === key);
+  if(!rank) return;
+  if(!confirm(`Delete "${rank.name}" permanently? Any character currently set to this rank will show it as blank. This cannot be undone.`)) return;
+  try{
+    const { error } = await supabaseClient.from('ranks').delete().eq('key', key);
+    if(error) throw error;
+    await loadRanks();
+    renderRanksManageList();
+    renderRankSelectOptions();
+    onRankChange();
+  }catch(e){
+    alert('Could not delete this rank: ' + (e.message || e));
+  }
+};
+
+/* ---------- RESET TIME AUTOMATION ----------
+   Two halves of the same mechanic:
+   1) applyRankResetTimer() — whenever Current Body/Mind/Spirit/Rank-stat
+      change, set Reset Time = now + the selected rank's Reset Hours.
+   2) checkAndApplyStatRefill() — once Reset Time has passed, refill
+      Current Body/Mind/Spirit/Rank-stat back to Base (Armor excluded)
+      and clear Reset Time until the player next spends a stat. Run once
+      on every sheet load/switch and on a periodic timer so it still
+      fires if the tab is simply left open past the reset time. */
+function toDatetimeLocalValue(date){
+  const pad = n => String(n).padStart(2,'0');
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function applyRankResetTimer(){
+  const rank = getCurrentRank();
+  // A rank with no Reset Hours set yet (null/blank) means "unknown" — leave
+  // Reset Time alone rather than guessing 0 (which would mean "instant").
+  if(!rank || rank.resetHours === null || rank.resetHours === undefined || rank.resetHours === '') return;
+  const hours = Number(rank.resetHours) || 0;
+  const next = new Date(Date.now() + hours * 3600 * 1000);
+  const iso = toDatetimeLocalValue(next);
+  state.charInfo.reset_time = iso;
+  const el = document.getElementById('ci-reset-time');
+  if(el) el.value = iso;
+}
+
+function checkAndApplyStatRefill(){
+  if(isViewingOther) return; // never mutate someone else's sheet just from viewing it
+  if(!state.charInfo) return;
+  const rt = state.charInfo.reset_time;
+  if(!rt) return;
+  const resetDate = new Date(rt);
+  if(isNaN(resetDate.getTime())) return;
+  if(resetDate.getTime() > Date.now()) return; // not due yet
+
+  ['body','mind','spirit','rank_stat'].forEach(stat => {
+    const suffix = stat === 'rank_stat' ? 'rank' : stat;
+    const baseEl = document.getElementById(`ci-${suffix}-base`);
+    const curEl = document.getElementById(`ci-${suffix}-cur`);
+    const baseVal = baseEl ? baseEl.value : '';
+    if(curEl) curEl.value = baseVal;
+    state.charInfo[`${stat}_current`] = baseVal;
+  });
+  state.charInfo.reset_time = '';
+  const resetEl = document.getElementById('ci-reset-time');
+  if(resetEl) resetEl.value = '';
+  persist(true);
+  renderWarrior(); // Rank/Body/Mind/Spirit current changed — refresh requirement met/unmet tags
+}
+
+/* ---------- ARMOR RESET TIMER ----------
+   Separate from the Rank-driven timer above: armor buffs conventionally
+   last a fixed 24 hours regardless of Rank, so this uses a flat constant
+   instead of a per-rank value. Same shape otherwise — changing Current
+   Armor sets a fresh 24h countdown, and once it passes Current Armor
+   auto-refills to Base Armor. Shown as a small badge directly under the
+   Armor current-stat input (see charsheet HTML) instead of a full
+   datetime picker, since it's a fixed duration with nothing to configure. */
+const ARMOR_RESET_HOURS = 24;
+
+function formatShortDateTime(iso){
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return '';
+  const pad = n => String(n).padStart(2,'0');
+  return `${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function updateArmorResetBadge(){
+  const badge = document.getElementById('armor-reset-badge');
+  if(!badge) return;
+  const iso = state.charInfo ? state.charInfo.armor_reset_time : '';
+  if(!iso){
+    badge.textContent = 'No cooldown';
+    badge.title = 'No reset timer is running — click to manually set one (e.g. for a spell that doesn\'t last exactly 24h)';
+    badge.classList.remove('counting');
+  } else {
+    badge.textContent = 'Resets ' + formatShortDateTime(iso);
+    badge.title = 'Armor auto-refills to Base Armor at this time (24h after it was last changed)';
+    badge.classList.add('counting');
+  }
+}
+
+function applyArmorResetTimer(){
+  const next = new Date(Date.now() + ARMOR_RESET_HOURS * 3600 * 1000);
+  const iso = toDatetimeLocalValue(next);
+  state.charInfo.armor_reset_time = iso;
+  const el = document.getElementById('ci-armor-reset-time');
+  if(el) el.value = iso;
+  updateArmorResetBadge();
+}
+
+function checkAndApplyArmorRefill(){
+  if(!state.charInfo) return;
+  const rt = state.charInfo.armor_reset_time;
+  if(!rt){ updateArmorResetBadge(); return; }
+  const resetDate = new Date(rt);
+  if(isNaN(resetDate.getTime())){ updateArmorResetBadge(); return; }
+  if(resetDate.getTime() > Date.now()){ updateArmorResetBadge(); return; } // not due yet — badge still shows the countdown target
+  if(isViewingOther){ updateArmorResetBadge(); return; } // show but never mutate someone else's sheet
+
+  const baseEl = document.getElementById('ci-armor-base');
+  const curEl = document.getElementById('ci-armor-cur');
+  const baseVal = baseEl ? baseEl.value : '';
+  if(curEl) curEl.value = baseVal;
+  state.charInfo.armor_current = baseVal;
+  state.charInfo.armor_reset_time = '';
+  const hiddenEl = document.getElementById('ci-armor-reset-time');
+  if(hiddenEl) hiddenEl.value = '';
+  updateArmorResetBadge();
+  persist(true);
+}
+
+/* Click-to-edit override for the armor badge — covers armor spells that
+   don't last exactly the standard 24h. Clicking the badge swaps it for a
+   real datetime-local input (pre-filled with the current reset time, or
+   now+24h if none is set), so it can be pointed at any exact moment
+   instead of only ever being "now + 24h". Leaving it blank clears the
+   cooldown entirely (badge goes back to "No cooldown"). */
+window.toggleArmorResetEdit = function(){
+  if(isViewingOther || editLocked) return;
+  const badge = document.getElementById('armor-reset-badge');
+  const editEl = document.getElementById('armor-reset-edit');
+  const hidden = document.getElementById('ci-armor-reset-time');
+  if(!badge || !editEl) return;
+  editEl.value = (hidden && hidden.value)
+    ? hidden.value
+    : toDatetimeLocalValue(new Date(Date.now() + ARMOR_RESET_HOURS * 3600 * 1000));
+  badge.style.display = 'none';
+  editEl.style.display = '';
+  editEl.focus();
+};
+
+window.onArmorResetEditChange = function(){
+  const editEl = document.getElementById('armor-reset-edit');
+  const hidden = document.getElementById('ci-armor-reset-time');
+  if(hidden && editEl){
+    hidden.value = editEl.value;
+    state.charInfo.armor_reset_time = editEl.value;
+  }
+  updateArmorResetBadge();
+  persist(true);
+  closeArmorResetEdit();
+};
+
+window.closeArmorResetEdit = function(){
+  const badge = document.getElementById('armor-reset-badge');
+  const editEl = document.getElementById('armor-reset-edit');
+  if(editEl) editEl.style.display = 'none';
+  if(badge) badge.style.display = '';
+};
+
 /* ---------- ABILITY EXTRA EFFECTS BUILDER (Shield / Roll Modifier / AOE / Special) ----------
    Same shape as the spell/warrior-skill versions, its own working array so
    none of the three modals can stomp on each other. */
@@ -6772,7 +7326,7 @@ window.updateWeaponItemNumberField = function(id, field, value){
 
 
 document.addEventListener('keydown', (e) => {
-  if(e.key === 'Escape'){ closeSpellModal(); closeRollBuffModal(); closeWsModal(); closeDisciplinesModal(); closeAddWsModal(); closeDiceModal(); closeCraftModal(); closeAddCraftModal(); closeAbilitiesModal(); closeRacesModal(); closeAbilityModal(); closeInventoryModal(); closeWeaponsModal(); closeItemViewModal(); }
+  if(e.key === 'Escape'){ closeSpellModal(); closeRollBuffModal(); closeWsModal(); closeDisciplinesModal(); closeAddWsModal(); closeDiceModal(); closeCraftModal(); closeAddCraftModal(); closeAbilitiesModal(); closeRacesModal(); closeAbilityModal(); closeInventoryModal(); closeWeaponsModal(); closeItemViewModal(); closeRanksModal(); closeRankViewModal(); }
 });
 
 document.getElementById('modal-desc').addEventListener('input', function(){ syncGrowWrap(this); });
@@ -6784,10 +7338,10 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 let currentUser = null;
 
 const CHAR_INFO_FIELDS = [
-  'name','race','rank','weakness','inventory','weapons',
+  'name','race','rank','secret_bonus_stat','weakness','inventory','weapons',
   'body_base','mind_base','spirit_base','armor_base','rank_stat_base',
   'body_current','mind_current','spirit_current','armor_current','rank_stat_current',
-  'reset_time',
+  'reset_time','armor_reset_time',
   /* NEW TRACKING KEYS */
   'body_precast','mind_precast','spirit_precast','armor_precast','rank_stat_precast'
 ];
@@ -7080,7 +7634,8 @@ async function fetchOtherCharacters() {
         const charInfo = charData.charInfo || {};
         const charName = charInfo.name ? charInfo.name.trim() : "Unnamed Character";
         const charRaceName = getRaceDisplayName(charInfo.race);
-        const charClassRace = (charRaceName || charInfo.rank) ? ` (${charRaceName || ''} ${charInfo.rank || ''})`.trim() : '';
+        const charRankName = getRankDisplayName(charInfo.rank);
+        const charClassRace = (charRaceName || charRankName) ? ` (${charRaceName || ''} ${charRankName || ''})`.trim() : '';
 
         const option = document.createElement('option');
         option.value = row.user_id;
@@ -7089,7 +7644,7 @@ async function fetchOtherCharacters() {
 
         const card = document.createElement('button');
         card.style.cssText = "background: rgba(0,0,0,0.2); border: 1px solid var(--hairline); color: var(--parchment); padding: 10px; border-radius: 6px; text-align: left; cursor: pointer; font-family: inherit; transition: border-color 0.2s;";
-        card.innerHTML = `<strong style="color: var(--light-accent); display:block; margin-bottom:2px;">${escapeHtml(charName)}</strong><span style="font-size:16px; color:var(--parchment-dim);">${escapeHtml(charRaceName || 'No Race')} · ${escapeHtml(charInfo.rank || 'No Rank')}</span>`;
+        card.innerHTML = `<strong style="color: var(--light-accent); display:block; margin-bottom:2px;">${escapeHtml(charName)}</strong><span style="font-size:16px; color:var(--parchment-dim);">${escapeHtml(charRaceName || 'No Race')} · ${escapeHtml(charRankName || 'No Rank')}</span>`;
         
         card.addEventListener('mouseenter', () => card.style.borderColor = "var(--gold)");
         card.addEventListener('mouseleave', () => card.style.borderColor = "var(--hairline)");
@@ -7318,6 +7873,9 @@ function populateCharInfoFields(){
   renderInventoryDisplay();
   renderWeaponsDisplay();
   renderPrecastDisplay();
+  onRankChange(); // recompute Base Stats from Rank + Secret Bonus with fresh data
+  if(!isViewingOther) checkAndApplyStatRefill(); // refill Current stats if Reset Time has already passed
+  checkAndApplyArmorRefill(); // refill/display Armor's independent 24h cooldown
 }
 
 /* ---------- AUTOGROW TEXTAREAS ----------
@@ -7347,16 +7905,24 @@ function initAutosizeTextareas(){
 }
 
 const REQUIREMENT_RELEVANT_CI_KEYS = ['rank_stat_current','body_current','mind_current','spirit_current'];
+const ARMOR_RELEVANT_CI_KEYS = ['armor_current'];
 window.onCharInfoChange = function(){
   if (isViewingOther) return;
   let relevantChanged = false;
+  let armorChanged = false;
   CHAR_INFO_FIELDS.forEach(key => {
     const el = document.querySelector(`[data-ci="${key}"]`);
     if(el){
       if(REQUIREMENT_RELEVANT_CI_KEYS.includes(key) && state.charInfo[key] !== el.value) relevantChanged = true;
+      if(ARMOR_RELEVANT_CI_KEYS.includes(key) && state.charInfo[key] !== el.value) armorChanged = true;
       state.charInfo[key] = el.value;
     }
   });
+  // Current Body/Mind/Spirit/Rank-stat changed by hand — that "spends" the
+  // current cycle, so push Reset Time out to a fresh now+rankHours window.
+  if(relevantChanged) applyRankResetTimer();
+  // Armor runs on its own fixed 24h cycle, independent of Rank.
+  if(armorChanged) applyArmorResetTimer();
   persist();
   // Rank/Body/Mind/Spirit feed the warrior skill "Stat Requirements"
   // comparison (met/unmet tags) — only re-render when one of those actually
@@ -8508,36 +9074,7 @@ function render(){
   renderGlobalStats();
   applyFilters();
   applyGridLockState();
-  renderJumpNav(visible);
 }
-
-/* Keeps the "Jump to school…" dropdown in the spells toolbar in sync with
-   whichever schools are currently visible (i.e. allowed by the alignment
-   checkboxes), so picking one scrolls straight to it — and opens it if it
-   was collapsed — instead of scrolling the whole grid to find it. */
-function renderJumpNav(visibleSchools){
-  const sel = document.getElementById('jump-school-select');
-  if(!sel) return;
-  const current = sel.value;
-  sel.innerHTML = '<option value="">Jump to school…</option>' +
-    visibleSchools.map(s => `<option value="${escapeHtml(s.key)}">${escapeHtml(s.name)}</option>`).join('');
-  sel.value = (current && visibleSchools.some(s => s.key === current)) ? current : '';
-}
-
-window.jumpToSchool = function(key){
-  if(!key) return;
-  if(isSchoolCollapsed(key)){
-    state.collapsed[key] = false;
-    persist(false);
-    render();
-  }
-  requestAnimationFrame(() => {
-    const el = Array.from(document.querySelectorAll('#grid .school')).find(s => s.dataset.school === key);
-    if(el) el.scrollIntoView({ behavior:'smooth', block:'start' });
-    const sel = document.getElementById('jump-school-select');
-    if(sel) sel.value = '';
-  });
-};
 
 /* render() rebuilds #grid from scratch every time (e.g. opening/closing a
    school, ticking a spell, changing filters), which wipes any `disabled`
@@ -8719,6 +9256,13 @@ function toggleReadOnly(readOnly) {
   if (importBtn) importBtn.disabled = readOnly;
 
   inputs.forEach(el => {
+    // Purely read-only viewers (e.g. "View Rank Details") should stay
+    // usable even while editing is locked or someone else's sheet is
+    // being viewed — they don't change any data, just show it.
+    if(el.classList.contains('always-enabled')){
+      el.removeAttribute('disabled');
+      return;
+    }
     if (readOnly) {
       el.setAttribute('disabled', 'true');
     } else {
@@ -8728,6 +9272,11 @@ function toggleReadOnly(readOnly) {
   
   if (!readOnly) { render(); if(currentView === 'warrior') renderWarrior();
     if(currentView === 'crafting') renderCrafting(); }
+
+  // The armor reset badge is a <span>, not an input/button, so it's not
+  // covered by the disabling loop above — toggle its own locked look/feel.
+  const armorBadge = document.getElementById('armor-reset-badge');
+  if(armorBadge) armorBadge.classList.toggle('locked', readOnly);
 }
 
 /* The edit lock is a manual on/off switch (persisted in localStorage) that
@@ -8788,8 +9337,51 @@ function applyFilterBarCollapsedState(){
   const bar = document.getElementById('spell-filter-bar');
   const btn = document.getElementById('toggle-filters-btn');
   if(bar) bar.classList.toggle('collapsed', filtersCollapsed);
-  if(btn) btn.textContent = (filtersCollapsed ? '▸' : '▾') + ' Filters';
+  if(btn) btn.textContent = '🔍 Filters ' + (filtersCollapsed ? '▸' : '▾');
 }
+/* TOOLBAR "TOOLS" MENU — shared dropdown behavior for the Spells/Warrior/
+   Crafting toolbars. Keeps only search + the primary reset button visible
+   at the top level; everything else lives behind this menu at every
+   screen size (see CSS .toolbar-tools-menu). */
+function closeAllToolbarToolMenus(exceptKey){
+  document.querySelectorAll('.toolbar-tools-menu').forEach(m => {
+    if(m.id !== 'toolbar-more-' + exceptKey) m.classList.add('collapsed');
+  });
+  document.querySelectorAll('.toolbar-tools-toggle').forEach(b => {
+    if(b.id !== 'toolbar-more-toggle-' + exceptKey){
+      b.setAttribute('aria-expanded', 'false');
+      b.textContent = '🧰 Tools ▾';
+    }
+  });
+}
+window.toggleToolbarMore = function(key){
+  const panel = document.getElementById('toolbar-more-' + key);
+  const btn = document.getElementById('toolbar-more-toggle-' + key);
+  if(!panel) return;
+  const willOpen = panel.classList.contains('collapsed');
+  closeAllToolbarToolMenus(willOpen ? key : '');
+  panel.classList.toggle('collapsed', !willOpen);
+  if(btn){
+    btn.setAttribute('aria-expanded', String(willOpen));
+    btn.textContent = willOpen ? '🧰 Tools ▴' : '🧰 Tools ▾';
+  }
+};
+document.addEventListener('click', (e) => {
+  document.querySelectorAll('.toolbar-tools').forEach(wrap => {
+    if(wrap.contains(e.target)) return;
+    const menu = wrap.querySelector('.toolbar-tools-menu');
+    const btn = wrap.querySelector('.toolbar-tools-toggle');
+    if(menu && !menu.classList.contains('collapsed')){
+      menu.classList.add('collapsed');
+      if(btn){ btn.setAttribute('aria-expanded', 'false'); btn.textContent = '🧰 Tools ▾'; }
+    }
+  });
+});
+document.addEventListener('keydown', (e) => {
+  if(e.key !== 'Escape') return;
+  closeAllToolbarToolMenus('');
+});
+
 window.toggleFilterBar = function(){
   filtersCollapsed = !filtersCollapsed;
   localStorage.setItem('spellbook_filters_collapsed', filtersCollapsed ? 'true' : 'false');
@@ -8800,7 +9392,7 @@ function applyWsFilterBarCollapsedState(){
   const bar = document.getElementById('ws-filter-bar');
   const btn = document.getElementById('ws-toggle-filters-btn');
   if(bar) bar.classList.toggle('collapsed', wsFiltersCollapsed);
-  if(btn) btn.textContent = (wsFiltersCollapsed ? '▸' : '▾') + ' Filters';
+  if(btn) btn.textContent = '🔍 Filters ' + (wsFiltersCollapsed ? '▸' : '▾');
 }
 window.toggleWsFilterBar = function(){
   wsFiltersCollapsed = !wsFiltersCollapsed;
@@ -8812,7 +9404,7 @@ function applyCraftFilterBarCollapsedState(){
   const bar = document.getElementById('craft-filter-bar');
   const btn = document.getElementById('craft-toggle-filters-btn');
   if(bar) bar.classList.toggle('collapsed', craftFiltersCollapsed);
-  if(btn) btn.textContent = (craftFiltersCollapsed ? '▸' : '▾') + ' Filters';
+  if(btn) btn.textContent = '🔍 Filters ' + (craftFiltersCollapsed ? '▸' : '▾');
 }
 window.toggleCraftFilterBar = function(){
   craftFiltersCollapsed = !craftFiltersCollapsed;
@@ -8891,10 +9483,12 @@ window.addEventListener('beforeunload', function(e){
   await loadCraftingRecipes();      // fetch Jewelry/Blacksmithing/Alchemy recipes from the cloud
   await loadCraftMeta();            // fetch shared recipe data (desc/tags/materials/DC/etc.) from the cloud
   await loadRacesAndAbilities();    // fetch Races + their racial special abilities from the cloud
+  await loadRanks();                // fetch Ranks (base stats + reset hours + description) from the cloud
   renderTagFilters();
   renderWsTagFilters();
   renderCraftTagFilters();
   renderRaceSelectOptions();        // populate the Race dropdown before load() sets its value
+  renderRankSelectOptions();        // populate the Rank dropdown before load() sets its value
   load();                    // renders the grid with the loaded spell metadata
   applyEditLockState();      // apply saved lock preference before anything can be touched
   applyCharsheetCollapsedState();
@@ -8907,6 +9501,19 @@ window.addEventListener('beforeunload', function(e){
   if(savedView === 'warrior') switchView('warrior');
   if(savedView === 'crafting') switchView('crafting');
   requestAnimationFrame(alignEditLockWithAuthBar);
+  // Catches a Reset Time that passes while the tab is simply left open,
+  // instead of only refilling stats on the next load/switch. Browsers
+  // throttle setInterval in background tabs, so also re-check immediately
+  // whenever the tab regains focus/visibility — otherwise a reset that
+  // was due while the tab was backgrounded could sit stale until the
+  // interval eventually fires (or the page is reloaded).
+  checkAndApplyStatRefill();
+  checkAndApplyArmorRefill();
+  setInterval(() => { checkAndApplyStatRefill(); checkAndApplyArmorRefill(); }, 60000);
+  document.addEventListener('visibilitychange', () => {
+    if(document.visibilityState === 'visible'){ checkAndApplyStatRefill(); checkAndApplyArmorRefill(); }
+  });
+  window.addEventListener('focus', () => { checkAndApplyStatRefill(); checkAndApplyArmorRefill(); });
 })();
 window.addEventListener('load', () => requestAnimationFrame(alignEditLockWithAuthBar));
 </script>
