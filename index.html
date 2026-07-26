@@ -1157,27 +1157,59 @@
   /* Drag handle that sets how many blocks fit in column 0 before the rest
      spill to column 1 — see getColumnSplitIndex()/initCharsheetColumnResize().
      Only shown in "🧩 Rearrange" mode, and only on wide-enough screens
-     where there are actually two columns to balance. */
+     where there are actually two columns to balance. Styled to look like
+     an obvious grabbable control (background + label), not just a
+     dashed line, since a bare divider reads as decorative rather than
+     interactive. */
   .cs-column-resize-handle{
     display:none;
     align-items:center;
     justify-content:center;
-    height:22px;
+    gap:8px;
+    height:30px;
     margin-top:-6px;
-    border:1px dashed var(--hairline);
-    border-radius:6px;
-    color:var(--parchment-dim);
-    font-size:13px;
-    letter-spacing:3px;
+    background:rgba(0,0,0,0.18);
+    border:1px dashed var(--gold);
+    border-radius:8px;
+    color:var(--light-accent);
+    font-family:'Crimson Pro',serif;
+    font-size:13.5px;
+    letter-spacing:0.03em;
     cursor:ns-resize;
     user-select:none;
     touch-action:none;
+    transition:background .15s, border-color .15s;
   }
-  .cs-column-resize-handle:hover{border-color:var(--gold);color:var(--light-accent);}
+  .cs-column-resize-handle:hover{background:rgba(201,160,84,0.14);border-style:solid;}
+  .cs-column-resize-handle.dragging{background:rgba(201,160,84,0.22);border-style:solid;}
   .charsheet-grid.layout-edit-mode .cs-column-resize-handle{display:flex;}
   @media (max-width:800px){
     .cs-column-resize-handle{display:none !important;}
   }
+  /* Live "N left · M right" readout shown next to the handle only while
+     actively dragging it — concrete feedback instead of an abstract
+     pixel height, which means nothing to someone using this feature for
+     the first time. */
+  .cs-resize-live-count{
+    display:none;
+    justify-content:center;
+    margin-top:6px;
+    font-size:13px;
+    color:var(--gold-bright);
+    font-style:italic;
+  }
+  .cs-resize-live-count.showing{display:flex;}
+  .cs-layout-hint{
+    background:rgba(201,160,84,0.1);
+    border:1px solid var(--gold);
+    border-radius:var(--radius-sm);
+    padding:10px 14px;
+    margin-bottom:16px;
+    font-size:14.5px;
+    line-height:1.5;
+    color:var(--parchment-dim);
+  }
+  .cs-layout-hint strong{color:var(--light-accent);font-weight:700;}
   /* ---------- REORDERABLE BLOCKS ----------
      Each .cs-block groups a set of related fields (see the HTML) so the
      whole group can be moved as one unit. Normally this is invisible —
@@ -2116,12 +2148,13 @@
     <div class="charsheet-title" onclick="toggleCharsheetCollapsed()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCharsheetCollapsed()}">
       <span>Character Sheet</span>
       <span style="display:flex;align-items:center;gap:14px;">
-        <button type="button" class="cs-layout-toggle always-enabled" id="cs-layout-toggle" onclick="event.stopPropagation(); toggleCharsheetLayoutMode();" title="Show the block outlines and ▲▼/drag controls so you can rearrange the sheet">🧩 Rearrange</button>
-        <button type="button" class="cs-layout-toggle always-enabled" id="cs-layout-reset-btn" onclick="event.stopPropagation(); resetCharsheetBlockOrderToStandard();" title="Back to the standard block arrangement (set by editors)">↺ Reset to Standard</button>
+        <button type="button" class="cs-layout-toggle" id="cs-layout-toggle" onclick="event.stopPropagation(); toggleCharsheetLayoutMode();" title="Show the block outlines and ▲▼/drag controls so you can rearrange the sheet">🧩 Rearrange</button>
+        <button type="button" class="cs-layout-toggle" id="cs-layout-reset-btn" onclick="event.stopPropagation(); resetCharsheetBlockOrderToStandard();" title="Back to the standard block arrangement (set by editors)">↺ Reset to Standard</button>
         <button type="button" class="cs-layout-toggle always-enabled" id="cs-layout-admin-link" style="display:none;" onclick="event.stopPropagation(); openCharsheetLayoutModal();" title="Set the standard arrangement everyone starts with (global editors only)">⚙ Manage Default Layout</button>
         <span class="charsheet-chevron" id="charsheet-chevron">▸</span>
       </span>
     </div>
+    <p class="cs-layout-hint" id="cs-layout-hint" style="display:none;">🧩 Drag a block's header (or use its ▲▼ buttons) to reorder it. Drag the <strong>⇕ Drag to rebalance columns</strong> bar at the bottom of the left column to change how many blocks fit on the left before the rest continue on the right.</p>
     <div class="charsheet-grid" id="charsheet-grid">
       <div class="cs-column" id="cs-column-0">
 
@@ -2217,7 +2250,8 @@
         </div>
       </div>
 
-      <div class="cs-column-resize-handle" id="cs-column-resize-handle" title="Drag to change how many blocks fit in the left column before the rest continue in the right column">⠿ ⠿ ⠿</div>
+      <div class="cs-column-resize-handle" id="cs-column-resize-handle" title="Drag up or down to change how many blocks fit in the left column">⇕ Drag to rebalance columns</div>
+      <div class="cs-resize-live-count" id="cs-resize-live-count"></div>
 
       </div>
 
@@ -9587,6 +9621,7 @@ function toggleReadOnly(readOnly) {
   // re-enable a block's ▲ on the first block or ▼ on the last one, which
   // should stay disabled regardless of lock state — reconcile that here.
   if(typeof updateCharsheetMoveButtons === 'function') updateCharsheetMoveButtons();
+  if(typeof updateCharsheetLayoutControlsForViewingState === 'function') updateCharsheetLayoutControlsForViewingState();
   
   if (!readOnly) { render(); if(currentView === 'warrior') renderWarrior();
     if(currentView === 'crafting') renderCrafting(); }
@@ -9706,15 +9741,17 @@ async function loadCharsheetLayoutDefault(){
    available while viewing someone else's sheet — see
    updateCharsheetLayoutControlsForViewingState(). */
 window.toggleCharsheetLayoutMode = function(){
-  if(isViewingOther) return;
+  if(isViewingOther || editLocked) return;
   const grid = document.getElementById('charsheet-grid');
   const btn = document.getElementById('cs-layout-toggle');
+  const hint = document.getElementById('cs-layout-hint');
   if(!grid) return;
   const active = grid.classList.toggle('layout-edit-mode');
   if(btn){
     btn.classList.toggle('active', active);
     btn.textContent = active ? '✓ Done Rearranging' : '🧩 Rearrange';
   }
+  if(hint) hint.style.display = active ? 'block' : 'none';
 };
 
 function getEffectiveCharsheetBlockOrder(){
@@ -9735,7 +9772,7 @@ function saveCharsheetBlockOrder(newOrder){
 }
 
 window.resetCharsheetBlockOrderToStandard = function(){
-  if(isViewingOther) return;
+  if(isViewingOther || editLocked) return;
   state.charsheetBlockOrder = [];
   state.charsheetColumnSplitHeight = null;
   persist(true);
@@ -9788,6 +9825,8 @@ function renderCharsheetColumns(){
   colB.style.display = twoCol ? '' : 'none';
   const handle = document.getElementById('cs-column-resize-handle');
   if(handle) colA.appendChild(handle); // keep it pinned at the bottom of column 0, after all its blocks
+  const liveCount = document.getElementById('cs-resize-live-count');
+  if(liveCount) colA.appendChild(liveCount); // right after the handle
   updateCharsheetMoveButtons(order);
   updateCharsheetLayoutControlsForViewingState();
 }
@@ -9820,22 +9859,27 @@ function updateCharsheetMoveButtons(order){
 function updateCharsheetLayoutControlsForViewingState(){
   const rearrangeBtn = document.getElementById('cs-layout-toggle');
   const resetBtn = document.getElementById('cs-layout-reset-btn');
+  const locked = isViewingOther || editLocked;
   if(rearrangeBtn){
-    rearrangeBtn.disabled = isViewingOther;
+    rearrangeBtn.disabled = locked;
     rearrangeBtn.title = isViewingOther
       ? "You can only rearrange your own sheet."
-      : 'Show the block outlines and ▲▼/drag controls so you can rearrange the sheet';
+      : editLocked
+        ? 'Unlock editing (🔓) first to rearrange the sheet'
+        : 'Show the block outlines and ▲▼/drag controls so you can rearrange the sheet';
   }
-  if(resetBtn) resetBtn.disabled = isViewingOther;
+  if(resetBtn) resetBtn.disabled = locked;
   const grid = document.getElementById('charsheet-grid');
-  if(isViewingOther && grid && grid.classList.contains('layout-edit-mode')){
+  if(locked && grid && grid.classList.contains('layout-edit-mode')){
     grid.classList.remove('layout-edit-mode');
     if(rearrangeBtn){ rearrangeBtn.classList.remove('active'); rearrangeBtn.textContent = '🧩 Rearrange'; }
+    const hint = document.getElementById('cs-layout-hint');
+    if(hint) hint.style.display = 'none';
   }
 }
 
 window.moveCharsheetBlock = function(blockId, dir){
-  if(isViewingOther) return;
+  if(isViewingOther || editLocked) return;
   const order = getEffectiveCharsheetBlockOrder();
   const idx = order.indexOf(blockId);
   const newIdx = idx + dir;
@@ -9849,7 +9893,7 @@ window.moveCharsheetBlock = function(blockId, dir){
 
 let csDragSrcBlock = null;
 function handleCsDragStart(e){
-  if(isViewingOther) return;
+  if(isViewingOther || editLocked) return;
   const block = e.currentTarget.closest('.cs-block');
   if(!block) return;
   csDragSrcBlock = block;
@@ -9868,7 +9912,7 @@ function handleCsDragOver(e){
 }
 function handleCsDrop(e){
   e.preventDefault();
-  if(isViewingOther) return;
+  if(isViewingOther || editLocked) return;
   const targetBlock = e.currentTarget;
   if(!csDragSrcBlock || !targetBlock || csDragSrcBlock === targetBlock) return;
   const srcId = csDragSrcBlock.id.replace('cs-block-', '');
@@ -10003,14 +10047,25 @@ window.saveCharsheetLayoutOrder = async function(){
 function initCharsheetColumnResize(){
   const handle = document.getElementById('cs-column-resize-handle');
   const colA = document.getElementById('cs-column-0');
+  const liveCount = document.getElementById('cs-resize-live-count');
   if(!handle || !colA) return;
 
   let dragging = false;
   let startY = 0;
   let startHeight = 0;
 
+  function updateLiveCount(){
+    if(!liveCount) return;
+    const order = getEffectiveCharsheetBlockOrder();
+    const n = getColumnSplitIndex(order, true);
+    liveCount.textContent = `${n} block${n === 1 ? '' : 's'} left · ${order.length - n} right`;
+  }
+
   function startDrag(clientY){
     dragging = true;
+    handle.classList.add('dragging');
+    if(liveCount) liveCount.classList.add('showing');
+    updateLiveCount();
     startY = clientY;
     startHeight = (typeof state.charsheetColumnSplitHeight === 'number' && state.charsheetColumnSplitHeight > 0)
       ? state.charsheetColumnSplitHeight
@@ -10021,18 +10076,21 @@ function initCharsheetColumnResize(){
     const next = Math.max(40, Math.round(startHeight + (clientY - startY)));
     state.charsheetColumnSplitHeight = next;
     renderCharsheetColumns();
+    updateLiveCount();
   }
   function endDrag(){
     if(!dragging) return;
     dragging = false;
+    handle.classList.remove('dragging');
+    if(liveCount) liveCount.classList.remove('showing');
     if(!isViewingOther) persist(true);
   }
 
-  handle.addEventListener('mousedown', (e) => { if(isViewingOther) return; e.preventDefault(); startDrag(e.clientY); });
+  handle.addEventListener('mousedown', (e) => { if(isViewingOther || editLocked) return; e.preventDefault(); startDrag(e.clientY); });
   window.addEventListener('mousemove', (e) => moveDrag(e.clientY));
   window.addEventListener('mouseup', endDrag);
 
-  handle.addEventListener('touchstart', (e) => { if(isViewingOther) return; startDrag(e.touches[0].clientY); }, { passive:true });
+  handle.addEventListener('touchstart', (e) => { if(isViewingOther || editLocked) return; startDrag(e.touches[0].clientY); }, { passive:true });
   window.addEventListener('touchmove', (e) => { if(dragging) moveDrag(e.touches[0].clientY); }, { passive:true });
   window.addEventListener('touchend', endDrag);
 }
