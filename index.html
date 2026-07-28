@@ -1481,6 +1481,254 @@
   .pregnancy-countdown{font-family:'Cinzel',Garamond,serif;font-size:20px;color:var(--secret-accent);letter-spacing:0.02em;font-variant-numeric:tabular-nums;}
   .pregnancy-panel-note{font-size:14px;color:var(--parchment-dim);margin-top:8px;min-height:1em;}
 
+  /* TEACHING — only rendered/populated for users holding the `teachers`
+     role (see checkTeacherStatus). A checklist tool for running a
+     spell-teaching session for up to 10 students, following FG's order:
+     explain -> perform -> OOC info -> each student casts -> reminder. */
+  .teaching-panel{
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--gold);
+    border-radius:var(--radius-lg);
+    padding:26px 30px 30px;
+    box-shadow:inset 3px 0 0 var(--gold), var(--shadow-soft);
+  }
+  .teaching-panel-header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+    margin-bottom:20px;
+    padding-bottom:14px;
+    border-bottom:1px solid var(--hairline);
+  }
+  .teaching-panel-title{
+    font-family:'Cinzel', Garamond, serif;
+    font-size:22px;
+    font-weight:700;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--gold-bright);
+    margin-bottom:4px;
+  }
+  .teaching-panel-sub{font-size:15px;color:var(--parchment-dim);}
+  .teaching-new-lesson-btn{
+    background:transparent;
+    border:1px solid var(--hairline);
+    color:var(--parchment-dim);
+    font-family:'Crimson Pro',serif;
+    font-size:15px;
+    padding:9px 16px;
+    border-radius:var(--radius-sm);
+    cursor:pointer;
+    transition:all .15s;
+    white-space:nowrap;
+  }
+  .teaching-new-lesson-btn:hover{border-color:var(--gold);color:var(--light-accent);}
+  .teaching-checklist{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    counter-reset:teaching-step;
+  }
+  .teaching-checklist > li{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .teaching-check-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    cursor:pointer;
+    padding:10px 14px;
+    border:1px solid var(--hairline);
+    border-radius:var(--radius-sm);
+    background:rgba(0,0,0,0.12);
+    transition:border-color .15s, background .15s;
+  }
+  .teaching-check-row:hover{border-color:var(--gold);}
+  .teaching-check-row input[type=checkbox]{width:20px;height:20px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;}
+  .teaching-check-row span{font-size:18px;color:var(--parchment);}
+  .teaching-check-row:has(input:checked){border-color:var(--ok);background:rgba(120,170,120,0.1);}
+  .teaching-check-row:has(input:checked) span{color:var(--parchment-dim);text-decoration:line-through;text-decoration-color:var(--ok);}
+  .teaching-check-row.missing{border-color:var(--danger);background:rgba(200,90,90,0.14);box-shadow:0 0 0 1px var(--danger);}
+  .teaching-student-row.missing td{background:rgba(200,90,90,0.14) !important;}
+  .teaching-spell-slot.missing{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger);}
+  #class-spell-slots.missing{border:2px solid var(--danger);border-radius:var(--radius-md);box-shadow:0 0 0 1px var(--danger);padding:10px;}
+  .teaching-students-label{font-size:15px;letter-spacing:0.09em;text-transform:uppercase;color:var(--gold);margin-bottom:2px;}
+  .teaching-student-table-wrap{overflow-x:auto;}
+  .teaching-student-table{width:100%;border-collapse:collapse;min-width:760px;}
+  .teaching-student-table th{
+    font-size:13px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--parchment-dim);
+    text-align:center;
+    padding:6px 8px;
+    border-bottom:1px solid var(--hairline);
+  }
+  .teaching-student-table .teaching-col-name{text-align:left;}
+  .teaching-student-table td{padding:6px 8px;border-bottom:1px solid var(--hairline);text-align:center;}
+  .teaching-student-table td.teaching-col-num{color:var(--parchment-dim);font-size:14px;}
+  .teaching-student-table td.teaching-col-name{text-align:left;}
+  .teaching-student-table input[type=text]{
+    width:100%;
+    background:var(--panel);
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    padding:6px 8px;
+    border-radius:6px;
+    font-family:'Crimson Pro',serif;
+    font-size:16px;
+    box-sizing:border-box;
+  }
+  .teaching-student-table input[type=checkbox]{width:19px;height:19px;accent-color:var(--gold);cursor:pointer;}
+  .teaching-student-row.done td{background:rgba(120,170,120,0.08);}
+  .teaching-student-row.done input[type=text]{border-color:var(--ok);}
+  .teaching-col-done{width:60px;}
+  .teaching-done-check{color:var(--ok);font-size:18px;visibility:hidden;}
+  .teaching-col-remove{width:36px;}
+  .teaching-remove-student-btn{
+    background:transparent;
+    border:1px solid var(--hairline);
+    color:var(--parchment-dim);
+    border-radius:6px;
+    width:26px;
+    height:26px;
+    cursor:pointer;
+    font-size:13px;
+    transition:all .15s;
+  }
+  .teaching-remove-student-btn:hover{border-color:var(--danger);color:var(--danger);}
+  .teaching-student-count-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-top:10px;
+  }
+  .teaching-student-count-label{font-size:14px;color:var(--parchment-dim);font-style:italic;}
+  .teaching-student-row.done .teaching-done-check{visibility:visible;}
+  .teaching-segment-row{
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .teaching-segment-num{
+    font-size:13px;
+    color:var(--parchment-dim);
+    padding-top:9px;
+    flex-shrink:0;
+    width:26px;
+  }
+  .teaching-segment-row .grow-wrap{flex:1;}
+  .teaching-segment-row textarea{width:100%;font-size:16px;}
+  .teaching-segment-count{
+    font-size:12px;
+    color:var(--parchment-dim);
+    flex-shrink:0;
+    padding-top:9px;
+    width:56px;
+    text-align:right;
+  }
+  .teaching-segment-remove{
+    background:transparent;
+    border:1px solid var(--hairline);
+    color:var(--parchment-dim);
+    border-radius:6px;
+    width:28px;
+    height:28px;
+    flex-shrink:0;
+    cursor:pointer;
+    margin-top:4px;
+  }
+  .teaching-segment-remove:hover{border-color:var(--danger);color:var(--danger);}
+
+  .teaching-spell-slot{
+    border:1px solid var(--hairline);
+    border-radius:var(--radius-md);
+    padding:12px 14px 14px;
+    margin-bottom:14px;
+    background:rgba(0,0,0,0.1);
+  }
+  .teaching-spell-slot-header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
+  .teaching-spell-slot-header label{font-size:14px;letter-spacing:0.06em;text-transform:uppercase;color:var(--gold);flex-shrink:0;}
+  .teaching-spell-slot-header select{
+    flex:1;
+    min-width:200px;
+    background:var(--panel);
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    padding:8px 10px;
+    border-radius:6px;
+    font-family:'Crimson Pro',serif;
+    font-size:16px;
+  }
+  .teaching-spell-slot-body{display:flex;flex-direction:column;gap:10px;}
+  .teaching-ref-block{
+    background:rgba(0,0,0,0.16);
+    border:1px dashed var(--hairline);
+    border-radius:8px;
+    padding:10px 12px;
+  }
+  .teaching-ref-label{font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:var(--parchment-dim);margin-bottom:4px;}
+  .teaching-ref-segment{display:flex;gap:8px;margin-bottom:4px;font-size:15px;color:var(--parchment);line-height:1.4;}
+  .teaching-ref-num{color:var(--gold);flex-shrink:0;font-size:13px;padding-top:2px;}
+  .teaching-ref-empty{font-size:14px;color:var(--parchment-dim);font-style:italic;}
+  .teaching-link-select{
+    width:100%;
+    margin-bottom:4px;
+    background:var(--panel);
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    padding:5px 6px;
+    border-radius:6px;
+    font-family:'Crimson Pro',serif;
+    font-size:14px;
+  }
+  .teaching-panel-footer{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-top:20px;
+    padding-top:14px;
+    border-top:1px solid var(--hairline);
+  }
+  .teaching-save-status{font-size:14px;color:var(--parchment-dim);font-style:italic;margin-right:auto;}
+  .teaching-complete-btn{
+    background:var(--gold);
+    border:1px solid var(--gold);
+    color:#1a1408;
+    font-family:'Crimson Pro',serif;
+    font-weight:700;
+    font-size:15px;
+    padding:9px 18px;
+    border-radius:var(--radius-sm);
+    cursor:pointer;
+    transition:box-shadow .15s;
+  }
+  .teaching-complete-btn:hover{box-shadow:0 0 0 3px rgba(201,160,84,0.25);}
+  .class-log-entry{
+    border:1px solid var(--hairline);
+    border-radius:var(--radius-md);
+    padding:12px 14px;
+    margin-bottom:12px;
+    background:rgba(0,0,0,0.1);
+  }
+  .class-log-entry-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+  .class-log-entry-head strong{font-size:17px;color:var(--light-accent);}
+  .class-log-status{font-size:12.5px;letter-spacing:0.04em;padding:2px 8px;border-radius:10px;margin-left:10px;}
+  .class-log-status.completed{background:rgba(120,170,120,0.18);color:var(--ok);}
+  .class-log-status.draft{background:rgba(201,160,84,0.15);color:var(--gold);}
+  .class-log-detail{font-size:15px;color:var(--parchment-dim);margin-bottom:2px;}
+  .class-log-label{color:var(--parchment);font-weight:600;}
+
   .stat-row{
     display:flex;
     flex-wrap:wrap;
@@ -2436,6 +2684,7 @@
     <button type="button" class="view-toggle-btn active" id="view-toggle-spells" onclick="switchView('spells')">📖 Spells</button>
     <button type="button" class="view-toggle-btn" id="view-toggle-warrior" onclick="switchView('warrior')">⚔ Warrior Skills</button>
     <button type="button" class="view-toggle-btn" id="view-toggle-crafting" onclick="switchView('crafting')">🔨 Crafting</button>
+    <button type="button" class="view-toggle-btn" id="view-toggle-teaching" onclick="switchView('teaching')" style="display:none;">🎓 Teaching</button>
   </div>
 
   <div id="spell-view">
@@ -2615,8 +2864,89 @@
     <div class="grid" id="craft-grid"></div>
   </div><!-- /#crafting-view -->
 
+  <!-- TEACHING (restricted role, see checkTeacherStatus/isTeacher) — a
+       "class" holds a date/time, the spells taught (up to
+       CLASS_SETTINGS.maxSpellsPerClass, editor-configurable — see
+       "⚙ Manage Class Settings"), and up to 10 students who each either
+       link to a real character sheet or just get a typed name (for
+       players who don't use this tracker). Saved to the cloud (classes +
+       class_students tables) — see saveClassDraft()/completeClass() —
+       so the class log is a shared record across every teacher, not a
+       personal local note. -->
+  <div id="teaching-view" style="display:none;">
+
+    <div class="teaching-panel" id="teaching-editor-panel">
+      <div class="teaching-panel-header">
+        <div>
+          <div class="teaching-panel-title" id="teaching-editor-title">🎓 New Class</div>
+          <div class="teaching-panel-sub">Up to <strong id="teaching-max-spells-label">2</strong> spells per class right now. <button type="button" class="mini-admin-link always-enabled" id="class-settings-admin-link" style="display:none;" onclick="openClassSettingsModal()">⚙ Manage Class Settings</button></div>
+        </div>
+        <button type="button" class="teaching-new-lesson-btn" onclick="startNewClass()">🆕 New Class</button>
+      </div>
+
+      <div class="cs-inline-row" style="margin-bottom:20px;">
+        <div class="charsheet-field">
+          <label for="class-date">Date</label>
+          <input type="date" id="class-date" onchange="onClassFieldChange()">
+        </div>
+        <div class="charsheet-field">
+          <label for="class-start-time">Start Time</label>
+          <input type="time" id="class-start-time" onchange="onClassFieldChange()">
+        </div>
+      </div>
+
+      <div id="class-spell-slots"></div>
+
+      <div class="teaching-students-label" style="margin-top:22px;">Students <span class="modal-hint" style="text-transform:none;letter-spacing:0;">(link a character sheet, or just type a name for players who don't use this site)</span></div>
+      <div class="teaching-student-table-wrap">
+        <table class="teaching-student-table" id="class-student-table">
+          <thead id="class-student-thead"></thead>
+          <tbody id="class-student-rows"></tbody>
+        </table>
+      </div>
+      <div class="teaching-student-count-row">
+        <button type="button" class="teaching-new-lesson-btn" id="class-add-student-btn" onclick="addClassStudentSlot()">+ Add Student</button>
+        <span id="class-student-count-label" class="teaching-student-count-label"></span>
+      </div>
+
+      <div class="teaching-panel-footer">
+        <span id="class-save-status" class="teaching-save-status"></span>
+        <button type="button" class="teaching-new-lesson-btn" onclick="deleteCurrentClass()" id="class-delete-btn" style="display:none;">🗑 Delete Class</button>
+        <button type="button" class="teaching-new-lesson-btn" onclick="saveClassDraft()">💾 Save Draft</button>
+        <button type="button" class="teaching-complete-btn" onclick="completeClass()">✅ Complete Class</button>
+      </div>
+    </div>
+
+    <div class="teaching-panel" style="margin-top:24px;">
+      <div class="teaching-panel-header">
+        <div>
+          <div class="teaching-panel-title">📜 Class Log</div>
+          <div class="teaching-panel-sub">Every teacher's past (and in-progress) classes.</div>
+        </div>
+      </div>
+      <div id="class-log-list"></div>
+    </div>
+
+  </div><!-- /#teaching-view -->
+
   <footer>Progress saves automatically to your local storage. Cloud saving of your character sheet only happens when you click "Save to Cloud Now" while logged in. Spell descriptions, tags, costs and damage are shared reference data stored centrally in the cloud for everyone using this tracker; only designated editors can change them (click a spell name to view or, if you're an editor, edit it).</footer>
 
+</div>
+
+<div id="class-settings-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeClassSettingsModal()">
+  <div class="modal-box" style="max-width:420px;">
+    <button class="modal-close" onclick="closeClassSettingsModal()">✕</button>
+    <h2>Manage Class Settings</h2>
+    <p class="modal-subtitle">Normally 2 spells are taught per class. Raise this temporarily (e.g. during an RP event) and lower it back when things return to normal.</p>
+    <label style="display:block;margin-top:10px;">Max Spells per Class
+      <input type="number" id="class-settings-max-spells" min="1" max="10" step="1" style="width:100%;margin-top:6px;">
+    </label>
+    <p id="class-settings-status" style="font-size:13px;color:var(--parchment-dim);font-style:italic;min-height:1.2em;margin-top:10px;"></p>
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button type="button" onclick="closeClassSettingsModal()">Cancel</button>
+      <button type="button" onclick="saveClassSettings()">Save</button>
+    </div>
+  </div>
 </div>
 
 <div id="spell-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeSpellModal()">
@@ -2750,6 +3080,20 @@
     <div class="modal-section">
       <label class="modal-label">Description</label>
       <div class="grow-wrap"><textarea id="modal-desc" rows="5" placeholder="What does this spell do?"></textarea></div>
+    </div>
+
+    <div class="modal-section teaching-info-section" id="teaching-info-section" style="display:none;">
+      <label class="modal-label">Teaching Info <span class="modal-hint">(for the 🎓 Teaching class tool — editors &amp; this school's Oracle only)</span></label>
+
+      <label class="modal-label" style="font-size:14px;margin-top:10px;">Teacher Emote <span class="modal-hint">(split into chunks of up to 400 characters — the chat input limit in-game)</span></label>
+      <div id="teach-emote-segments"></div>
+      <button type="button" class="ee-add-btn" id="teach-add-emote-btn" onclick="addTeachingSegment('emote')">+ Add Emote Chunk</button>
+
+      <label class="modal-label" style="font-size:14px;margin-top:14px;">OOC Info <span class="modal-hint">(same idea — split into 400-character chunks)</span></label>
+      <div id="teach-ooc-segments"></div>
+      <button type="button" class="ee-add-btn" id="teach-add-ooc-btn" onclick="addTeachingSegment('ooc')">+ Add OOC Chunk</button>
+
+      <p id="teaching-info-status" style="font-size:13px;color:var(--parchment-dim);font-style:italic;min-height:1.2em;margin-top:8px;"></p>
     </div>
 
     <p id="modal-readonly-hint" class="modal-hint" style="display:none;color:var(--danger);">
@@ -3651,7 +3995,7 @@ async function checkSpellEditorStatus(){
   isWsEditor = false;
   isCraftEditor = false;
   oracleSchools = new Set();
-  if(!currentUser){ updateTagGroupsButtonVisibility(); updateSchoolAdminButtonVisibility(); updateDisciplineAdminButtonVisibility(); updateRaceAdminLinksVisibility(); updateRankAdminLinksVisibility(); updateCharsheetLayoutAdminLinkVisibility(); return; }
+  if(!currentUser){ updateTagGroupsButtonVisibility(); updateSchoolAdminButtonVisibility(); updateDisciplineAdminButtonVisibility(); updateRaceAdminLinksVisibility(); updateRankAdminLinksVisibility(); updateCharsheetLayoutAdminLinkVisibility(); updateClassSettingsAdminLinkVisibility(); return; }
   try{
     const { data, error } = await supabaseClient
       .from('spell_editors')
@@ -3689,6 +4033,7 @@ async function checkSpellEditorStatus(){
   updateRaceAdminLinksVisibility();
   updateRankAdminLinksVisibility();
   updateCharsheetLayoutAdminLinkVisibility();
+  updateClassSettingsAdminLinkVisibility();
   render();
   if(currentView === 'warrior') renderWarrior();
   if(currentView === 'crafting') renderCrafting();
@@ -3762,6 +4107,586 @@ function updatePregnancyPanelVisibility(){
   const panel = document.getElementById('pregnancy-panel');
   if(panel) panel.style.display = isPregnancyViewer ? '' : 'none';
   if(!isPregnancyViewer) stopPregnancyCountdown();
+}
+
+/* ---------- TEACHER ROLE (restricted, separate table — see teachers_setup.sql) ----------
+   Grants the "🎓 Teaching" view: create/run a class (date, time, the
+   spells being taught, and up to 10 students) and see the shared log of
+   past classes — see classes_setup.sql and the Classes section below.
+   This check only answers "is this person a teacher?". */
+let isTeacher = false;
+
+async function checkTeacherStatus(){
+  isTeacher = false;
+  if(!currentUser){ updateTeacherNavVisibility(); return; }
+  try{
+    const { data, error } = await supabaseClient
+      .from('teachers')
+      .select('user_id')
+      .eq('user_id', currentUser.id)
+      .maybeSingle();
+    if(!error && data) isTeacher = true;
+  }catch(e){ console.error('[teacher] role check failed:', e); }
+  updateTeacherNavVisibility();
+}
+
+function updateTeacherNavVisibility(){
+  const btn = document.getElementById('view-toggle-teaching');
+  if(btn) btn.style.display = isTeacher ? '' : 'none';
+  if(!isTeacher && currentView === 'teaching'){ switchView('spells'); return; }
+  if(isTeacher && currentView === 'teaching') renderTeachingPanel();
+}
+
+/* ---------- CLASS SETTINGS (max spells per class — editor configurable) ---------- */
+let CLASS_SETTINGS = { maxSpellsPerClass: 2 };
+
+async function loadClassSettings(){
+  try{
+    const { data, error } = await supabaseClient.from('class_settings').select('*').eq('id', 1).maybeSingle();
+    if(!error && data && typeof data.max_spells_per_class === 'number'){
+      CLASS_SETTINGS.maxSpellsPerClass = data.max_spells_per_class;
+    }
+  }catch(e){ console.error('Could not load class settings from cloud (using fallback of 2):', e); }
+  const label = document.getElementById('teaching-max-spells-label');
+  if(label) label.textContent = CLASS_SETTINGS.maxSpellsPerClass;
+}
+
+function canManageClassSettings(){ return isSpellEditor; }
+function updateClassSettingsAdminLinkVisibility(){
+  const el = document.getElementById('class-settings-admin-link');
+  if(el) el.style.display = canManageClassSettings() ? '' : 'none';
+}
+
+window.openClassSettingsModal = function(){
+  if(!canManageClassSettings()) return;
+  document.getElementById('class-settings-max-spells').value = CLASS_SETTINGS.maxSpellsPerClass;
+  document.getElementById('class-settings-status').textContent = '';
+  document.getElementById('class-settings-modal-backdrop').classList.add('open');
+};
+window.closeClassSettingsModal = function(){
+  document.getElementById('class-settings-modal-backdrop').classList.remove('open');
+};
+window.saveClassSettings = async function(){
+  if(!canManageClassSettings()) return;
+  const val = Math.max(1, Math.min(10, parseInt(document.getElementById('class-settings-max-spells').value, 10) || 2));
+  const statusEl = document.getElementById('class-settings-status');
+  statusEl.textContent = 'Saving...';
+  try{
+    const { error } = await supabaseClient.from('class_settings').update({ max_spells_per_class: val }).eq('id', 1);
+    if(error) throw error;
+    CLASS_SETTINGS.maxSpellsPerClass = val;
+    const label = document.getElementById('teaching-max-spells-label');
+    if(label) label.textContent = val;
+    closeClassSettingsModal();
+  }catch(e){
+    statusEl.textContent = 'Error: ' + (e.message || e);
+  }
+};
+
+/* ---------- CLASSES (the 🎓 Teaching view) ----------
+   currentClass is the class currently being created/edited — a plain
+   in-memory object mirroring the classes+class_students cloud rows (see
+   classRowToObject()/saveClassDraft()). Autosaves (debounced) on every
+   change so nothing is lost, plus an explicit "💾 Save Draft" button. */
+let currentClass = null;
+let classAutosaveTimer = null;
+
+function newClassObject(){
+  return {
+    id: null,
+    startsAtISO: null, // absolute point in time (UTC, stored as an ISO string) — see combineLocalDateTimeToISO()/formatClassDateTimeLocal()
+    spellIds: Array.from({ length: CLASS_SETTINGS.maxSpellsPerClass }, () => null),
+    spellProgress: {},
+    status: 'draft',
+    studentCount: 1, // how many of the 10 slots are currently shown — see addClassStudentSlot()/removeClassStudentSlot()
+    students: Array.from({ length: 10 }, () => ({ linkedUserId: null, displayName: '', progress: {} })),
+  };
+}
+
+function classRowToObject(c, studentRows){
+  const slotCount = Math.max(CLASS_SETTINGS.maxSpellsPerClass, (c.spell_ids || []).length);
+  const students = Array.from({ length: 10 }, (_, i) => {
+    const row = (studentRows || []).find(s => s.slot_index === i);
+    return row
+      ? { linkedUserId: row.linked_user_id || null, displayName: row.display_name || '', progress: row.progress || {} }
+      : { linkedUserId: null, displayName: '', progress: {} };
+  });
+  // Show exactly as many rows as have an actual student in them (so an
+  // old/small class doesn't reopen showing 10 empty-looking rows), with a
+  // floor of 1 so there's always at least one row to fill in.
+  let filledCount = 0;
+  students.forEach((s, i) => { if(s.linkedUserId || (s.displayName && s.displayName.trim())) filledCount = i + 1; });
+  return {
+    id: c.id,
+    startsAtISO: c.starts_at || null,
+    spellIds: Array.from({ length: slotCount }, (_, i) => (c.spell_ids || [])[i] || null),
+    spellProgress: c.spell_progress || {},
+    status: c.status || 'draft',
+    studentCount: Math.max(1, filledCount),
+    students,
+  };
+}
+
+/* ---------- TIMEZONE HANDLING ----------
+   The date/time picker inputs are always read/written in whoever's
+   currently looking at the screen local time — but what's actually
+   stored (and sent to the database) is a single absolute instant
+   (starts_at, a UTC timestamptz), built from that local wall-clock time
+   via the browser's own timezone offset (new Date(y,m,d,h,min) does this
+   automatically). That's what makes it "just work" for everyone: a
+   viewer in a different timezone gets the same ISO instant back and their
+   own browser converts it to THEIR local time when displaying it —
+   nobody has to think about UTC or timezones at all. */
+function combineLocalDateTimeToISO(dateStr, timeStr){
+  if(!dateStr || !timeStr) return null;
+  const [y, mo, d] = dateStr.split('-').map(Number);
+  const [h, mi] = timeStr.split(':').map(Number);
+  if([y, mo, d, h, mi].some(n => Number.isNaN(n))) return null;
+  return new Date(y, mo - 1, d, h, mi).toISOString();
+}
+// Splits a stored ISO instant back into the LOCAL date/time strings the
+// date/time <input> elements expect, for whoever is currently editing.
+function isoToLocalDateTimeParts(iso){
+  if(!iso) return { date: '', time: '' };
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return { date: '', time: '' };
+  const pad = n => String(n).padStart(2, '0');
+  return {
+    date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+    time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+  };
+}
+// For display in the log — formatted in whoever's viewing it's own local
+// time/timezone, with the timezone abbreviation shown so it's unambiguous.
+function formatClassDateTimeLocal(iso){
+  if(!iso) return 'No date/time set';
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return 'No date/time set';
+  const datePart = d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  const timePart = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+  return `${datePart} · ${timePart}`;
+}
+
+function scheduleClassAutosave(){
+  clearTimeout(classAutosaveTimer);
+  classAutosaveTimer = setTimeout(() => saveClassDraftCore(true), 1200);
+}
+
+async function saveClassDraftCore(silent){
+  if(!currentUser || !currentClass) return;
+  const statusEl = document.getElementById('class-save-status');
+  if(statusEl && !silent) statusEl.textContent = 'Saving...';
+  try{
+    const payload = {
+      starts_at: currentClass.startsAtISO || null,
+      teacher_user_id: currentUser.id,
+      teacher_name: (state.charInfo && state.charInfo.name) ? state.charInfo.name : (currentUser.email || 'Unknown'),
+      spell_ids: currentClass.spellIds.filter(Boolean),
+      spell_progress: currentClass.spellProgress,
+      status: currentClass.status || 'draft',
+    };
+    if(currentClass.status === 'completed') payload.completed_at = new Date().toISOString();
+    if(currentClass.id){
+      const { error } = await supabaseClient.from('classes').update(payload).eq('id', currentClass.id);
+      if(error) throw error;
+    } else {
+      const { data, error } = await supabaseClient.from('classes').insert(payload).select().single();
+      if(error) throw error;
+      currentClass.id = data.id;
+      const delBtn = document.getElementById('class-delete-btn');
+      if(delBtn) delBtn.style.display = '';
+    }
+    await saveClassStudentsToCloud();
+    if(statusEl) statusEl.textContent = 'Saved ' + new Date().toLocaleTimeString();
+    loadClassLog();
+  }catch(e){
+    console.error(e);
+    if(statusEl) statusEl.textContent = 'Error saving: ' + (e.message || e);
+  }
+}
+
+async function saveClassStudentsToCloud(){
+  if(!currentClass.id) return;
+  const rows = currentClass.students.map((s, i) => ({
+    class_id: currentClass.id,
+    slot_index: i,
+    linked_user_id: s.linkedUserId || null,
+    display_name: s.displayName || '',
+    progress: s.progress || {},
+  }));
+  try{
+    const { error } = await supabaseClient.from('class_students').upsert(rows, { onConflict: 'class_id,slot_index' });
+    if(error) console.error(error);
+  }catch(e){ console.error(e); }
+}
+
+window.startNewClass = function(){
+  currentClass = newClassObject();
+  renderClassEditor();
+};
+
+window.saveClassDraft = function(){ saveClassDraftCore(false); };
+
+/* ---------- CLASS COMPLETION VALIDATION ----------
+   "Complete Class" is blocked unless every checkbox that matters is
+   ticked: every selected spell's explain/perform/OOC-shown, every named
+   student's cast/roll/success/stats-posted for every spell taught, and
+   the final screenshot reminder. Anything missing gets highlighted red
+   right where it is, and the page scrolls to the first one, instead of
+   silently letting a teacher forget a step. */
+function getIncompleteClassItems(){
+  const issues = [];
+  const activeSpells = currentClass.spellIds.filter(Boolean);
+  if(!activeSpells.length){
+    issues.push({ type: 'nospells' });
+    return issues;
+  }
+  activeSpells.forEach(spellId => {
+    const p = currentClass.spellProgress[spellId] || {};
+    if(!p.explained || !p.performed || !p.oocShown || !p.reminderDone){
+      issues.push({ type: 'spell', spellId, slotIndex: currentClass.spellIds.indexOf(spellId) });
+    }
+  });
+  const visibleCount = Math.max(1, Math.min(10, currentClass.studentCount || 1));
+  for(let i = 0; i < visibleCount; i++){
+    const s = currentClass.students[i];
+    const hasStudent = s.linkedUserId || (s.displayName && s.displayName.trim());
+    if(!hasStudent) continue;
+    const incomplete = activeSpells.some(id => {
+      const p = s.progress[id] || {};
+      return !p.cast || !p.roll || !p.success || !p.statsPosted;
+    });
+    if(incomplete) issues.push({ type: 'student', slotIndex: i });
+  }
+  return issues;
+}
+
+function clearClassValidationHighlights(){
+  document.querySelectorAll('.teaching-check-row.missing').forEach(el => el.classList.remove('missing'));
+  document.querySelectorAll('.teaching-student-row.missing').forEach(el => el.classList.remove('missing'));
+  const wrap = document.getElementById('class-spell-slots');
+  if(wrap) wrap.classList.remove('missing');
+}
+
+function highlightClassValidationIssues(issues){
+  let firstEl = null;
+  issues.forEach(issue => {
+    if(issue.type === 'spell'){
+      const bodyEl = document.getElementById('class-spell-slot-body-' + issue.slotIndex);
+      const p = currentClass.spellProgress[issue.spellId] || {};
+      if(bodyEl){
+        bodyEl.querySelectorAll('.teaching-check-row').forEach(row => {
+          const cb = row.querySelector('input[type=checkbox]');
+          if(cb && !cb.checked){
+            row.classList.add('missing');
+            if(!firstEl) firstEl = row;
+          }
+        });
+      }
+    } else if(issue.type === 'student'){
+      const row = document.getElementById('class-student-row-' + issue.slotIndex);
+      if(row){ row.classList.add('missing'); if(!firstEl) firstEl = row; }
+    } else if(issue.type === 'nospells'){
+      const wrap = document.getElementById('class-spell-slots');
+      if(wrap){ wrap.classList.add('missing'); if(!firstEl) firstEl = wrap; }
+    }
+  });
+  if(firstEl) firstEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+window.completeClass = async function(){
+  if(!currentClass) return;
+  clearClassValidationHighlights();
+  const issues = getIncompleteClassItems();
+  if(issues.length){
+    highlightClassValidationIssues(issues);
+    if(issues.length === 1 && issues[0].type === 'nospells'){
+      alert("Pick at least one spell before completing this class.");
+    } else {
+      alert(`This class isn't fully checked off yet — ${issues.length} step${issues.length === 1 ? '' : 's'} still missing (highlighted in red below).`);
+    }
+    return;
+  }
+  if(!confirm('Mark this class as completed and move it to the Class Log?')) return;
+  currentClass.status = 'completed';
+  await saveClassDraftCore(true);
+  alert('Class marked as completed!');
+  startNewClass();
+};
+
+window.deleteCurrentClass = async function(){
+  if(!currentClass || !currentClass.id) return;
+  if(!confirm('Delete this class permanently? This cannot be undone.')) return;
+  try{
+    const { error } = await supabaseClient.from('classes').delete().eq('id', currentClass.id);
+    if(error) throw error;
+  }catch(e){ alert('Could not delete: ' + (e.message || e)); return; }
+  currentClass = newClassObject();
+  renderClassEditor();
+  loadClassLog();
+};
+
+window.onClassFieldChange = function(){
+  const dateVal = document.getElementById('class-date').value;
+  const timeVal = document.getElementById('class-start-time').value;
+  currentClass.startsAtISO = combineLocalDateTimeToISO(dateVal, timeVal);
+  scheduleClassAutosave();
+};
+
+function buildSpellOptionsHtml(selectedId){
+  let html = `<option value="">— Select Spell —</option>`;
+  SCHOOLS.forEach(sch => {
+    html += `<optgroup label="${escapeHtml(sch.name)}">`;
+    sch.groups.forEach(g => g.spells.forEach(sp => {
+      html += `<option value="${sp.id}" ${sp.id === selectedId ? 'selected' : ''}>${escapeHtml(sp.latin)} (${escapeHtml(sp.en)})</option>`;
+    }));
+    html += `</optgroup>`;
+  });
+  return html;
+}
+
+function renderClassSpellSlots(){
+  const wrap = document.getElementById('class-spell-slots');
+  if(!wrap || !currentClass) return;
+  wrap.innerHTML = currentClass.spellIds.map((spellId, i) => `
+    <div class="teaching-spell-slot">
+      <div class="teaching-spell-slot-header">
+        <label>Spell #${i + 1}</label>
+        <select onchange="onClassSpellSlotChange(${i}, this.value)">${buildSpellOptionsHtml(spellId)}</select>
+      </div>
+      <div class="teaching-spell-slot-body" id="class-spell-slot-body-${i}"></div>
+    </div>`).join('');
+  currentClass.spellIds.forEach((spellId, i) => renderClassSpellSlotBody(i));
+}
+
+async function renderClassSpellSlotBody(i){
+  const bodyEl = document.getElementById('class-spell-slot-body-' + i);
+  if(!bodyEl || !currentClass) return;
+  const spellId = currentClass.spellIds[i];
+  if(!spellId){ bodyEl.innerHTML = ''; return; }
+  const progress = currentClass.spellProgress[spellId] || { explained: false, performed: false, oocShown: false, reminderDone: false };
+  const info = await getTeachingInfoForSpell(spellId);
+  const renderRef = (segs, emptyLabel) => segs.length
+    ? segs.map((s, idx) => `<div class="teaching-ref-segment"><span class="teaching-ref-num">#${idx + 1}</span><span>${escapeHtml(s)}</span></div>`).join('')
+    : `<p class="teaching-ref-empty">${emptyLabel}</p>`;
+  bodyEl.innerHTML = `
+    <div class="teaching-ref-block">
+      <div class="teaching-ref-label">Teacher Emote</div>
+      ${renderRef(info.teacherEmoteSegments, 'No teacher emote written for this spell yet — an editor or this school\'s Oracle can add it from the spell\'s modal.')}
+      <div class="teaching-ref-label" style="margin-top:8px;">OOC Info</div>
+      ${renderRef(info.oocInfoSegments, 'No OOC info written for this spell yet.')}
+    </div>
+    <label class="teaching-check-row"><input type="checkbox" ${progress.explained ? 'checked' : ''} onchange="onClassSpellStepChange('${spellId}','explained',this)"><span>Teacher explains the spell</span></label>
+    <label class="teaching-check-row"><input type="checkbox" ${progress.performed ? 'checked' : ''} onchange="onClassSpellStepChange('${spellId}','performed',this)"><span>Teacher performs the spell</span></label>
+    <label class="teaching-check-row"><input type="checkbox" ${progress.oocShown ? 'checked' : ''} onchange="onClassSpellStepChange('${spellId}','oocShown',this)"><span>OOC information about the spell gets shown</span></label>
+    <label class="teaching-check-row"><input type="checkbox" ${progress.reminderDone ? 'checked' : ''} onchange="onClassSpellStepChange('${spellId}','reminderDone',this)"><span>Teacher reminds the students to save the screenshots of their success for this spell and add it to their sheet in Discord <span class="modal-hint" style="text-transform:none;letter-spacing:0;">(check once students below have finished this spell)</span></span></label>`;
+}
+
+window.onClassSpellSlotChange = function(idx, spellId){
+  currentClass.spellIds[idx] = spellId || null;
+  renderClassSpellSlotBody(idx);
+  renderClassStudentTable(); // columns depend on which spells are currently chosen
+  scheduleClassAutosave();
+};
+window.onClassSpellStepChange = function(spellId, field, el){
+  if(!currentClass.spellProgress[spellId]) currentClass.spellProgress[spellId] = { explained: false, performed: false, oocShown: false };
+  currentClass.spellProgress[spellId][field] = el.checked;
+  const row = el.closest('.teaching-check-row');
+  if(row) row.classList.remove('missing');
+  const wrap = document.getElementById('class-spell-slots');
+  if(wrap) wrap.classList.remove('missing');
+  scheduleClassAutosave();
+};
+
+function renderClassStudentTable(){
+  if(!currentClass) return;
+  const thead = document.getElementById('class-student-thead');
+  const tbody = document.getElementById('class-student-rows');
+  if(!thead || !tbody) return;
+  const spellCols = currentClass.spellIds.filter(Boolean).map(id => { const sp = SPELL_INDEX[id]; return { id, label: sp ? sp.latin : id }; });
+
+  thead.innerHTML = `
+    <tr>
+      <th class="teaching-col-num" rowspan="2">#</th>
+      <th class="teaching-col-name" rowspan="2">Student</th>
+      ${spellCols.length ? spellCols.map(c => `<th colspan="4">${escapeHtml(c.label)}</th>`).join('') : '<th rowspan="2">Pick a spell above</th>'}
+      <th class="teaching-col-done" rowspan="2">Done</th>
+      <th class="teaching-col-remove" rowspan="2"></th>
+    </tr>
+    <tr>${spellCols.map(() => `<th>Cast</th><th>Roll</th><th>Success</th><th>Stats Posted</th>`).join('')}</tr>`;
+
+  const charOptions = (globalOtherSheetsData || []).map(r => ({
+    id: r.user_id,
+    name: (r.data && r.data.charInfo && r.data.charInfo.name) ? r.data.charInfo.name.trim() : 'Unnamed Character',
+  })).sort((a, b) => a.name.localeCompare(b.name));
+
+  const visibleCount = Math.max(1, Math.min(10, currentClass.studentCount || 1));
+  tbody.innerHTML = currentClass.students.slice(0, visibleCount).map((s, i) => {
+    const allDone = spellCols.length > 0 && spellCols.every(c => s.progress[c.id] && s.progress[c.id].cast && s.progress[c.id].roll && s.progress[c.id].success && s.progress[c.id].statsPosted);
+    const linkOptionsHtml = `<option value="">— Not Linked —</option>` + charOptions.map(c => `<option value="${c.id}" ${c.id === s.linkedUserId ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('');
+    const spellCellsHtml = spellCols.length ? spellCols.map(c => {
+      const p = s.progress[c.id] || { cast: false, roll: false, success: false, statsPosted: false };
+      return `<td><input type="checkbox" ${p.cast ? 'checked' : ''} onchange="onClassStudentProgressChange(${i},'${c.id}','cast',this.checked)"></td>
+              <td><input type="checkbox" ${p.roll ? 'checked' : ''} onchange="onClassStudentProgressChange(${i},'${c.id}','roll',this.checked)"></td>
+              <td><input type="checkbox" ${p.success ? 'checked' : ''} onchange="onClassStudentProgressChange(${i},'${c.id}','success',this.checked)"></td>
+              <td><input type="checkbox" ${p.statsPosted ? 'checked' : ''} onchange="onClassStudentProgressChange(${i},'${c.id}','statsPosted',this.checked)" title="Student posted a screenshot of their success and added it to their sheet in Discord"></td>`;
+    }).join('') : '<td>—</td>';
+    return `<tr class="teaching-student-row${allDone ? ' done' : ''}" id="class-student-row-${i}">
+      <td class="teaching-col-num">${i + 1}</td>
+      <td class="teaching-col-name">
+        <select class="teaching-link-select" onchange="onClassStudentLinkChange(${i}, this.value)">${linkOptionsHtml}</select>
+        <input type="text" value="${escapeHtml(s.displayName)}" placeholder="Name..." ${s.linkedUserId ? 'disabled' : ''} oninput="onClassStudentNameChange(${i}, this.value)">
+      </td>
+      ${spellCellsHtml}
+      <td class="teaching-col-done"><span class="teaching-done-check">✓</span></td>
+      <td class="teaching-col-remove"><button type="button" class="teaching-remove-student-btn" title="Remove this student row" onclick="removeClassStudentSlot(${i})">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  updateClassStudentCountControls();
+}
+
+function updateClassStudentCountControls(){
+  const addBtn = document.getElementById('class-add-student-btn');
+  const countLabel = document.getElementById('class-student-count-label');
+  const visibleCount = Math.max(1, Math.min(10, currentClass.studentCount || 1));
+  if(addBtn) addBtn.disabled = visibleCount >= 10;
+  if(countLabel) countLabel.textContent = `${visibleCount} of 10 slots shown`;
+}
+
+window.addClassStudentSlot = function(){
+  if(!currentClass) return;
+  currentClass.studentCount = Math.min(10, (currentClass.studentCount || 1) + 1);
+  renderClassStudentTable();
+  scheduleClassAutosave();
+};
+
+// Removes one row and shifts everything after it up by one slot, so the
+// underlying data always stays packed at the front (slots 0..studentCount-1)
+// — simpler than leaving a gap in the middle.
+window.removeClassStudentSlot = function(idx){
+  if(!currentClass) return;
+  const visibleCount = Math.max(1, Math.min(10, currentClass.studentCount || 1));
+  if(visibleCount <= 1){
+    // Nothing to remove down to — just clear this one row instead.
+    currentClass.students[idx] = { linkedUserId: null, displayName: '', progress: {} };
+  } else {
+    for(let i = idx; i < currentClass.students.length - 1; i++){
+      currentClass.students[i] = currentClass.students[i + 1];
+    }
+    currentClass.students[currentClass.students.length - 1] = { linkedUserId: null, displayName: '', progress: {} };
+    currentClass.studentCount = visibleCount - 1;
+  }
+  renderClassStudentTable();
+  scheduleClassAutosave();
+};
+
+window.onClassStudentLinkChange = function(idx, userId){
+  const s = currentClass.students[idx];
+  s.linkedUserId = userId || null;
+  if(userId){
+    const found = (globalOtherSheetsData || []).find(r => r.user_id === userId);
+    if(found && found.data && found.data.charInfo && found.data.charInfo.name) s.displayName = found.data.charInfo.name.trim();
+  }
+  renderClassStudentTable();
+  scheduleClassAutosave();
+};
+window.onClassStudentNameChange = function(idx, val){
+  currentClass.students[idx].displayName = val;
+  scheduleClassAutosave();
+};
+window.onClassStudentProgressChange = function(idx, spellId, field, checked){
+  const s = currentClass.students[idx];
+  if(!s.progress[spellId]) s.progress[spellId] = { cast: false, roll: false, success: false, statsPosted: false };
+  s.progress[spellId][field] = checked;
+  const row = document.getElementById('class-student-row-' + idx);
+  if(row){
+    const activeSpells = currentClass.spellIds.filter(Boolean);
+    const allDone = activeSpells.length > 0 && activeSpells.every(id => s.progress[id] && s.progress[id].cast && s.progress[id].roll && s.progress[id].success && s.progress[id].statsPosted);
+    row.classList.toggle('done', allDone);
+    if(allDone) row.classList.remove('missing');
+  }
+  scheduleClassAutosave();
+};
+
+function renderClassEditor(){
+  if(!currentClass) currentClass = newClassObject();
+  const dateEl = document.getElementById('class-date');
+  const timeEl = document.getElementById('class-start-time');
+  const localParts = isoToLocalDateTimeParts(currentClass.startsAtISO);
+  if(dateEl) dateEl.value = localParts.date;
+  if(timeEl) timeEl.value = localParts.time;
+  const titleEl = document.getElementById('teaching-editor-title');
+  if(titleEl) titleEl.textContent = currentClass.id ? '🎓 Editing Class' : '🎓 New Class';
+  const delBtn = document.getElementById('class-delete-btn');
+  if(delBtn) delBtn.style.display = currentClass.id ? '' : 'none';
+  const statusEl = document.getElementById('class-save-status');
+  if(statusEl) statusEl.textContent = '';
+  renderClassSpellSlots();
+  renderClassStudentTable();
+}
+
+async function loadClassLog(){
+  const listEl = document.getElementById('class-log-list');
+  if(!listEl) return;
+  try{
+    const { data: classRows, error } = await supabaseClient.from('classes').select('*')
+      .order('starts_at', { ascending: false });
+    if(error) throw error;
+    const classIds = (classRows || []).map(c => c.id);
+    const studentsByClass = {};
+    if(classIds.length){
+      const { data: studentRows } = await supabaseClient.from('class_students').select('*').in('class_id', classIds);
+      (studentRows || []).forEach(s => {
+        if(!studentsByClass[s.class_id]) studentsByClass[s.class_id] = [];
+        studentsByClass[s.class_id].push(s);
+      });
+    }
+    listEl.innerHTML = (classRows || []).map(c => renderClassLogEntry(c, (studentsByClass[c.id] || []).sort((a, b) => a.slot_index - b.slot_index))).join('')
+      || '<p class="rollbuff-list-empty">No classes yet.</p>';
+  }catch(e){
+    console.error(e);
+    listEl.innerHTML = '<p class="rollbuff-list-empty">Could not load the class log.</p>';
+  }
+}
+
+function renderClassLogEntry(c, students){
+  const spellNames = (c.spell_ids || []).map(id => { const sp = SPELL_INDEX[id]; return sp ? sp.latin : id; }).join(', ') || '—';
+  const names = students.filter(s => s.display_name && s.display_name.trim()).map(s => escapeHtml(s.display_name)).join(', ') || '—';
+  const canEditThis = currentUser && (c.teacher_user_id === currentUser.id || isSpellEditor);
+  return `<div class="class-log-entry">
+    <div class="class-log-entry-head">
+      <div>
+        <strong>${escapeHtml(formatClassDateTimeLocal(c.starts_at))}</strong>
+        <span class="class-log-status ${c.status}">${c.status === 'completed' ? '✅ Completed' : '📝 Draft'}</span>
+      </div>
+      ${canEditThis ? `<button type="button" class="mini-admin-link" onclick="editClassFromLog('${c.id}')">✎ Edit</button>` : ''}
+    </div>
+    <div class="class-log-detail"><span class="class-log-label">Taught by:</span> ${escapeHtml(c.teacher_name || 'Unknown')}</div>
+    <div class="class-log-detail"><span class="class-log-label">Spells:</span> ${escapeHtml(spellNames)}</div>
+    <div class="class-log-detail"><span class="class-log-label">Attended:</span> ${names}</div>
+  </div>`;
+}
+
+window.editClassFromLog = async function(classId){
+  try{
+    const { data: c, error } = await supabaseClient.from('classes').select('*').eq('id', classId).single();
+    if(error || !c) throw error || new Error('Class not found');
+    const { data: studentRows } = await supabaseClient.from('class_students').select('*').eq('class_id', classId);
+    currentClass = classRowToObject(c, studentRows || []);
+    renderClassEditor();
+    document.getElementById('teaching-editor-panel').scrollIntoView({ behavior: 'smooth' });
+  }catch(e){
+    alert('Could not load this class: ' + (e.message || e));
+  }
+};
+
+async function renderTeachingPanel(){
+  await loadClassSettings();
+  if(currentUser && (!globalOtherSheetsData || !globalOtherSheetsData.length)) await fetchOtherCharacters();
+  if(!currentClass) currentClass = newClassObject();
+  renderClassEditor();
+  loadClassLog();
 }
 
 /* Loads the pregnancy_data row for the given user_id and populates the
@@ -4299,6 +5224,110 @@ function updateEffectSectionVisibility(){
   });
 }
 
+/* ---------- PER-SPELL TEACHING INFO (for the 🎓 Teaching class tool) ----------
+   Lives in its own `spell_teaching_info` table (not spell_meta) since it's
+   editable by a slightly different set of people: global spell editors OR
+   specifically the Oracle of that spell's school (same canEditSchool()
+   check already used for the rest of this modal). Each of "Teacher Emote"
+   and "OOC Info" is a list of segments capped at 400 characters — the
+   in-game chat input's limit — so a teacher can copy/paste one chunk at a
+   time during a live class instead of it getting cut off. */
+let currentTeachingInfo = { teacherEmoteSegments: [], oocInfoSegments: [] };
+const SPELL_TEACHING_INFO_CACHE = {}; // spellId -> {teacherEmoteSegments, oocInfoSegments} — reused by the Teaching view so it isn't re-fetched every time
+
+async function loadTeachingInfoForSpell(spellId){
+  currentTeachingInfo = { teacherEmoteSegments: [], oocInfoSegments: [] };
+  try{
+    const { data, error } = await supabaseClient.from('spell_teaching_info').select('*').eq('spell_id', spellId).maybeSingle();
+    if(!error && data){
+      currentTeachingInfo.teacherEmoteSegments = Array.isArray(data.teacher_emote_segments) ? data.teacher_emote_segments : [];
+      currentTeachingInfo.oocInfoSegments = Array.isArray(data.ooc_info_segments) ? data.ooc_info_segments : [];
+    }
+  }catch(e){ console.error('Could not load teaching info for this spell:', e); }
+  SPELL_TEACHING_INFO_CACHE[spellId] = { teacherEmoteSegments: currentTeachingInfo.teacherEmoteSegments.slice(), oocInfoSegments: currentTeachingInfo.oocInfoSegments.slice() };
+  renderTeachingSegments('emote');
+  renderTeachingSegments('ooc');
+}
+
+function renderTeachingSegments(kind){
+  const listEl = document.getElementById(kind === 'emote' ? 'teach-emote-segments' : 'teach-ooc-segments');
+  if(!listEl) return;
+  const arr = kind === 'emote' ? currentTeachingInfo.teacherEmoteSegments : currentTeachingInfo.oocInfoSegments;
+  const dis = editLocked ? 'disabled' : '';
+  listEl.innerHTML = arr.length ? arr.map((seg, i) => `
+    <div class="teaching-segment-row">
+      <span class="teaching-segment-num">#${i + 1}</span>
+      <div class="grow-wrap"><textarea maxlength="400" ${dis} oninput="onTeachingSegmentChange('${kind}',${i},this); syncGrowWrap(this)">${escapeHtml(seg)}</textarea></div>
+      <span class="teaching-segment-count">${seg.length}/400</span>
+      <button type="button" class="teaching-segment-remove" ${dis} title="Remove this chunk" onclick="removeTeachingSegment('${kind}',${i})">✕</button>
+    </div>`).join('')
+    : `<p class="rollbuff-list-empty">No ${kind === 'emote' ? 'emote' : 'OOC info'} chunks yet.</p>`;
+  autosizeAllTextareas();
+}
+
+window.addTeachingSegment = function(kind){
+  const arr = kind === 'emote' ? currentTeachingInfo.teacherEmoteSegments : currentTeachingInfo.oocInfoSegments;
+  arr.push('');
+  renderTeachingSegments(kind);
+  saveTeachingInfoDebounced();
+};
+window.removeTeachingSegment = function(kind, idx){
+  const arr = kind === 'emote' ? currentTeachingInfo.teacherEmoteSegments : currentTeachingInfo.oocInfoSegments;
+  arr.splice(idx, 1);
+  renderTeachingSegments(kind);
+  saveTeachingInfoNow();
+};
+window.onTeachingSegmentChange = function(kind, idx, el){
+  const arr = kind === 'emote' ? currentTeachingInfo.teacherEmoteSegments : currentTeachingInfo.oocInfoSegments;
+  arr[idx] = el.value.slice(0, 400);
+  const row = el.closest('.teaching-segment-row');
+  const counter = row ? row.querySelector('.teaching-segment-count') : null;
+  if(counter) counter.textContent = `${arr[idx].length}/400`;
+  saveTeachingInfoDebounced();
+};
+
+let teachingInfoSaveTimer = null;
+function saveTeachingInfoDebounced(){
+  clearTimeout(teachingInfoSaveTimer);
+  teachingInfoSaveTimer = setTimeout(saveTeachingInfoNow, 800);
+}
+async function saveTeachingInfoNow(){
+  if(!currentModalSpellId) return;
+  const spellId = currentModalSpellId;
+  const statusEl = document.getElementById('teaching-info-status');
+  if(statusEl) statusEl.textContent = 'Saving...';
+  try{
+    const { error } = await supabaseClient.from('spell_teaching_info').upsert({
+      spell_id: spellId,
+      teacher_emote_segments: currentTeachingInfo.teacherEmoteSegments,
+      ooc_info_segments: currentTeachingInfo.oocInfoSegments,
+      updated_by: currentUser ? currentUser.id : null,
+      updated_at: new Date().toISOString(),
+    });
+    if(error) throw error;
+    if(statusEl) statusEl.textContent = 'Saved.';
+    SPELL_TEACHING_INFO_CACHE[spellId] = { teacherEmoteSegments: currentTeachingInfo.teacherEmoteSegments.slice(), oocInfoSegments: currentTeachingInfo.oocInfoSegments.slice() };
+  }catch(e){
+    if(statusEl) statusEl.textContent = 'Error saving: ' + (e.message || e);
+  }
+}
+
+async function getTeachingInfoForSpell(spellId){
+  if(SPELL_TEACHING_INFO_CACHE[spellId]) return SPELL_TEACHING_INFO_CACHE[spellId];
+  let info = { teacherEmoteSegments: [], oocInfoSegments: [] };
+  try{
+    const { data, error } = await supabaseClient.from('spell_teaching_info').select('*').eq('spell_id', spellId).maybeSingle();
+    if(!error && data){
+      info = {
+        teacherEmoteSegments: Array.isArray(data.teacher_emote_segments) ? data.teacher_emote_segments : [],
+        oocInfoSegments: Array.isArray(data.ooc_info_segments) ? data.ooc_info_segments : [],
+      };
+    }
+  }catch(e){ console.error(e); }
+  SPELL_TEACHING_INFO_CACHE[spellId] = info;
+  return info;
+}
+
 window.openSpellModal = function(evt, id){
   if(evt){ evt.preventDefault(); evt.stopPropagation(); }
   const sp = SPELL_INDEX[id];
@@ -4376,7 +5405,8 @@ window.openSpellModal = function(evt, id){
     'modal-buff-upkeep-body','modal-buff-upkeep-mind','modal-buff-upkeep-spirit','modal-desc',
     'modal-flavor-incantation','modal-flavor-movements','modal-flavor-autohit',
     'modal-flavor-friendlyfire','modal-flavor-duration','flavor-parse-btn',
-    'ee-add-shield','ee-add-rollmod','ee-add-aoe','ee-add-special'];
+    'ee-add-shield','ee-add-rollmod','ee-add-aoe','ee-add-special',
+    'teach-add-emote-btn','teach-add-ooc-btn'];
   const hasRights = canEditSchool(sp.schoolKey);
   const canEditSpell = hasRights && !editLocked;
   editableIds.forEach(id => { document.getElementById(id).disabled = !canEditSpell; });
@@ -4388,6 +5418,10 @@ window.openSpellModal = function(evt, id){
     : "You don't have edit rights for this School of Magic. Ask the tracker owner to add you as an editor (or Oracle of this school) if you should be able to change this.";
 
   renderExtraEffectsList(!canEditSpell);
+
+  const teachingSection = document.getElementById('teaching-info-section');
+  if(teachingSection) teachingSection.style.display = hasRights ? '' : 'none';
+  if(hasRights) loadTeachingInfoForSpell(id);
 
   document.getElementById('spell-modal-backdrop').classList.add('open');
   syncGrowWrap(document.getElementById('modal-desc'));
@@ -4952,24 +5986,30 @@ function applyWsFilters(){
 
 /* ---------- VIEW TOGGLE ---------- */
 window.switchView = function(view){
+  if(view === 'teaching' && !isTeacher) view = 'spells'; // guard against a stale saved view (e.g. role was revoked)
   currentView = view;
   localStorage.setItem('spellbook_active_view', view);
   const isSpells = view === 'spells';
   const isWarrior = view === 'warrior';
   const isCrafting = view === 'crafting';
+  const isTeaching = view === 'teaching';
   document.getElementById('spell-view').style.display = isSpells ? '' : 'none';
   document.getElementById('warrior-view').style.display = isWarrior ? '' : 'none';
   document.getElementById('crafting-view').style.display = isCrafting ? '' : 'none';
+  document.getElementById('teaching-view').style.display = isTeaching ? '' : 'none';
   document.getElementById('view-toggle-spells').classList.toggle('active', isSpells);
   document.getElementById('view-toggle-warrior').classList.toggle('active', isWarrior);
   document.getElementById('view-toggle-crafting').classList.toggle('active', isCrafting);
-  document.getElementById('page-title').textContent = isSpells ? 'Spellbook Tracker' : (isWarrior ? 'Warrior Skills Tracker' : 'Crafting Tracker');
+  document.getElementById('view-toggle-teaching').classList.toggle('active', isTeaching);
+  document.getElementById('page-title').textContent = isSpells ? 'Spellbook Tracker' : (isWarrior ? 'Warrior Skills Tracker' : (isCrafting ? 'Crafting Tracker' : 'Teaching a Spell'));
   document.getElementById('page-subtitle').textContent = isSpells
     ? "Track what you know, what you're missing, and where you stand as Savant or Oracle"
     : (isWarrior ? 'Track passed learning rolls toward each warrior skill, discipline by discipline'
-                 : 'Track which recipes you know across Jewelry, Blacksmithing, and Alchemy');
+                 : (isCrafting ? 'Track which recipes you know across Jewelry, Blacksmithing, and Alchemy'
+                                : 'A checklist for running a spell-teaching session for up to 10 students'));
   if(isWarrior) renderWarrior();
   if(isCrafting) renderCrafting();
+  if(isTeaching) renderTeachingPanel();
 };
 
 /* ---------- EXTRA EFFECTS BUILDER (warrior skill modal copy) ----------
@@ -7658,7 +8698,7 @@ window.updateWeaponItemNumberField = function(id, field, value){
 
 
 document.addEventListener('keydown', (e) => {
-  if(e.key === 'Escape'){ closeSpellModal(); closeRollBuffModal(); closeWsModal(); closeDisciplinesModal(); closeAddWsModal(); closeDiceModal(); closeCraftModal(); closeAddCraftModal(); closeAbilitiesModal(); closeRacesModal(); closeAbilityModal(); closeInventoryModal(); closeWeaponsModal(); closeItemViewModal(); closeRanksModal(); closeRankViewModal(); closeCharsheetLayoutModal(); }
+  if(e.key === 'Escape'){ closeSpellModal(); closeRollBuffModal(); closeWsModal(); closeDisciplinesModal(); closeAddWsModal(); closeDiceModal(); closeCraftModal(); closeAddCraftModal(); closeAbilitiesModal(); closeRacesModal(); closeAbilityModal(); closeInventoryModal(); closeWeaponsModal(); closeItemViewModal(); closeRanksModal(); closeRankViewModal(); closeCharsheetLayoutModal(); closeClassSettingsModal(); }
 });
 
 document.getElementById('modal-desc').addEventListener('input', function(){ syncGrowWrap(this); });
@@ -8115,6 +9155,7 @@ async function signUp(){
     updateAuthUI();
     await checkSpellEditorStatus();
     await checkPregnancyViewerStatus();
+    await checkTeacherStatus();
     await loadFromCloud();
   } else {
     setCloudStatus('Signed up! If email confirmation is enabled, please confirm your email and then log in.', false);
@@ -8135,6 +9176,7 @@ async function signIn(){
   updateAuthUI();
   await checkSpellEditorStatus();
   await checkPregnancyViewerStatus();
+  await checkTeacherStatus();
   await loadFromCloud();
 }
 
@@ -8143,6 +9185,8 @@ async function signOut(){
   currentUser = null;
   isSpellEditor = false;
   isPregnancyViewer = false;
+  isTeacher = false;
+  updateTeacherNavVisibility();
   pregnancyData = { is_pregnant: false, baby_count: 1, conception_at: '' };
   pregnancyShownForUserId = null;
   updatePregnancyPanelVisibility();
@@ -8157,6 +9201,7 @@ async function initAuth(){
   updateAuthUI();
   await checkSpellEditorStatus();
   await checkPregnancyViewerStatus();
+  await checkTeacherStatus();
   if(currentUser) await loadFromCloud();
 }
 
@@ -10266,6 +11311,7 @@ window.addEventListener('beforeunload', function(e){
   const savedView = localStorage.getItem('spellbook_active_view');
   if(savedView === 'warrior') switchView('warrior');
   if(savedView === 'crafting') switchView('crafting');
+  if(savedView === 'teaching') switchView('teaching');
   requestAnimationFrame(alignEditLockWithAuthBar);
   // Catches a Reset Time that passes while the tab is simply left open,
   // instead of only refilling stats on the next load/switch. Browsers
