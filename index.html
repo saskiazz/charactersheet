@@ -1657,9 +1657,10 @@
   }
   .teaching-spell-slot-header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
   .teaching-spell-slot-header label{font-size:14px;letter-spacing:0.06em;text-transform:uppercase;color:var(--gold);flex-shrink:0;}
-  .teaching-spell-slot-header select{
-    flex:1;
-    min-width:200px;
+  .teaching-spell-picker{position:relative;flex:1;min-width:220px;}
+  .teaching-spell-picker-btn{
+    width:100%;
+    text-align:left;
     background:var(--panel);
     border:1px solid var(--hairline);
     color:var(--parchment);
@@ -1667,17 +1668,121 @@
     border-radius:6px;
     font-family:'Crimson Pro',serif;
     font-size:16px;
+    cursor:pointer;
+    transition:border-color .15s;
   }
+  .teaching-spell-picker-btn:hover{border-color:var(--gold);}
+  .teaching-spell-picker-panel{
+    display:flex;
+    flex-direction:column;
+    position:absolute;
+    top:calc(100% + 6px);
+    left:0;
+    right:0;
+    z-index:60;
+    max-height:360px;
+    overflow-y:auto;
+    background:linear-gradient(180deg,var(--panel-2),var(--panel));
+    border:1px solid var(--gold);
+    border-radius:var(--radius-md);
+    box-shadow:var(--shadow-lift);
+    padding:6px;
+  }
+  .teaching-spell-picker-panel.collapsed{display:none;}
+  .teaching-spell-school-section{border-bottom:1px solid var(--hairline);}
+  .teaching-spell-school-section:last-child{border-bottom:none;}
+  .teaching-spell-school-header{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    width:100%;
+    text-align:left;
+    background:transparent;
+    border:none;
+    color:var(--parchment);
+    font-family:'Cinzel',Garamond,serif;
+    font-size:14.5px;
+    letter-spacing:0.04em;
+    padding:8px 6px;
+    cursor:pointer;
+  }
+  .teaching-spell-school-header:hover{color:var(--light-accent);}
+  .teaching-spell-school-chevron{color:var(--gold);font-size:12px;flex-shrink:0;width:12px;}
+  .teaching-spell-school-body{display:none;flex-direction:column;padding:2px 4px 8px 24px;}
+  .teaching-spell-school-section.open .teaching-spell-school-body{display:flex;}
+  .teaching-spell-option{
+    text-align:left;
+    background:transparent;
+    border:none;
+    color:var(--parchment);
+    font-family:'Crimson Pro',serif;
+    font-size:15px;
+    padding:6px 8px;
+    border-radius:6px;
+    cursor:pointer;
+  }
+  .teaching-spell-option:hover{background:rgba(201,160,84,0.14);}
+  .teaching-spell-option.selected{background:rgba(201,160,84,0.22);color:var(--light-accent);font-weight:700;}
+  .teaching-spell-option-en{color:var(--parchment-dim);font-weight:400;}
   .teaching-spell-slot-body{display:flex;flex-direction:column;gap:10px;}
+  .teaching-ref-toggle{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    width:100%;
+    text-align:left;
+    background:rgba(0,0,0,0.12);
+    border:1px solid var(--hairline);
+    border-radius:8px;
+    color:var(--parchment-dim);
+    font-family:'Crimson Pro',serif;
+    font-size:14.5px;
+    letter-spacing:0.02em;
+    padding:8px 12px;
+    cursor:pointer;
+    transition:border-color .15s, color .15s;
+  }
+  .teaching-ref-toggle:hover{border-color:var(--gold);color:var(--light-accent);}
+  .teaching-ref-toggle-chevron{color:var(--gold);font-size:12px;flex-shrink:0;width:10px;}
   .teaching-ref-block{
     background:rgba(0,0,0,0.16);
     border:1px dashed var(--hairline);
     border-radius:8px;
     padding:10px 12px;
+    margin-top:8px;
   }
+  .teaching-ref-block.collapsed{display:none;}
   .teaching-ref-label{font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:var(--parchment-dim);margin-bottom:4px;}
-  .teaching-ref-segment{display:flex;gap:8px;margin-bottom:4px;font-size:15px;color:var(--parchment);line-height:1.4;}
-  .teaching-ref-num{color:var(--gold);flex-shrink:0;font-size:13px;padding-top:2px;}
+  .teaching-ref-segment{
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
+    margin-bottom:6px;
+    padding:6px 8px;
+    border-radius:6px;
+    border:1px solid transparent;
+    transition:background .15s, border-color .15s;
+  }
+  .teaching-ref-text{flex:1;font-size:15px;color:var(--parchment);line-height:1.4;white-space:pre-wrap;}
+  .teaching-ref-num{color:var(--gold);flex-shrink:0;font-size:13px;padding-top:3px;}
+  .teaching-ref-copy-btn{
+    flex-shrink:0;
+    background:transparent;
+    border:1px solid var(--hairline);
+    color:var(--parchment-dim);
+    font-family:'Crimson Pro',serif;
+    font-size:13px;
+    padding:4px 9px;
+    border-radius:6px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:all .15s;
+  }
+  .teaching-ref-copy-btn:hover{border-color:var(--gold);color:var(--light-accent);}
+  .teaching-ref-segment.copied{background:rgba(120,170,120,0.1);border-color:rgba(120,170,120,0.35);}
+  .teaching-ref-segment.flash{background:rgba(120,170,120,0.28);border-color:var(--ok);transition:background .15s, border-color .15s;}
+  .teaching-ref-segment.copied .teaching-ref-text{color:var(--parchment-dim);}
+  .teaching-ref-segment.copied .teaching-ref-copy-btn{border-color:var(--ok);color:var(--ok);}
   .teaching-ref-empty{font-size:14px;color:var(--parchment-dim);font-style:italic;}
   .teaching-link-select{
     width:100%;
@@ -2896,6 +3001,10 @@
       </div>
 
       <div id="class-spell-slots"></div>
+      <div class="teaching-student-count-row">
+        <button type="button" class="teaching-new-lesson-btn" id="class-add-spell-btn" onclick="addClassSpellSlot()">+ Add Spell</button>
+        <span id="class-spell-count-label" class="teaching-student-count-label"></span>
+      </div>
 
       <div class="teaching-students-label" style="margin-top:22px;">Students <span class="modal-hint" style="text-transform:none;letter-spacing:0;">(link a character sheet, or just type a name for players who don't use this site)</span></div>
       <div class="teaching-student-table-wrap">
@@ -4195,7 +4304,7 @@ function newClassObject(){
   return {
     id: null,
     startsAtISO: null, // absolute point in time (UTC, stored as an ISO string) — see combineLocalDateTimeToISO()/formatClassDateTimeLocal()
-    spellIds: Array.from({ length: CLASS_SETTINGS.maxSpellsPerClass }, () => null),
+    spellIds: [null], // starts with just 1 slot — see addClassSpellSlot()/removeClassSpellSlot(); grows up to CLASS_SETTINGS.maxSpellsPerClass
     spellProgress: {},
     status: 'draft',
     studentCount: 1, // how many of the 10 slots are currently shown — see addClassStudentSlot()/removeClassStudentSlot()
@@ -4204,7 +4313,6 @@ function newClassObject(){
 }
 
 function classRowToObject(c, studentRows){
-  const slotCount = Math.max(CLASS_SETTINGS.maxSpellsPerClass, (c.spell_ids || []).length);
   const students = Array.from({ length: 10 }, (_, i) => {
     const row = (studentRows || []).find(s => s.slot_index === i);
     return row
@@ -4216,10 +4324,14 @@ function classRowToObject(c, studentRows){
   // floor of 1 so there's always at least one row to fill in.
   let filledCount = 0;
   students.forEach((s, i) => { if(s.linkedUserId || (s.displayName && s.displayName.trim())) filledCount = i + 1; });
+  // Same idea for spells — show exactly the ones that were actually
+  // taught (a class can teach anywhere from 1 up to the current max), not
+  // always padded out to the current max-per-class setting.
+  const savedSpellIds = (c.spell_ids || []).filter(Boolean);
   return {
     id: c.id,
     startsAtISO: c.starts_at || null,
-    spellIds: Array.from({ length: slotCount }, (_, i) => (c.spell_ids || [])[i] || null),
+    spellIds: savedSpellIds.length ? savedSpellIds : [null],
     spellProgress: c.spell_progress || {},
     status: c.status || 'draft',
     studentCount: Math.max(1, filledCount),
@@ -4433,17 +4545,70 @@ window.onClassFieldChange = function(){
   scheduleClassAutosave();
 };
 
-function buildSpellOptionsHtml(selectedId){
-  let html = `<option value="">— Select Spell —</option>`;
-  SCHOOLS.forEach(sch => {
-    html += `<optgroup label="${escapeHtml(sch.name)}">`;
-    sch.groups.forEach(g => g.spells.forEach(sp => {
-      html += `<option value="${sp.id}" ${sp.id === selectedId ? 'selected' : ''}>${escapeHtml(sp.latin)} (${escapeHtml(sp.en)})</option>`;
-    }));
-    html += `</optgroup>`;
-  });
-  return html;
+/* ---------- COLLAPSIBLE SPELL PICKER ----------
+   Replaces a single giant <select> (every spell from every school in one
+   flat list) with a small dropdown button that opens a panel of
+   collapsible school sections — open the one school you're teaching
+   from, pick the spell, panel closes. teachingPickerOpenSchool tracks
+   which school is expanded per spell slot (transient UI state only). */
+let teachingPickerOpenSchool = {};
+
+function spellPickerButtonLabel(spellId){
+  const sp = spellId ? SPELL_INDEX[spellId] : null;
+  return sp ? `${sp.latin} (${sp.en})` : '— Select Spell —';
 }
+
+function buildSpellPickerPanelHtml(slotIdx, selectedId){
+  const openKey = teachingPickerOpenSchool[slotIdx];
+  return SCHOOLS.map(sch => {
+    const open = openKey === sch.key;
+    const spellsHtml = sch.groups.flatMap(g => g.spells).map(sp => `
+      <button type="button" class="teaching-spell-option${sp.id === selectedId ? ' selected' : ''}" onclick="selectTeachingSpell(${slotIdx}, '${sp.id}')">
+        ${escapeHtml(sp.latin)} <span class="teaching-spell-option-en">(${escapeHtml(sp.en)})</span>
+      </button>`).join('') || `<p class="teaching-ref-empty" style="padding:4px 10px;">No spells in this school yet.</p>`;
+    return `<div class="teaching-spell-school-section${open ? ' open' : ''}">
+      <button type="button" class="teaching-spell-school-header" onclick="event.stopPropagation(); toggleTeachingPickerSchool(${slotIdx}, '${sch.key}')">
+        <span class="teaching-spell-school-chevron">${open ? '▾' : '▸'}</span> ${escapeHtml(sch.name)}
+      </button>
+      <div class="teaching-spell-school-body">${spellsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+window.toggleTeachingSpellPicker = function(slotIdx){
+  const panel = document.getElementById('teaching-spell-picker-panel-' + slotIdx);
+  if(!panel) return;
+  const wasCollapsed = panel.classList.contains('collapsed');
+  // Close any other open pickers first — only one open at a time.
+  document.querySelectorAll('.teaching-spell-picker-panel').forEach(p => p.classList.add('collapsed'));
+  if(wasCollapsed){
+    panel.innerHTML = buildSpellPickerPanelHtml(slotIdx, currentClass.spellIds[slotIdx]);
+    panel.classList.remove('collapsed');
+  }
+};
+
+window.toggleTeachingPickerSchool = function(slotIdx, schoolKey){
+  teachingPickerOpenSchool[slotIdx] = (teachingPickerOpenSchool[slotIdx] === schoolKey) ? null : schoolKey;
+  const panel = document.getElementById('teaching-spell-picker-panel-' + slotIdx);
+  if(panel) panel.innerHTML = buildSpellPickerPanelHtml(slotIdx, currentClass.spellIds[slotIdx]);
+};
+
+window.selectTeachingSpell = function(slotIdx, spellId){
+  onClassSpellSlotChange(slotIdx, spellId);
+  const panel = document.getElementById('teaching-spell-picker-panel-' + slotIdx);
+  if(panel) panel.classList.add('collapsed');
+  const btn = document.getElementById('teaching-spell-picker-btn-' + slotIdx);
+  if(btn) btn.textContent = spellPickerButtonLabel(spellId) + ' ▾';
+};
+
+// Click anywhere outside an open picker closes it.
+document.addEventListener('click', (e) => {
+  document.querySelectorAll('.teaching-spell-picker').forEach(wrap => {
+    if(wrap.contains(e.target)) return;
+    const panel = wrap.querySelector('.teaching-spell-picker-panel');
+    if(panel) panel.classList.add('collapsed');
+  });
+});
 
 function renderClassSpellSlots(){
   const wrap = document.getElementById('class-spell-slots');
@@ -4452,12 +4617,112 @@ function renderClassSpellSlots(){
     <div class="teaching-spell-slot">
       <div class="teaching-spell-slot-header">
         <label>Spell #${i + 1}</label>
-        <select onchange="onClassSpellSlotChange(${i}, this.value)">${buildSpellOptionsHtml(spellId)}</select>
+        <div class="teaching-spell-picker">
+          <button type="button" class="teaching-spell-picker-btn" id="teaching-spell-picker-btn-${i}" onclick="event.stopPropagation(); toggleTeachingSpellPicker(${i});">${spellPickerButtonLabel(spellId)} ▾</button>
+          <div class="teaching-spell-picker-panel collapsed" id="teaching-spell-picker-panel-${i}"></div>
+        </div>
+        <button type="button" class="teaching-remove-student-btn" title="Remove this spell slot" onclick="removeClassSpellSlot(${i})">✕</button>
       </div>
       <div class="teaching-spell-slot-body" id="class-spell-slot-body-${i}"></div>
     </div>`).join('');
   currentClass.spellIds.forEach((spellId, i) => renderClassSpellSlotBody(i));
+  updateClassSpellCountControls();
 }
+
+function updateClassSpellCountControls(){
+  const addBtn = document.getElementById('class-add-spell-btn');
+  const countLabel = document.getElementById('class-spell-count-label');
+  const count = currentClass ? currentClass.spellIds.length : 1;
+  const max = CLASS_SETTINGS.maxSpellsPerClass;
+  if(addBtn) addBtn.disabled = count >= max;
+  if(countLabel) countLabel.textContent = `${count} of ${max} spell${max === 1 ? '' : 's'} max`;
+}
+
+window.addClassSpellSlot = function(){
+  if(!currentClass) return;
+  if(currentClass.spellIds.length >= CLASS_SETTINGS.maxSpellsPerClass) return;
+  currentClass.spellIds.push(null);
+  renderClassSpellSlots();
+  scheduleClassAutosave();
+};
+
+// Removes one spell slot and shifts the rest up, same idea as removing a
+// student row — down to 1 slot minimum, at which point it just clears
+// that slot instead of removing the row entirely.
+window.removeClassSpellSlot = function(idx){
+  if(!currentClass) return;
+  if(currentClass.spellIds.length <= 1){
+    currentClass.spellIds[0] = null;
+  } else {
+    currentClass.spellIds.splice(idx, 1);
+  }
+  renderClassSpellSlots();
+  renderClassStudentTable(); // columns depend on which spells are currently chosen
+  scheduleClassAutosave();
+};
+
+/* Tracks which reference chunks have already been copied this session, so
+   the teacher can see at a glance where they are in reading through a
+   spell's emote/OOC text. Keyed by "spellId:kind:index". Deliberately
+   in-memory only (not saved to the class record) — it's just a "where am
+   I right now" progress cue for the live moment, not data worth
+   persisting or syncing. */
+const copiedTeachingSegments = new Set();
+
+window.copyTeachingRefSegment = function(btn){
+  const seg = btn.closest('.teaching-ref-segment');
+  if(!seg) return;
+  const textEl = seg.querySelector('.teaching-ref-text');
+  const text = textEl ? textEl.textContent : '';
+  const key = seg.id.replace('teaching-ref-seg-', '');
+  const markCopied = () => {
+    seg.classList.add('copied');
+    copiedTeachingSegments.add(key);
+    btn.textContent = '✓ Copied!';
+    seg.classList.add('flash');
+    clearTimeout(btn._teachingCopyFlashTimer);
+    btn._teachingCopyFlashTimer = setTimeout(() => {
+      seg.classList.remove('flash');
+      btn.textContent = '📋 Copy Again';
+    }, 900);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(markCopied).catch(() => fallbackCopyTextToClipboard(text, markCopied));
+  } else {
+    fallbackCopyTextToClipboard(text, markCopied);
+  }
+};
+
+function fallbackCopyTextToClipboard(text, onSuccess){
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    onSuccess();
+  }catch(e){
+    console.error('Copy failed:', e);
+    alert("Couldn't copy automatically — please select and copy the text by hand.");
+  }
+}
+
+// Keeps the reference text (teacher emote + OOC info) collapsed by
+// default per spell — they can get long, and with up to 4 spells taught
+// in one class it gets crowded fast if all of them are open at once.
+// Independent per slot (no forced single-open), so a teacher can have
+// just the spell they're currently on expanded.
+window.toggleTeachingRefBlock = function(i){
+  const block = document.getElementById('teaching-ref-block-' + i);
+  const chevron = document.getElementById('teaching-ref-chevron-' + i);
+  if(!block) return;
+  block.classList.toggle('collapsed');
+  if(chevron) chevron.textContent = block.classList.contains('collapsed') ? '▸' : '▾';
+};
 
 async function renderClassSpellSlotBody(i){
   const bodyEl = document.getElementById('class-spell-slot-body-' + i);
@@ -4466,15 +4731,26 @@ async function renderClassSpellSlotBody(i){
   if(!spellId){ bodyEl.innerHTML = ''; return; }
   const progress = currentClass.spellProgress[spellId] || { explained: false, performed: false, oocShown: false, reminderDone: false };
   const info = await getTeachingInfoForSpell(spellId);
-  const renderRef = (segs, emptyLabel) => segs.length
-    ? segs.map((s, idx) => `<div class="teaching-ref-segment"><span class="teaching-ref-num">#${idx + 1}</span><span>${escapeHtml(s)}</span></div>`).join('')
+  const renderRef = (segs, emptyLabel, kind) => segs.length
+    ? segs.map((s, idx) => {
+        const key = `${spellId}:${kind}:${idx}`;
+        const copied = copiedTeachingSegments.has(key);
+        return `<div class="teaching-ref-segment${copied ? ' copied' : ''}" id="teaching-ref-seg-${key}">
+          <span class="teaching-ref-num">#${idx + 1}</span>
+          <span class="teaching-ref-text">${escapeHtml(s)}</span>
+          <button type="button" class="teaching-ref-copy-btn" onclick="copyTeachingRefSegment(this)">${copied ? '📋 Copy Again' : '📋 Copy'}</button>
+        </div>`;
+      }).join('')
     : `<p class="teaching-ref-empty">${emptyLabel}</p>`;
   bodyEl.innerHTML = `
-    <div class="teaching-ref-block">
+    <button type="button" class="teaching-ref-toggle" onclick="toggleTeachingRefBlock(${i})">
+      <span class="teaching-ref-toggle-chevron" id="teaching-ref-chevron-${i}">▸</span> Teaching Reference (Emote &amp; OOC Info)
+    </button>
+    <div class="teaching-ref-block collapsed" id="teaching-ref-block-${i}">
       <div class="teaching-ref-label">Teacher Emote</div>
-      ${renderRef(info.teacherEmoteSegments, 'No teacher emote written for this spell yet — an editor or this school\'s Oracle can add it from the spell\'s modal.')}
+      ${renderRef(info.teacherEmoteSegments, 'No teacher emote written for this spell yet — an editor or this school\'s Oracle can add it from the spell\'s modal.', 'emote')}
       <div class="teaching-ref-label" style="margin-top:8px;">OOC Info</div>
-      ${renderRef(info.oocInfoSegments, 'No OOC info written for this spell yet.')}
+      ${renderRef(info.oocInfoSegments, 'No OOC info written for this spell yet.', 'ooc')}
     </div>
     <label class="teaching-check-row"><input type="checkbox" ${progress.explained ? 'checked' : ''} onchange="onClassSpellStepChange('${spellId}','explained',this)"><span>Teacher explains the spell</span></label>
     <label class="teaching-check-row"><input type="checkbox" ${progress.performed ? 'checked' : ''} onchange="onClassSpellStepChange('${spellId}','performed',this)"><span>Teacher performs the spell</span></label>
