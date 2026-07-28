@@ -1834,6 +1834,23 @@
   .class-log-detail{font-size:15px;color:var(--parchment-dim);margin-bottom:2px;}
   .class-log-label{color:var(--parchment);font-weight:600;}
 
+  .class-view-section{margin-bottom:20px;}
+  .class-view-section-label{font-size:14px;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;}
+  .class-view-spell{
+    border:1px solid var(--hairline);
+    border-radius:var(--radius-sm);
+    padding:10px 12px;
+    margin-bottom:8px;
+    background:rgba(0,0,0,0.1);
+  }
+  .class-view-spell-name{font-size:16px;color:var(--light-accent);margin-bottom:6px;font-weight:600;}
+  .class-view-spell-steps{display:flex;flex-wrap:wrap;gap:14px;font-size:14px;color:var(--parchment-dim);}
+  .class-view-check{font-weight:700;margin-right:2px;}
+  .class-view-check.yes{color:var(--ok);}
+  .class-view-check.no{color:var(--danger);}
+  .class-view-student-plain{margin:0;padding-left:20px;color:var(--parchment);}
+  .class-view-student-plain li{margin-bottom:4px;}
+
   .stat-row{
     display:flex;
     flex-wrap:wrap;
@@ -3055,6 +3072,15 @@
       <button type="button" onclick="closeClassSettingsModal()">Cancel</button>
       <button type="button" onclick="saveClassSettings()">Save</button>
     </div>
+  </div>
+</div>
+
+<div id="class-view-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeClassViewModal()">
+  <div class="modal-box" style="max-width:min(1200px, 95vw);">
+    <button class="modal-close" onclick="closeClassViewModal()">✕</button>
+    <h2 id="class-view-title">Class Details</h2>
+    <p class="modal-subtitle" id="class-view-subtitle"></p>
+    <div id="class-view-body"></div>
   </div>
 </div>
 
@@ -4936,7 +4962,10 @@ function renderClassLogEntry(c, students){
         <strong>${escapeHtml(formatClassDateTimeLocal(c.starts_at))}</strong>
         <span class="class-log-status ${c.status}">${c.status === 'completed' ? '✅ Completed' : '📝 Draft'}</span>
       </div>
-      ${canEditThis ? `<button type="button" class="mini-admin-link" onclick="editClassFromLog('${c.id}')">✎ Edit</button>` : ''}
+      <div style="display:flex;gap:10px;flex-shrink:0;">
+        <button type="button" class="mini-admin-link always-enabled" onclick="viewClassFromLog('${c.id}')">👁 View</button>
+        ${canEditThis ? `<button type="button" class="mini-admin-link" onclick="editClassFromLog('${c.id}')">✎ Edit</button>` : ''}
+      </div>
     </div>
     <div class="class-log-detail"><span class="class-log-label">Taught by:</span> ${escapeHtml(c.teacher_name || 'Unknown')}</div>
     <div class="class-log-detail"><span class="class-log-label">Spells:</span> ${escapeHtml(spellNames)}</div>
@@ -4955,6 +4984,99 @@ window.editClassFromLog = async function(classId){
   }catch(e){
     alert('Could not load this class: ' + (e.message || e));
   }
+};
+
+/* ---------- VIEW CLASS (read-only, any teacher) ----------
+   Unlike "✎ Edit" (only the class's own teacher, or a global editor),
+   "👁 View" is available to every teacher — it's just a closer look at
+   who was in a class and how far they got, with nothing clickable/
+   editable. Pulls fresh data each time rather than reusing whatever's in
+   the log list, so it's always current. */
+window.viewClassFromLog = async function(classId){
+  try{
+    const { data: c, error } = await supabaseClient.from('classes').select('*').eq('id', classId).single();
+    if(error || !c) throw error || new Error('Class not found');
+    const { data: studentRows } = await supabaseClient.from('class_students').select('*').eq('class_id', classId);
+    renderClassViewModal(c, studentRows || []);
+  }catch(e){
+    alert('Could not load this class: ' + (e.message || e));
+  }
+};
+
+function renderClassViewModal(c, studentRows){
+  const titleEl = document.getElementById('class-view-title');
+  const subEl = document.getElementById('class-view-subtitle');
+  const bodyEl = document.getElementById('class-view-body');
+  if(!titleEl || !subEl || !bodyEl) return;
+
+  titleEl.textContent = formatClassDateTimeLocal(c.starts_at);
+  subEl.textContent = `Taught by ${c.teacher_name || 'Unknown'} · ${c.status === 'completed' ? '✅ Completed' : '📝 Draft'}`;
+
+  const spellIds = (c.spell_ids || []).filter(Boolean);
+  const spellProgress = c.spell_progress || {};
+  const students = (studentRows || [])
+    .filter(s => s.linked_user_id || (s.display_name && s.display_name.trim()))
+    .sort((a, b) => a.slot_index - b.slot_index);
+
+  const check = v => v ? '<span class="class-view-check yes">✓</span>' : '<span class="class-view-check no">✕</span>';
+
+  const spellsHtml = spellIds.length ? spellIds.map(id => {
+    const sp = SPELL_INDEX[id];
+    const p = spellProgress[id] || {};
+    return `<div class="class-view-spell">
+      <div class="class-view-spell-name">${escapeHtml(sp ? `${sp.latin} (${sp.en})` : id)}</div>
+      <div class="class-view-spell-steps">
+        <span>${check(p.explained)} Explained</span>
+        <span>${check(p.performed)} Performed</span>
+        <span>${check(p.oocShown)} OOC Shown</span>
+        <span>${check(p.reminderDone)} Reminded</span>
+      </div>
+    </div>`;
+  }).join('') : '<p class="rollbuff-list-empty">No spells recorded.</p>';
+
+  let studentsHtml;
+  if(!students.length){
+    studentsHtml = '<p class="rollbuff-list-empty">No students recorded.</p>';
+  } else if(!spellIds.length){
+    studentsHtml = `<ul class="class-view-student-plain">${students.map(s => `<li>${escapeHtml(s.display_name || 'Unnamed')}</li>`).join('')}</ul>`;
+  } else {
+    studentsHtml = `<div class="teaching-student-table-wrap"><table class="teaching-student-table">
+      <thead>
+        <tr>
+          <th class="teaching-col-num" rowspan="2">#</th>
+          <th class="teaching-col-name" rowspan="2">Student</th>
+          ${spellIds.map(id => { const sp = SPELL_INDEX[id]; return `<th colspan="4">${escapeHtml(sp ? sp.latin : id)}</th>`; }).join('')}
+        </tr>
+        <tr>${spellIds.map(() => `<th>Cast</th><th>Roll</th><th>Success</th><th>Posted</th>`).join('')}</tr>
+      </thead>
+      <tbody>
+        ${students.map((s, i) => `<tr>
+          <td class="teaching-col-num">${i + 1}</td>
+          <td class="teaching-col-name">${escapeHtml(s.display_name || 'Unnamed')}</td>
+          ${spellIds.map(id => {
+            const p = (s.progress || {})[id] || {};
+            return `<td>${check(p.cast)}</td><td>${check(p.roll)}</td><td>${check(p.success)}</td><td>${check(p.statsPosted)}</td>`;
+          }).join('')}
+        </tr>`).join('')}
+      </tbody>
+    </table></div>`;
+  }
+
+  bodyEl.innerHTML = `
+    <div class="class-view-section">
+      <div class="class-view-section-label">Spells Taught</div>
+      ${spellsHtml}
+    </div>
+    <div class="class-view-section">
+      <div class="class-view-section-label">Students (${students.length})</div>
+      ${studentsHtml}
+    </div>`;
+
+  document.getElementById('class-view-modal-backdrop').classList.add('open');
+}
+
+window.closeClassViewModal = function(){
+  document.getElementById('class-view-modal-backdrop').classList.remove('open');
 };
 
 async function renderTeachingPanel(){
@@ -8974,7 +9096,7 @@ window.updateWeaponItemNumberField = function(id, field, value){
 
 
 document.addEventListener('keydown', (e) => {
-  if(e.key === 'Escape'){ closeSpellModal(); closeRollBuffModal(); closeWsModal(); closeDisciplinesModal(); closeAddWsModal(); closeDiceModal(); closeCraftModal(); closeAddCraftModal(); closeAbilitiesModal(); closeRacesModal(); closeAbilityModal(); closeInventoryModal(); closeWeaponsModal(); closeItemViewModal(); closeRanksModal(); closeRankViewModal(); closeCharsheetLayoutModal(); closeClassSettingsModal(); }
+  if(e.key === 'Escape'){ closeSpellModal(); closeRollBuffModal(); closeWsModal(); closeDisciplinesModal(); closeAddWsModal(); closeDiceModal(); closeCraftModal(); closeAddCraftModal(); closeAbilitiesModal(); closeRacesModal(); closeAbilityModal(); closeInventoryModal(); closeWeaponsModal(); closeItemViewModal(); closeRanksModal(); closeRankViewModal(); closeCharsheetLayoutModal(); closeClassSettingsModal(); closeClassViewModal(); }
 });
 
 document.getElementById('modal-desc').addEventListener('input', function(){ syncGrowWrap(this); });
