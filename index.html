@@ -107,6 +107,22 @@
     text-transform:uppercase;
     margin-bottom:10px;
   }
+  .easter-egg-toggle{
+    position:absolute;
+    top:8px;
+    right:8px;
+    background:transparent;
+    border:1px solid transparent;
+    color:var(--parchment-dim);
+    font-size:18px;
+    padding:5px 8px;
+    border-radius:8px;
+    cursor:pointer;
+    opacity:0.35;
+    transition:opacity .15s, border-color .15s, background .15s;
+  }
+  .easter-egg-toggle:hover{opacity:1;border-color:var(--hairline);}
+  .easter-egg-toggle.active{opacity:1;border-color:var(--gold);background:rgba(201,160,84,0.14);}
   header h1{
     font-family:'Cinzel', Garamond, serif;
     font-weight:700;
@@ -2483,7 +2499,8 @@
   </div>
 
   <header>
-    <div class="eyebrow">Fallen Gate</div>
+    <div class="eyebrow" id="site-eyebrow">Fallen Gate</div>
+    <button type="button" id="easter-egg-toggle" class="easter-egg-toggle" style="display:none;" onclick="toggleFallenGatekeepEasterEgg()" title="Editors only — toggle the site-wide joke">🗝️</button>
     <h1 id="page-title">Spellbook Tracker</h1>
     <p class="sub" id="page-subtitle">Track what you know, what you're missing, and where you stand as Savant or Oracle</p>
   </header>
@@ -4130,7 +4147,7 @@ async function checkSpellEditorStatus(){
   isWsEditor = false;
   isCraftEditor = false;
   oracleSchools = new Set();
-  if(!currentUser){ updateTagGroupsButtonVisibility(); updateSchoolAdminButtonVisibility(); updateDisciplineAdminButtonVisibility(); updateRaceAdminLinksVisibility(); updateRankAdminLinksVisibility(); updateCharsheetLayoutAdminLinkVisibility(); updateClassSettingsAdminLinkVisibility(); return; }
+  if(!currentUser){ updateTagGroupsButtonVisibility(); updateSchoolAdminButtonVisibility(); updateDisciplineAdminButtonVisibility(); updateRaceAdminLinksVisibility(); updateRankAdminLinksVisibility(); updateCharsheetLayoutAdminLinkVisibility(); updateClassSettingsAdminLinkVisibility(); updateEasterEggToggleVisibility(); return; }
   try{
     const { data, error } = await supabaseClient
       .from('spell_editors')
@@ -4169,6 +4186,7 @@ async function checkSpellEditorStatus(){
   updateRankAdminLinksVisibility();
   updateCharsheetLayoutAdminLinkVisibility();
   updateClassSettingsAdminLinkVisibility();
+  updateEasterEggToggleVisibility();
   render();
   if(currentView === 'warrior') renderWarrior();
   if(currentView === 'crafting') renderCrafting();
@@ -4287,6 +4305,98 @@ async function loadClassSettings(){
 }
 
 function canManageClassSettings(){ return isSpellEditor; }
+
+/* ---------- "FALLEN GATEKEEP" EASTER EGG ----------
+   A little joke, editor-controlled and site-wide (same single-row-table
+   pattern as class_settings) — once toggled on, replaces "Fallen Gate"
+   with "Fallen Gatekeep" everywhere on the page for every visitor, not
+   just the toggling editor. Uses a MutationObserver (rather than a
+   one-time pass) so it keeps catching new text as the app re-renders —
+   opening modals, switching views, spell descriptions, rank text,
+   whatever — without needing to touch every render function individually.
+   Only ever rewrites actual text content, never HTML/attributes, so it
+   can't break any functionality — worst case it's just a harmless joke. */
+let EASTER_EGG_ENABLED = false;
+let easterEggObserver = null;
+const FALLEN_GATE_RE = /Fallen Gate(?!keep)/g;
+const FALLEN_GATEKEEP_RE = /Fallen Gatekeep/g;
+
+async function loadEasterEggSetting(){
+  try{
+    const { data, error } = await supabaseClient.from('site_easter_egg').select('enabled').eq('id', 1).maybeSingle();
+    if(!error && data) EASTER_EGG_ENABLED = !!data.enabled;
+  }catch(e){ console.error('Could not load easter egg setting from cloud:', e); }
+  updateEasterEggToggleVisibility();
+  if(EASTER_EGG_ENABLED) startEasterEggObserver();
+}
+
+function updateEasterEggToggleVisibility(){
+  const btn = document.getElementById('easter-egg-toggle');
+  if(!btn) return;
+  btn.style.display = isSpellEditor ? '' : 'none';
+  btn.classList.toggle('active', EASTER_EGG_ENABLED);
+}
+
+function walkAndReplaceFallenGate(root){
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+  let node;
+  while((node = walker.nextNode())){
+    if(node.nodeValue && FALLEN_GATE_RE.test(node.nodeValue)){
+      node.nodeValue = node.nodeValue.replace(FALLEN_GATE_RE, 'Fallen Gatekeep');
+    }
+  }
+}
+function walkAndRevertFallenGatekeep(root){
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+  let node;
+  while((node = walker.nextNode())){
+    if(node.nodeValue && FALLEN_GATEKEEP_RE.test(node.nodeValue)){
+      node.nodeValue = node.nodeValue.replace(FALLEN_GATEKEEP_RE, 'Fallen Gate');
+    }
+  }
+}
+
+function startEasterEggObserver(){
+  if(easterEggObserver) return;
+  walkAndReplaceFallenGate(document.body);
+  easterEggObserver = new MutationObserver(mutations => {
+    mutations.forEach(m => {
+      if(m.type === 'characterData'){
+        const n = m.target;
+        if(n.nodeValue && FALLEN_GATE_RE.test(n.nodeValue)) n.nodeValue = n.nodeValue.replace(FALLEN_GATE_RE, 'Fallen Gatekeep');
+      } else if(m.type === 'childList'){
+        m.addedNodes.forEach(added => {
+          if(added.nodeType === Node.TEXT_NODE){
+            if(added.nodeValue && FALLEN_GATE_RE.test(added.nodeValue)) added.nodeValue = added.nodeValue.replace(FALLEN_GATE_RE, 'Fallen Gatekeep');
+          } else if(added.nodeType === Node.ELEMENT_NODE){
+            walkAndReplaceFallenGate(added);
+          }
+        });
+      }
+    });
+  });
+  easterEggObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
+}
+
+function stopEasterEggObserver(){
+  if(easterEggObserver){ easterEggObserver.disconnect(); easterEggObserver = null; }
+  walkAndRevertFallenGatekeep(document.body);
+}
+
+window.toggleFallenGatekeepEasterEgg = async function(){
+  if(!isSpellEditor) return;
+  const next = !EASTER_EGG_ENABLED;
+  try{
+    const { error } = await supabaseClient.from('site_easter_egg').update({ enabled: next }).eq('id', 1);
+    if(error) throw error;
+    EASTER_EGG_ENABLED = next;
+    updateEasterEggToggleVisibility();
+    if(EASTER_EGG_ENABLED) startEasterEggObserver(); else stopEasterEggObserver();
+  }catch(e){
+    alert('Could not update the easter egg setting: ' + (e.message || e));
+  }
+};
+
 function updateClassSettingsAdminLinkVisibility(){
   const el = document.getElementById('class-settings-admin-link');
   if(el) el.style.display = canManageClassSettings() ? '' : 'none';
@@ -11690,6 +11800,7 @@ window.addEventListener('beforeunload', function(e){
   await loadRacesAndAbilities();    // fetch Races + their racial special abilities from the cloud
   await loadRanks();                // fetch Ranks (base stats + reset hours + description) from the cloud
   await loadCharsheetLayoutDefault(); // fetch the editor-set standard character-sheet block arrangement
+  await loadEasterEggSetting();       // fetch + apply the "Fallen Gatekeep" joke toggle, if an editor has turned it on
   renderTagFilters();
   renderWsTagFilters();
   renderCraftTagFilters();
