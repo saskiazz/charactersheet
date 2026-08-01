@@ -5449,7 +5449,7 @@ async function onPregnancyFieldChange(){
 }
 
 async function savePregnancyData(){
-  if(!currentUser || !isPregnancyViewer) return;
+  if(!currentUser || !isPregnancyViewer) return false;
   const note = document.getElementById('pregnancy-panel-note');
   if(note) note.textContent = 'Saving...';
   try{
@@ -5462,12 +5462,14 @@ async function savePregnancyData(){
         conception_at: pregnancyData.conception_at,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
-    if(error){ if(note) note.textContent = 'Error: ' + error.message; return; }
+    if(error){ if(note) note.textContent = 'Error: ' + error.message; return false; }
     if(note) note.textContent = 'Saved ✓';
     clearTimeout(window._pregSaveTimer);
     window._pregSaveTimer = setTimeout(() => { if(note) note.textContent = ''; }, 1200);
+    return true;
   }catch(e){
     if(note) note.textContent = 'Network error while saving.';
+    return false;
   }
 }
 
@@ -5630,14 +5632,31 @@ window.deleteChild = async function(id){
 };
 
 /* ---------- AUTOMATIC BIRTH AT DUE DATE ----------
-   Once the due date (conception + exactly 9 days) has passed, creates one
-   blank Children entry per baby — name/gender/description left empty for
-   whoever's tracking it to fill in later, but birthday auto-set to the
-   due date — and resets Pregnancy back to not-pregnant. Only ever acts on
+   Once the due date (conception + exactly 9 days) has passed, resets
+   Pregnancy back to not-pregnant and creates one blank Children entry per
+   baby — name/gender/description left empty for whoever's tracking it to
+   fill in later, but birthday auto-set to the due date. Only ever acts on
    the logged-in user's OWN pregnancy row (never someone else's, even if
    currently being viewed), mirroring how the stat/armor reset timers only
    ever touch your own sheet. Checked on load/switch and periodically —
-   see the setInterval/visibilitychange/focus wiring in boot(). */
+   see the setInterval/visibilitychange/focus wiring in boot().
+
+   Two things guard against duplicate children:
+   1. pregnancyDueBirthInProgress blocks the function from running twice
+      at once — 'focus' and 'visibilitychange' commonly fire together
+      when switching back to a tab, and without this both firings would
+      independently see "still due" and both create a batch of children.
+   2. The pregnancy reset is saved to the cloud FIRST, and children are
+      only created if that save actually succeeds. Doing it the other way
+      around (children first, reset second) is what caused a real bug:
+      if the reset's save silently failed, is_pregnant stayed true in the
+      cloud, so every subsequent reload saw the same still-overdue
+      pregnancy and created yet another batch of children — forever. With
+      the reset going first, a failed save just means nothing happened
+      yet and it cleanly retries as a whole next time, instead of ever
+      creating children more than once for the same pregnancy. */
+let pregnancyDueBirthInProgress = false;
+
 async function checkAndApplyPregnancyDueBirth(){
   if(!isPregnancyViewer || !currentUser) return;
   if(isViewingOther || pregnancyShownForUserId !== currentUser.id) return;
@@ -5646,12 +5665,26 @@ async function checkAndApplyPregnancyDueBirth(){
   if(isNaN(conception.getTime())) return;
   const due = new Date(conception.getTime() + GESTATION_MS);
   if(due.getTime() > Date.now()) return; // not due yet
+  if(pregnancyDueBirthInProgress) return; // already being handled by an overlapping trigger
 
+  pregnancyDueBirthInProgress = true;
   const note = document.getElementById('pregnancy-panel-note');
   const babyCount = Math.max(1, pregnancyData.baby_count || 1);
   const birthday = todayLocalDateString(due);
+  const previousPregnancyData = { ...pregnancyData };
 
   try{
+    pregnancyData = { is_pregnant: false, baby_count: 1, conception_at: '' };
+    populatePregnancyFields();
+    const saveOk = await savePregnancyData();
+    if(!saveOk){
+      // Revert so the UI matches what's actually saved in the cloud —
+      // this will simply be retried in full on the next check.
+      pregnancyData = previousPregnancyData;
+      populatePregnancyFields();
+      return;
+    }
+
     const rows = Array.from({ length: babyCount }, () => ({
       user_id: currentUser.id,
       name: '',
@@ -5666,16 +5699,12 @@ async function checkAndApplyPregnancyDueBirth(){
       children.sort((a, b) => (a.birthday || '').localeCompare(b.birthday || ''));
       renderChildrenList();
     }
-
-    pregnancyData = { is_pregnant: false, baby_count: 1, conception_at: '' };
-    populatePregnancyFields();
-    await savePregnancyData();
-
     if(note) note.textContent = `🎉 ${babyCount} ${babyCount === 1 ? 'baby' : 'babies'} born! Added to Children below — fill in the name(s) whenever you're ready.`;
   }catch(e){
     console.error('Could not auto-create children at due date:', e);
-    const pnote = document.getElementById('pregnancy-panel-note');
-    if(pnote) pnote.textContent = "Due date reached, but couldn't automatically add the child/children: " + (e.message || e);
+    if(note) note.textContent = "Pregnancy was reset, but couldn't automatically add the child/children — please add them manually below: " + (e.message || e);
+  }finally{
+    pregnancyDueBirthInProgress = false;
   }
 }
 
