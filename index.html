@@ -5671,17 +5671,24 @@ async function checkAndApplyPregnancyDueBirth(){
   const note = document.getElementById('pregnancy-panel-note');
   const babyCount = Math.max(1, pregnancyData.baby_count || 1);
   const birthday = todayLocalDateString(due);
-  const previousPregnancyData = { ...pregnancyData };
 
   try{
-    pregnancyData = { is_pregnant: false, baby_count: 1, conception_at: '' };
-    populatePregnancyFields();
-    const saveOk = await savePregnancyData();
-    if(!saveOk){
-      // Revert so the UI matches what's actually saved in the cloud —
-      // this will simply be retried in full on the next check.
-      pregnancyData = previousPregnancyData;
-      populatePregnancyFields();
+    // Save the reset straight to the cloud first, WITHOUT touching the
+    // local pregnancyData/UI yet — so if this fails there's no visible
+    // flash at all, and if it succeeds the UI only flips once, straight
+    // to its true final state, instead of optimistically flipping and
+    // then possibly reverting (which is what caused a visible flicker).
+    const { error: resetError } = await supabaseClient
+      .from('pregnancy_data')
+      .upsert({
+        user_id: currentUser.id,
+        is_pregnant: false,
+        baby_count: 1,
+        conception_at: null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+    if(resetError){
+      if(note) note.textContent = "Due date reached, but couldn't reset Pregnancy yet — will retry automatically: " + resetError.message;
       return;
     }
 
@@ -5697,11 +5704,21 @@ async function checkAndApplyPregnancyDueBirth(){
     if(data && data.length){
       children = children.concat(data);
       children.sort((a, b) => (a.birthday || '').localeCompare(b.birthday || ''));
-      renderChildrenList();
     }
+
+    // Only now, once everything has actually succeeded, apply the result
+    // locally and update the UI — a single clean transition.
+    pregnancyData = { is_pregnant: false, baby_count: 1, conception_at: '' };
+    populatePregnancyFields();
+    renderChildrenList();
     if(note) note.textContent = `🎉 ${babyCount} ${babyCount === 1 ? 'baby' : 'babies'} born! Added to Children below — fill in the name(s) whenever you're ready.`;
   }catch(e){
     console.error('Could not auto-create children at due date:', e);
+    // The pregnancy reset above did succeed and is already saved, even
+    // though creating the children failed — reflect that so the UI
+    // matches the cloud instead of still showing "pregnant".
+    pregnancyData = { is_pregnant: false, baby_count: 1, conception_at: '' };
+    populatePregnancyFields();
     if(note) note.textContent = "Pregnancy was reset, but couldn't automatically add the child/children — please add them manually below: " + (e.message || e);
   }finally{
     pregnancyDueBirthInProgress = false;
