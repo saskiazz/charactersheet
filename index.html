@@ -107,6 +107,22 @@
     text-transform:uppercase;
     margin-bottom:10px;
   }
+  .easter-egg-toggle{
+    position:absolute;
+    top:8px;
+    right:8px;
+    background:transparent;
+    border:1px solid transparent;
+    color:var(--parchment-dim);
+    font-size:18px;
+    padding:5px 8px;
+    border-radius:8px;
+    cursor:pointer;
+    opacity:0.35;
+    transition:opacity .15s, border-color .15s, background .15s;
+  }
+  .easter-egg-toggle:hover{opacity:1;border-color:var(--hairline);}
+  .easter-egg-toggle.active{opacity:1;border-color:var(--gold);background:rgba(201,160,84,0.14);}
   header h1{
     font-family:'Cinzel', Garamond, serif;
     font-weight:700;
@@ -1481,6 +1497,71 @@
   .pregnancy-countdown{font-family:'Cinzel',Garamond,serif;font-size:20px;color:var(--secret-accent);letter-spacing:0.02em;font-variant-numeric:tabular-nums;}
   .pregnancy-panel-note{font-size:14px;color:var(--parchment-dim);margin-top:8px;min-height:1em;}
 
+  .children-count-badge{
+    display:inline-block;
+    background:rgba(201,160,84,0.14);
+    border:1px solid var(--gold);
+    color:var(--light-accent);
+    font-family:'Cinzel',Garamond,serif;
+    font-size:14px;
+    letter-spacing:0.04em;
+    padding:4px 12px;
+    border-radius:999px;
+    margin-bottom:14px;
+  }
+  .child-row{
+    border:1px solid var(--hairline);
+    border-radius:var(--radius-sm);
+    padding:12px 14px;
+    margin-bottom:12px;
+    background:rgba(0,0,0,0.12);
+  }
+  .child-row-main{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
+  .child-row-main input[type=text],
+  .child-row-main input[type=date],
+  .child-row-main select{
+    background:var(--panel);
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    padding:7px 9px;
+    border-radius:6px;
+    font-family:'Crimson Pro',serif;
+    font-size:15px;
+  }
+  .child-row-main input[type=text]{flex:1 1 160px;min-width:120px;}
+  .child-age-badge{
+    background:rgba(120,170,120,0.14);
+    border:1px solid var(--ok);
+    color:var(--ok);
+    font-size:13.5px;
+    padding:4px 10px;
+    border-radius:999px;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .child-description{
+    width:100%;
+    box-sizing:border-box;
+    background:var(--panel);
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    padding:8px 10px;
+    border-radius:6px;
+    font-family:'Crimson Pro',serif;
+    font-size:15px;
+    resize:vertical;
+    min-height:38px;
+  }
+  .children-add-row{
+    display:flex;
+    align-items:flex-end;
+    gap:12px;
+    flex-wrap:wrap;
+    padding-top:10px;
+    border-top:1px dashed var(--hairline);
+    margin-top:6px;
+  }
+
   /* TEACHING — only rendered/populated for users holding the `teachers`
      role (see checkTeacherStatus). A checklist tool for running a
      spell-teaching session for up to 10 students, following FG's order:
@@ -2483,7 +2564,8 @@
   </div>
 
   <header>
-    <div class="eyebrow">Fallen Gate</div>
+    <div class="eyebrow" id="site-eyebrow">Fallen Gate</div>
+    <button type="button" id="easter-egg-toggle" class="easter-egg-toggle" style="display:none;" onclick="toggleFallenGatekeepEasterEgg()" title="Editors only — toggle the site-wide joke">🗝️</button>
     <h1 id="page-title">Spellbook Tracker</h1>
     <p class="sub" id="page-subtitle">Track what you know, what you're missing, and where you stand as Savant or Oracle</p>
   </header>
@@ -2799,6 +2881,45 @@
         <div class="pregnancy-countdown" id="preg-countdown-text">—</div>
       </div>
       <div class="pregnancy-panel-note" id="pregnancy-panel-note"></div>
+    </div>
+
+    <!-- CHILDREN (same restricted role as Pregnancy, see checkPregnancyViewerStatus)
+         Age is computed live from birthday — every real-world day counts
+         as 1 year, matching the same accelerated timescale as Pregnancy's
+         "conception + 9 days = due". -->
+    <div class="pregnancy-panel children-panel" id="children-panel" style="display:none;">
+      <div class="pregnancy-panel-title">👶 Children (Restricted)</div>
+      <div class="pregnancy-panel-sub">Only visible to people specifically granted this access. Age counts every real-world day as 1 year.</div>
+      <div class="children-count-badge" id="children-count-badge">0 children</div>
+
+      <div id="children-list"></div>
+
+      <div class="children-add-row" id="children-add-row">
+        <div class="pregnancy-field">
+          <label for="child-new-name">Name</label>
+          <input type="text" id="child-new-name" placeholder="Child's name">
+        </div>
+        <div class="pregnancy-field">
+          <label for="child-new-birthday">Birthday</label>
+          <input type="date" id="child-new-birthday">
+        </div>
+        <div class="pregnancy-field">
+          <label for="child-new-gender">Gender</label>
+          <select id="child-new-gender">
+            <option value="">— Unspecified —</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="pregnancy-field" style="flex:1 1 220px;">
+          <label for="child-new-description">Description <span class="modal-hint" style="text-transform:none;letter-spacing:0;">(optional)</span></label>
+          <input type="text" id="child-new-description" placeholder="Anything worth noting...">
+        </div>
+        <button type="button" class="teaching-new-lesson-btn" onclick="addChild()">+ Add Child</button>
+      </div>
+
+      <div class="pregnancy-panel-note" id="children-panel-note"></div>
     </div>
   </div>
 
@@ -4130,7 +4251,7 @@ async function checkSpellEditorStatus(){
   isWsEditor = false;
   isCraftEditor = false;
   oracleSchools = new Set();
-  if(!currentUser){ updateTagGroupsButtonVisibility(); updateSchoolAdminButtonVisibility(); updateDisciplineAdminButtonVisibility(); updateRaceAdminLinksVisibility(); updateRankAdminLinksVisibility(); updateCharsheetLayoutAdminLinkVisibility(); updateClassSettingsAdminLinkVisibility(); return; }
+  if(!currentUser){ updateTagGroupsButtonVisibility(); updateSchoolAdminButtonVisibility(); updateDisciplineAdminButtonVisibility(); updateRaceAdminLinksVisibility(); updateRankAdminLinksVisibility(); updateCharsheetLayoutAdminLinkVisibility(); updateClassSettingsAdminLinkVisibility(); updateEasterEggToggleVisibility(); return; }
   try{
     const { data, error } = await supabaseClient
       .from('spell_editors')
@@ -4169,6 +4290,7 @@ async function checkSpellEditorStatus(){
   updateRankAdminLinksVisibility();
   updateCharsheetLayoutAdminLinkVisibility();
   updateClassSettingsAdminLinkVisibility();
+  updateEasterEggToggleVisibility();
   render();
   if(currentView === 'warrior') renderWarrior();
   if(currentView === 'crafting') renderCrafting();
@@ -4218,7 +4340,7 @@ async function checkSpellEditorStatus(){
 */
 async function checkPregnancyViewerStatus(){
   isPregnancyViewer = false;
-  if(!currentUser){ updatePregnancyPanelVisibility(); return; }
+  if(!currentUser){ updatePregnancyPanelVisibility(); updateChildrenPanelVisibility(); return; }
   try{
     const { data, error } = await supabaseClient
       .from('pregnancy_viewers')
@@ -4233,8 +4355,12 @@ async function checkPregnancyViewerStatus(){
     }
   }catch(e){ console.error('[pregnancy] role check threw:', e); }
   updatePregnancyPanelVisibility();
+  updateChildrenPanelVisibility();
   if(isPregnancyViewer){
-    await loadPregnancyData(isViewingOther && pregnancyShownForUserId ? pregnancyShownForUserId : currentUser.id);
+    const targetId = isViewingOther && pregnancyShownForUserId ? pregnancyShownForUserId : currentUser.id;
+    await loadPregnancyData(targetId);
+    await loadChildren(targetId);
+    await checkAndApplyPregnancyDueBirth();
   }
 }
 
@@ -4287,6 +4413,98 @@ async function loadClassSettings(){
 }
 
 function canManageClassSettings(){ return isSpellEditor; }
+
+/* ---------- "FALLEN GATEKEEP" EASTER EGG ----------
+   A little joke, editor-controlled and site-wide (same single-row-table
+   pattern as class_settings) — once toggled on, replaces "Fallen Gate"
+   with "Fallen Gatekeep" everywhere on the page for every visitor, not
+   just the toggling editor. Uses a MutationObserver (rather than a
+   one-time pass) so it keeps catching new text as the app re-renders —
+   opening modals, switching views, spell descriptions, rank text,
+   whatever — without needing to touch every render function individually.
+   Only ever rewrites actual text content, never HTML/attributes, so it
+   can't break any functionality — worst case it's just a harmless joke. */
+let EASTER_EGG_ENABLED = false;
+let easterEggObserver = null;
+const FALLEN_GATE_RE = /Fallen Gate(?!keep)/g;
+const FALLEN_GATEKEEP_RE = /Fallen Gatekeep/g;
+
+async function loadEasterEggSetting(){
+  try{
+    const { data, error } = await supabaseClient.from('site_easter_egg').select('enabled').eq('id', 1).maybeSingle();
+    if(!error && data) EASTER_EGG_ENABLED = !!data.enabled;
+  }catch(e){ console.error('Could not load easter egg setting from cloud:', e); }
+  updateEasterEggToggleVisibility();
+  if(EASTER_EGG_ENABLED) startEasterEggObserver();
+}
+
+function updateEasterEggToggleVisibility(){
+  const btn = document.getElementById('easter-egg-toggle');
+  if(!btn) return;
+  btn.style.display = isSpellEditor ? '' : 'none';
+  btn.classList.toggle('active', EASTER_EGG_ENABLED);
+}
+
+function walkAndReplaceFallenGate(root){
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+  let node;
+  while((node = walker.nextNode())){
+    if(node.nodeValue && FALLEN_GATE_RE.test(node.nodeValue)){
+      node.nodeValue = node.nodeValue.replace(FALLEN_GATE_RE, 'Fallen Gatekeep');
+    }
+  }
+}
+function walkAndRevertFallenGatekeep(root){
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+  let node;
+  while((node = walker.nextNode())){
+    if(node.nodeValue && FALLEN_GATEKEEP_RE.test(node.nodeValue)){
+      node.nodeValue = node.nodeValue.replace(FALLEN_GATEKEEP_RE, 'Fallen Gate');
+    }
+  }
+}
+
+function startEasterEggObserver(){
+  if(easterEggObserver) return;
+  walkAndReplaceFallenGate(document.body);
+  easterEggObserver = new MutationObserver(mutations => {
+    mutations.forEach(m => {
+      if(m.type === 'characterData'){
+        const n = m.target;
+        if(n.nodeValue && FALLEN_GATE_RE.test(n.nodeValue)) n.nodeValue = n.nodeValue.replace(FALLEN_GATE_RE, 'Fallen Gatekeep');
+      } else if(m.type === 'childList'){
+        m.addedNodes.forEach(added => {
+          if(added.nodeType === Node.TEXT_NODE){
+            if(added.nodeValue && FALLEN_GATE_RE.test(added.nodeValue)) added.nodeValue = added.nodeValue.replace(FALLEN_GATE_RE, 'Fallen Gatekeep');
+          } else if(added.nodeType === Node.ELEMENT_NODE){
+            walkAndReplaceFallenGate(added);
+          }
+        });
+      }
+    });
+  });
+  easterEggObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
+}
+
+function stopEasterEggObserver(){
+  if(easterEggObserver){ easterEggObserver.disconnect(); easterEggObserver = null; }
+  walkAndRevertFallenGatekeep(document.body);
+}
+
+window.toggleFallenGatekeepEasterEgg = async function(){
+  if(!isSpellEditor) return;
+  const next = !EASTER_EGG_ENABLED;
+  try{
+    const { error } = await supabaseClient.from('site_easter_egg').update({ enabled: next }).eq('id', 1);
+    if(error) throw error;
+    EASTER_EGG_ENABLED = next;
+    updateEasterEggToggleVisibility();
+    if(EASTER_EGG_ENABLED) startEasterEggObserver(); else stopEasterEggObserver();
+  }catch(e){
+    alert('Could not update the easter egg setting: ' + (e.message || e));
+  }
+};
+
 function updateClassSettingsAdminLinkVisibility(){
   const el = document.getElementById('class-settings-admin-link');
   if(el) el.style.display = canManageClassSettings() ? '' : 'none';
@@ -5252,6 +5470,215 @@ async function savePregnancyData(){
     if(note) note.textContent = 'Network error while saving.';
   }
 }
+
+/* ---------- CHILDREN (restricted, same role as Pregnancy — see children_setup.sql) ----------
+   Same visibility model as pregnancy_data: any pregnancy_viewers member
+   can see every child (across everyone), but can only add/edit/delete
+   children filed under their own account — enforced both here and by
+   the table's RLS, same as Pregnancy. Age is computed live from
+   birthday, treating every real-world day as 1 year — matching the
+   pregnancy panel's own "conception + 9 days = due" accelerated
+   timescale, just phrased differently. */
+let children = [];
+let childrenShownForUserId = null;
+
+function childrenFieldsEditable(){
+  return isPregnancyViewer && !isViewingOther && !editLocked
+    && !!currentUser && childrenShownForUserId === currentUser.id;
+}
+
+function todayLocalDateString(d){
+  d = d || new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+// Every real-world calendar day since the birthday counts as 1 year —
+// compared at midnight-to-midnight so it doesn't depend on time-of-day.
+function computeChildAgeYears(birthday){
+  if(!birthday) return 0;
+  const bd = new Date(birthday + 'T00:00:00');
+  if(isNaN(bd.getTime())) return 0;
+  const now = new Date();
+  const bdMidnight = new Date(bd.getFullYear(), bd.getMonth(), bd.getDate());
+  const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const days = Math.round((nowMidnight - bdMidnight) / (24 * 60 * 60 * 1000));
+  return Math.max(0, days);
+}
+
+async function loadChildren(userId){
+  if(!isPregnancyViewer || !userId) return;
+  childrenShownForUserId = userId;
+  const note = document.getElementById('children-panel-note');
+  try{
+    const { data, error } = await supabaseClient
+      .from('children')
+      .select('id, name, birthday, gender, description')
+      .eq('user_id', userId)
+      .order('birthday', { ascending: true });
+    if(error){ if(note) note.textContent = 'Could not load: ' + error.message; return; }
+    children = data || [];
+    renderChildrenList();
+    if(note) note.textContent = '';
+  }catch(e){
+    if(note) note.textContent = 'Network error loading children.';
+  }
+  const bdayEl = document.getElementById('child-new-birthday');
+  if(bdayEl && !bdayEl.value) bdayEl.value = todayLocalDateString();
+}
+
+function updateChildrenPanelVisibility(){
+  const panel = document.getElementById('children-panel');
+  if(panel) panel.style.display = isPregnancyViewer ? '' : 'none';
+}
+
+function renderChildrenList(){
+  const listEl = document.getElementById('children-list');
+  const countEl = document.getElementById('children-count-badge');
+  const addRow = document.getElementById('children-add-row');
+  if(!listEl) return;
+  const editable = childrenFieldsEditable();
+  if(countEl) countEl.textContent = `${children.length} child${children.length === 1 ? '' : 'ren'}`;
+  if(addRow) addRow.style.display = editable ? '' : 'none';
+  const dis = editable ? '' : 'disabled';
+  listEl.innerHTML = children.length ? children.map(c => {
+    const age = computeChildAgeYears(c.birthday);
+    return `<div class="child-row">
+      <div class="child-row-main">
+        <input type="text" value="${escapeHtml(c.name)}" placeholder="Name" ${dis} onchange="onChildFieldChange('${c.id}','name',this.value)">
+        <input type="date" value="${c.birthday || ''}" ${dis} onchange="onChildFieldChange('${c.id}','birthday',this.value)">
+        <select ${dis} onchange="onChildFieldChange('${c.id}','gender',this.value)">
+          <option value="" ${!c.gender ? 'selected' : ''}>— Unspecified —</option>
+          <option value="male" ${c.gender === 'male' ? 'selected' : ''}>Male</option>
+          <option value="female" ${c.gender === 'female' ? 'selected' : ''}>Female</option>
+          <option value="other" ${c.gender === 'other' ? 'selected' : ''}>Other</option>
+        </select>
+        <span class="child-age-badge">${age} yr${age === 1 ? '' : 's'} old</span>
+        ${editable ? `<button type="button" class="teaching-remove-student-btn" title="Remove this child" onclick="deleteChild('${c.id}')">✕</button>` : ''}
+      </div>
+      <textarea class="child-description" placeholder="Description (optional)" ${dis} onchange="onChildFieldChange('${c.id}','description',this.value)">${escapeHtml(c.description || '')}</textarea>
+    </div>`;
+  }).join('') : `<p class="rollbuff-list-empty">No children added yet.</p>`;
+}
+
+window.onChildFieldChange = async function(id, field, value){
+  if(!childrenFieldsEditable()) return;
+  const child = children.find(c => c.id === id);
+  if(!child) return;
+  child[field] = value;
+  if(field === 'birthday') renderChildrenList(); // refresh the age badge immediately
+  const note = document.getElementById('children-panel-note');
+  try{
+    const { error } = await supabaseClient.from('children').update({ [field]: value }).eq('id', id);
+    if(error) throw error;
+    if(note){
+      note.textContent = 'Saved ✓';
+      clearTimeout(window._childSaveTimer);
+      window._childSaveTimer = setTimeout(() => { if(note) note.textContent = ''; }, 1200);
+    }
+  }catch(e){
+    if(note) note.textContent = 'Error saving: ' + (e.message || e);
+  }
+};
+
+window.addChild = async function(){
+  if(!childrenFieldsEditable()) return;
+  const nameEl = document.getElementById('child-new-name');
+  const bdayEl = document.getElementById('child-new-birthday');
+  const genderEl = document.getElementById('child-new-gender');
+  const descEl = document.getElementById('child-new-description');
+  const note = document.getElementById('children-panel-note');
+  const name = nameEl.value.trim();
+  if(!name){ if(note) note.textContent = 'Enter a name first.'; return; }
+  try{
+    const { data, error } = await supabaseClient.from('children').insert({
+      user_id: currentUser.id,
+      name,
+      birthday: bdayEl.value || todayLocalDateString(),
+      gender: genderEl.value || '',
+      description: descEl.value || '',
+    }).select().single();
+    if(error) throw error;
+    children.push(data);
+    children.sort((a, b) => (a.birthday || '').localeCompare(b.birthday || ''));
+    renderChildrenList();
+    nameEl.value = '';
+    descEl.value = '';
+    genderEl.value = '';
+    bdayEl.value = todayLocalDateString(); // reset back to today for the next one
+    if(note){
+      note.textContent = 'Added ✓';
+      clearTimeout(window._childSaveTimer);
+      window._childSaveTimer = setTimeout(() => { if(note) note.textContent = ''; }, 1200);
+    }
+  }catch(e){
+    if(note) note.textContent = 'Error adding: ' + (e.message || e);
+  }
+};
+
+window.deleteChild = async function(id){
+  if(!childrenFieldsEditable()) return;
+  if(!confirm('Remove this child permanently? This cannot be undone.')) return;
+  try{
+    const { error } = await supabaseClient.from('children').delete().eq('id', id);
+    if(error) throw error;
+    children = children.filter(c => c.id !== id);
+    renderChildrenList();
+  }catch(e){
+    alert('Could not delete: ' + (e.message || e));
+  }
+};
+
+/* ---------- AUTOMATIC BIRTH AT DUE DATE ----------
+   Once the due date (conception + exactly 9 days) has passed, creates one
+   blank Children entry per baby — name/gender/description left empty for
+   whoever's tracking it to fill in later, but birthday auto-set to the
+   due date — and resets Pregnancy back to not-pregnant. Only ever acts on
+   the logged-in user's OWN pregnancy row (never someone else's, even if
+   currently being viewed), mirroring how the stat/armor reset timers only
+   ever touch your own sheet. Checked on load/switch and periodically —
+   see the setInterval/visibilitychange/focus wiring in boot(). */
+async function checkAndApplyPregnancyDueBirth(){
+  if(!isPregnancyViewer || !currentUser) return;
+  if(isViewingOther || pregnancyShownForUserId !== currentUser.id) return;
+  if(!pregnancyData.is_pregnant || !pregnancyData.conception_at) return;
+  const conception = new Date(pregnancyData.conception_at);
+  if(isNaN(conception.getTime())) return;
+  const due = new Date(conception.getTime() + GESTATION_MS);
+  if(due.getTime() > Date.now()) return; // not due yet
+
+  const note = document.getElementById('pregnancy-panel-note');
+  const babyCount = Math.max(1, pregnancyData.baby_count || 1);
+  const birthday = todayLocalDateString(due);
+
+  try{
+    const rows = Array.from({ length: babyCount }, () => ({
+      user_id: currentUser.id,
+      name: '',
+      birthday,
+      gender: '',
+      description: '',
+    }));
+    const { data, error } = await supabaseClient.from('children').insert(rows).select();
+    if(error) throw error;
+    if(data && data.length){
+      children = children.concat(data);
+      children.sort((a, b) => (a.birthday || '').localeCompare(b.birthday || ''));
+      renderChildrenList();
+    }
+
+    pregnancyData = { is_pregnant: false, baby_count: 1, conception_at: '' };
+    populatePregnancyFields();
+    await savePregnancyData();
+
+    if(note) note.textContent = `🎉 ${babyCount} ${babyCount === 1 ? 'baby' : 'babies'} born! Added to Children below — fill in the name(s) whenever you're ready.`;
+  }catch(e){
+    console.error('Could not auto-create children at due date:', e);
+    const pnote = document.getElementById('pregnancy-panel-note');
+    if(pnote) pnote.textContent = "Due date reached, but couldn't automatically add the child/children: " + (e.message || e);
+  }
+}
+
 
 async function saveSpellMetaRow(id, meta){
   const payload = {
@@ -9488,7 +9915,7 @@ function switchToAlternativeSheet(targetUserId) {
     if(currentView === 'warrior') renderWarrior();
     if(currentView === 'crafting') renderCrafting();
     applyEditLockState(); 
-    if(isPregnancyViewer) loadPregnancyData(targetUserId);
+    if(isPregnancyViewer){ loadPregnancyData(targetUserId); loadChildren(targetUserId).then(checkAndApplyPregnancyDueBirth); }
   }
 }
 
@@ -9535,7 +9962,7 @@ function returnToOwnSheet() {
     if(currentView === 'crafting') renderCrafting();
   applyEditLockState(); 
   saveState(false); 
-  if(isPregnancyViewer && currentUser) loadPregnancyData(currentUser.id);
+  if(isPregnancyViewer && currentUser){ loadPregnancyData(currentUser.id); loadChildren(currentUser.id).then(checkAndApplyPregnancyDueBirth); }
 }
 
 async function signUp(){
@@ -9588,6 +10015,9 @@ async function signOut(){
   pregnancyData = { is_pregnant: false, baby_count: 1, conception_at: '' };
   pregnancyShownForUserId = null;
   updatePregnancyPanelVisibility();
+  children = [];
+  childrenShownForUserId = null;
+  updateChildrenPanelVisibility();
   updateAuthUI();
   updateTagGroupsButtonVisibility();
   setCloudStatus('Logged out.', false);
@@ -11084,6 +11514,7 @@ function applyEditLockState(){
   toggleReadOnly(isViewingOther || editLocked);
   updateEditLockButtonUI();
   if(isPregnancyViewer) populatePregnancyFields();
+  if(isPregnancyViewer) renderChildrenList();
 }
 
 function updateEditLockButtonUI(){
@@ -11690,6 +12121,7 @@ window.addEventListener('beforeunload', function(e){
   await loadRacesAndAbilities();    // fetch Races + their racial special abilities from the cloud
   await loadRanks();                // fetch Ranks (base stats + reset hours + description) from the cloud
   await loadCharsheetLayoutDefault(); // fetch the editor-set standard character-sheet block arrangement
+  await loadEasterEggSetting();       // fetch + apply the "Fallen Gatekeep" joke toggle, if an editor has turned it on
   renderTagFilters();
   renderWsTagFilters();
   renderCraftTagFilters();
@@ -11716,14 +12148,16 @@ window.addEventListener('beforeunload', function(e){
   // throttle setInterval in background tabs, so also re-check immediately
   // whenever the tab regains focus/visibility — otherwise a reset that
   // was due while the tab was backgrounded could sit stale until the
-  // interval eventually fires (or the page is reloaded).
+  // interval eventually fires (or the page is reloaded). Same idea for a
+  // Pregnancy due date passing while the tab is left open.
   checkAndApplyStatRefill();
   checkAndApplyArmorRefill();
-  setInterval(() => { checkAndApplyStatRefill(); checkAndApplyArmorRefill(); }, 60000);
+  checkAndApplyPregnancyDueBirth();
+  setInterval(() => { checkAndApplyStatRefill(); checkAndApplyArmorRefill(); checkAndApplyPregnancyDueBirth(); }, 60000);
   document.addEventListener('visibilitychange', () => {
-    if(document.visibilityState === 'visible'){ checkAndApplyStatRefill(); checkAndApplyArmorRefill(); }
+    if(document.visibilityState === 'visible'){ checkAndApplyStatRefill(); checkAndApplyArmorRefill(); checkAndApplyPregnancyDueBirth(); }
   });
-  window.addEventListener('focus', () => { checkAndApplyStatRefill(); checkAndApplyArmorRefill(); });
+  window.addEventListener('focus', () => { checkAndApplyStatRefill(); checkAndApplyArmorRefill(); checkAndApplyPregnancyDueBirth(); });
 })();
 window.addEventListener('load', () => requestAnimationFrame(alignEditLockWithAuthBar));
 </script>
