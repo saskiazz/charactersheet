@@ -1545,6 +1545,17 @@
     border-top:1px dashed var(--hairline);
     margin-top:6px;
   }
+  .partner-note-text{
+    font-size:17px;
+    line-height:1.6;
+    color:var(--parchment);
+    white-space:pre-wrap;
+    background:rgba(0,0,0,0.14);
+    border:1px solid var(--hairline);
+    border-radius:var(--radius-sm);
+    padding:14px 18px;
+    margin:0;
+  }
 
   /* TEACHING — only rendered/populated for users holding the `teachers`
      role (see checkTeacherStatus). A checklist tool for running a
@@ -2829,81 +2840,6 @@
 
     </div>
 
-
-    <!-- RESTRICTED PREGNANCY PANEL — a separate little menu, deliberately
-         kept outside .charsheet-grid and outside `state`. It is hidden by
-         default and only shown/populated by JS for users the site owner
-         has added to the "pregnancy_viewers" table in Supabase. Even spell
-         editors / warrior skill editors / oracles do NOT get access to
-         this — it's its own role, checked independently. See
-         checkPregnancyViewerStatus() and loadPregnancyData(). -->
-    <div class="pregnancy-panel" id="pregnancy-panel" style="display:none;">
-      <div class="pregnancy-panel-title">🤰 Pregnancy (Restricted)</div>
-      <div class="pregnancy-panel-sub">Only visible to people specifically granted this access.</div>
-      <div class="pregnancy-panel-row">
-        <div class="pregnancy-field pregnancy-field-check">
-          <input type="checkbox" id="preg-is-pregnant" onchange="onPregnancyFieldChange()">
-          <label for="preg-is-pregnant">Pregnant</label>
-        </div>
-        <div class="pregnancy-field" id="preg-babies-wrap">
-          <label for="preg-baby-count"># of Babies</label>
-          <input type="number" id="preg-baby-count" min="1" max="20" step="1" value="1" onchange="onPregnancyFieldChange()">
-        </div>
-        <div class="pregnancy-field" id="preg-conception-wrap">
-          <label for="preg-conception-date">Conception Date</label>
-          <input type="date" id="preg-conception-date" onchange="onPregnancyFieldChange()">
-        </div>
-        <div class="pregnancy-field" id="preg-conception-time-wrap">
-          <label for="preg-conception-time">Conception Time (sec.)</label>
-          <input type="time" id="preg-conception-time" step="1" onchange="onPregnancyFieldChange()">
-        </div>
-      </div>
-      <div class="pregnancy-due-display" id="preg-due-display" style="display:none;">
-        <div class="pregnancy-due-label">Due (conception + exactly 9 days)</div>
-        <div class="pregnancy-due-date" id="preg-due-date-text">—</div>
-        <div class="pregnancy-countdown" id="preg-countdown-text">—</div>
-      </div>
-      <div class="pregnancy-panel-note" id="pregnancy-panel-note"></div>
-    </div>
-
-    <!-- CHILDREN (same restricted role as Pregnancy, see checkPregnancyViewerStatus)
-         Age is computed live from birthday — every real-world day counts
-         as 1 year, matching the same accelerated timescale as Pregnancy's
-         "conception + 9 days = due". -->
-    <div class="pregnancy-panel children-panel" id="children-panel" style="display:none;">
-      <div class="pregnancy-panel-title">👶 Children (Restricted)</div>
-      <div class="pregnancy-panel-sub">Only visible to people specifically granted this access. Age counts every real-world day as 1 year.</div>
-      <div class="children-count-badge" id="children-count-badge">0 children</div>
-
-      <div id="children-list"></div>
-
-      <div class="children-add-row" id="children-add-row">
-        <div class="pregnancy-field">
-          <label for="child-new-name">Name</label>
-          <input type="text" id="child-new-name" placeholder="Child's name">
-        </div>
-        <div class="pregnancy-field">
-          <label for="child-new-birthday">Birthday</label>
-          <input type="date" id="child-new-birthday">
-        </div>
-        <div class="pregnancy-field">
-          <label for="child-new-gender">Gender</label>
-          <select id="child-new-gender">
-            <option value="">— Unspecified —</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-        <div class="pregnancy-field" style="flex:1 1 220px;">
-          <label for="child-new-description">Description <span class="modal-hint" style="text-transform:none;letter-spacing:0;">(optional)</span></label>
-          <input type="text" id="child-new-description" placeholder="Anything worth noting...">
-        </div>
-        <button type="button" class="teaching-new-lesson-btn" onclick="addChild()">+ Add Child</button>
-      </div>
-
-      <div class="pregnancy-panel-note" id="children-panel-note"></div>
-    </div>
   </div>
 
   <div class="view-toggle">
@@ -2911,6 +2847,7 @@
     <button type="button" class="view-toggle-btn" id="view-toggle-warrior" onclick="switchView('warrior')">⚔ Warrior Skills</button>
     <button type="button" class="view-toggle-btn" id="view-toggle-crafting" onclick="switchView('crafting')">🔨 Crafting</button>
     <button type="button" class="view-toggle-btn" id="view-toggle-teaching" onclick="switchView('teaching')" style="display:none;">🎓 Teaching</button>
+    <button type="button" class="view-toggle-btn" id="view-toggle-family" onclick="switchView('family')" style="display:none;">👶 Family</button>
   </div>
 
   <div id="spell-view">
@@ -3158,6 +3095,107 @@
     </div>
 
   </div><!-- /#teaching-view -->
+
+  <!-- RESTRICTED FAMILY VIEW — its own tab (hidden entirely unless
+       checkPregnancyViewerStatus() grants access), rather than sitting
+       inline on every character sheet. Only spell editors / warrior
+       skill editors / oracles do NOT automatically get this — it's its
+       own separate role, checked independently. Holds both the Pregnancy
+       and Children panels. See checkPregnancyViewerStatus(),
+       loadPregnancyData(), and loadChildren(). -->
+  <div id="family-view" style="display:none;">
+
+    <!-- PARTNER NOTE — a totally separate role ("sasadmin"), not shared
+         with pregnancy_viewers/teachers/editors. Not a messaging system:
+         one message, one recipient at a time, editable only by whoever
+         holds the sasadmin role. RLS on partner_note means literally
+         nobody else can even read the row — see sasadmin_setup.sql.
+         The recipient's view is deliberately plain — just the text,
+         no title/icon/framing implying it's "a note". -->
+    <div class="pregnancy-panel" id="partner-note-wrap" style="display:none;margin-bottom:24px;">
+      <div id="partner-note-editor" style="display:none;">
+        <div class="pregnancy-panel-title">💌 Little Note</div>
+        <div class="pregnancy-panel-sub">Only visible to you (to edit) and whoever you pick below (to read) — nobody else, not even other people with Family access.</div>
+        <div class="pregnancy-field" style="margin-bottom:12px;max-width:320px;">
+          <label for="partner-note-target-select">Send to</label>
+          <select id="partner-note-target-select" onchange="onPartnerNoteTargetChange(this.value)"></select>
+        </div>
+        <div class="pregnancy-field">
+          <label for="partner-note-message">Message</label>
+          <textarea id="partner-note-message" rows="3" class="child-description" style="width:100%;box-sizing:border-box;" oninput="onPartnerNoteMessageChange(this.value)" placeholder="Write something sweet..."></textarea>
+        </div>
+        <div class="pregnancy-panel-note" id="partner-note-status"></div>
+      </div>
+      <div id="partner-note-viewer" style="display:none;">
+        <p class="partner-note-text" id="partner-note-viewer-text"></p>
+      </div>
+    </div>
+
+    <div class="pregnancy-panel" id="pregnancy-panel" style="display:none;">
+      <div class="pregnancy-panel-title">🤰 Pregnancy (Restricted)</div>
+      <div class="pregnancy-panel-sub">Only visible to people specifically granted this access.</div>
+      <div class="pregnancy-panel-row">
+        <div class="pregnancy-field pregnancy-field-check">
+          <input type="checkbox" id="preg-is-pregnant" onchange="onPregnancyFieldChange()">
+          <label for="preg-is-pregnant">Pregnant</label>
+        </div>
+        <div class="pregnancy-field" id="preg-babies-wrap">
+          <label for="preg-baby-count"># of Babies</label>
+          <input type="number" id="preg-baby-count" min="1" max="20" step="1" value="1" onchange="onPregnancyFieldChange()">
+        </div>
+        <div class="pregnancy-field" id="preg-conception-wrap">
+          <label for="preg-conception-date">Conception Date</label>
+          <input type="date" id="preg-conception-date" onchange="onPregnancyFieldChange()">
+        </div>
+        <div class="pregnancy-field" id="preg-conception-time-wrap">
+          <label for="preg-conception-time">Conception Time (sec.)</label>
+          <input type="time" id="preg-conception-time" step="1" onchange="onPregnancyFieldChange()">
+        </div>
+      </div>
+      <div class="pregnancy-due-display" id="preg-due-display" style="display:none;">
+        <div class="pregnancy-due-label">Due (conception + exactly 9 days)</div>
+        <div class="pregnancy-due-date" id="preg-due-date-text">—</div>
+        <div class="pregnancy-countdown" id="preg-countdown-text">—</div>
+      </div>
+      <div class="pregnancy-panel-note" id="pregnancy-panel-note"></div>
+    </div>
+
+    <div class="pregnancy-panel children-panel" id="children-panel" style="display:none;margin-top:24px;">
+      <div class="pregnancy-panel-title">👶 Children (Restricted)</div>
+      <div class="pregnancy-panel-sub">Only visible to people specifically granted this access. Age counts every real-world day as 1 year.</div>
+      <div class="children-count-badge" id="children-count-badge">0 children</div>
+
+      <div id="children-list"></div>
+
+      <div class="children-add-row" id="children-add-row">
+        <div class="pregnancy-field">
+          <label for="child-new-name">Name</label>
+          <input type="text" id="child-new-name" placeholder="Child's name">
+        </div>
+        <div class="pregnancy-field">
+          <label for="child-new-birthday">Birthday</label>
+          <input type="date" id="child-new-birthday">
+        </div>
+        <div class="pregnancy-field">
+          <label for="child-new-gender">Gender</label>
+          <select id="child-new-gender">
+            <option value="">— Unspecified —</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="pregnancy-field" style="flex:1 1 220px;">
+          <label for="child-new-description">Description <span class="modal-hint" style="text-transform:none;letter-spacing:0;">(optional)</span></label>
+          <input type="text" id="child-new-description" placeholder="Anything worth noting...">
+        </div>
+        <button type="button" class="teaching-new-lesson-btn" onclick="addChild()">+ Add Child</button>
+      </div>
+
+      <div class="pregnancy-panel-note" id="children-panel-note"></div>
+    </div>
+
+  </div><!-- /#family-view -->
 
   <footer>Progress saves automatically to your local storage. Cloud saving of your character sheet only happens when you click "Save to Cloud Now" while logged in. Spell descriptions, tags, costs and damage are shared reference data stored centrally in the cloud for everyone using this tracker; only designated editors can change them (click a spell name to view or, if you're an editor, edit it).</footer>
 
@@ -4380,6 +4418,107 @@ function updateTeacherNavVisibility(){
   if(isTeacher && currentView === 'teaching') renderTeachingPanel();
 }
 
+/* ---------- SASADMIN + PARTNER NOTE ----------
+   A brand-new, standalone role — deliberately NOT shared with
+   spell_editors/teachers/pregnancy_viewers. Does exactly one thing: lets
+   whoever holds it write a short message that only shows up for one
+   specific person, inside the Family tab. Not a messaging system — one
+   message, one recipient at a time, and only the sasadmin can write it.
+   RLS on partner_note (see sasadmin_setup.sql) means literally nobody
+   else, not even other Family-tab people, can read the row at all. */
+let isSasadmin = false;
+let partnerNote = { targetUserId: null, message: '' };
+
+async function checkSasadminStatus(){
+  isSasadmin = false;
+  if(!currentUser){ partnerNote = { targetUserId: null, message: '' }; renderPartnerNoteUI(); return; }
+  try{
+    const { data, error } = await supabaseClient
+      .from('sasadmin')
+      .select('user_id')
+      .eq('user_id', currentUser.id)
+      .maybeSingle();
+    if(!error && data) isSasadmin = true;
+  }catch(e){ console.error('[sasadmin] role check failed:', e); }
+  await loadPartnerNote();
+  if(isSasadmin && currentUser && (!globalOtherSheetsData || !globalOtherSheetsData.length)) await fetchOtherCharacters();
+  renderPartnerNoteUI();
+}
+
+async function loadPartnerNote(){
+  try{
+    // RLS means this simply returns no row at all for anyone who's
+    // neither the sasadmin nor the current recipient — not an error.
+    const { data, error } = await supabaseClient.from('partner_note').select('*').eq('id', 1).maybeSingle();
+    if(!error && data) partnerNote = { targetUserId: data.target_user_id || null, message: data.message || '' };
+    else if(!data) partnerNote = { targetUserId: null, message: '' };
+  }catch(e){ console.error('Could not load partner note (expected unless you\'re the sasadmin or the recipient):', e); }
+}
+
+function renderPartnerNoteUI(){
+  const wrap = document.getElementById('partner-note-wrap');
+  const editor = document.getElementById('partner-note-editor');
+  const viewer = document.getElementById('partner-note-viewer');
+  if(!wrap || !editor || !viewer) return;
+
+  if(isSasadmin){
+    wrap.style.display = '';
+    editor.style.display = '';
+    viewer.style.display = 'none';
+    const sel = document.getElementById('partner-note-target-select');
+    if(sel){
+      const charOptions = (globalOtherSheetsData || []).map(r => ({
+        id: r.user_id,
+        name: (r.data && r.data.charInfo && r.data.charInfo.name) ? r.data.charInfo.name.trim() : 'Unnamed Character',
+      })).sort((a, b) => a.name.localeCompare(b.name));
+      sel.innerHTML = `<option value="">— Choose who sees this —</option>` + charOptions.map(c => `<option value="${c.id}" ${c.id === partnerNote.targetUserId ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('');
+    }
+    const msgEl = document.getElementById('partner-note-message');
+    if(msgEl && document.activeElement !== msgEl) msgEl.value = partnerNote.message;
+  } else if(currentUser && partnerNote.targetUserId === currentUser.id && partnerNote.message.trim()){
+    wrap.style.display = '';
+    editor.style.display = 'none';
+    viewer.style.display = '';
+    const textEl = document.getElementById('partner-note-viewer-text');
+    if(textEl) textEl.textContent = partnerNote.message;
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+
+let partnerNoteSaveTimer = null;
+window.onPartnerNoteTargetChange = function(val){
+  if(!isSasadmin) return;
+  partnerNote.targetUserId = val || null;
+  savePartnerNote();
+};
+window.onPartnerNoteMessageChange = function(val){
+  if(!isSasadmin) return;
+  partnerNote.message = val;
+  clearTimeout(partnerNoteSaveTimer);
+  partnerNoteSaveTimer = setTimeout(savePartnerNote, 800);
+};
+async function savePartnerNote(){
+  if(!isSasadmin) return;
+  const statusEl = document.getElementById('partner-note-status');
+  if(statusEl) statusEl.textContent = 'Saving...';
+  try{
+    const { error } = await supabaseClient.from('partner_note').update({
+      target_user_id: partnerNote.targetUserId,
+      message: partnerNote.message,
+      updated_at: new Date().toISOString(),
+    }).eq('id', 1);
+    if(error) throw error;
+    if(statusEl){
+      statusEl.textContent = 'Saved ✓';
+      clearTimeout(window._partnerNoteStatusTimer);
+      window._partnerNoteStatusTimer = setTimeout(() => { if(statusEl) statusEl.textContent = ''; }, 1200);
+    }
+  }catch(e){
+    if(statusEl) statusEl.textContent = 'Error: ' + (e.message || e);
+  }
+}
+
 /* ---------- CLASS SETTINGS (max spells per class — editor configurable) ---------- */
 let CLASS_SETTINGS = { maxSpellsPerClass: 2 };
 
@@ -5423,6 +5562,9 @@ async function loadChildren(userId){
 function updateChildrenPanelVisibility(){
   const panel = document.getElementById('children-panel');
   if(panel) panel.style.display = isPregnancyViewer ? '' : 'none';
+  const navBtn = document.getElementById('view-toggle-family');
+  if(navBtn) navBtn.style.display = isPregnancyViewer ? '' : 'none';
+  if(!isPregnancyViewer && currentView === 'family') switchView('spells');
 }
 
 function renderChildrenList(){
@@ -6749,26 +6891,31 @@ function applyWsFilters(){
 /* ---------- VIEW TOGGLE ---------- */
 window.switchView = function(view){
   if(view === 'teaching' && !isTeacher) view = 'spells'; // guard against a stale saved view (e.g. role was revoked)
+  if(view === 'family' && !isPregnancyViewer) view = 'spells';
   currentView = view;
   localStorage.setItem('spellbook_active_view', view);
   const isSpells = view === 'spells';
   const isWarrior = view === 'warrior';
   const isCrafting = view === 'crafting';
   const isTeaching = view === 'teaching';
+  const isFamily = view === 'family';
   document.getElementById('spell-view').style.display = isSpells ? '' : 'none';
   document.getElementById('warrior-view').style.display = isWarrior ? '' : 'none';
   document.getElementById('crafting-view').style.display = isCrafting ? '' : 'none';
   document.getElementById('teaching-view').style.display = isTeaching ? '' : 'none';
+  document.getElementById('family-view').style.display = isFamily ? '' : 'none';
   document.getElementById('view-toggle-spells').classList.toggle('active', isSpells);
   document.getElementById('view-toggle-warrior').classList.toggle('active', isWarrior);
   document.getElementById('view-toggle-crafting').classList.toggle('active', isCrafting);
   document.getElementById('view-toggle-teaching').classList.toggle('active', isTeaching);
-  document.getElementById('page-title').textContent = isSpells ? 'Spellbook Tracker' : (isWarrior ? 'Warrior Skills Tracker' : (isCrafting ? 'Crafting Tracker' : 'Teaching a Spell'));
+  document.getElementById('view-toggle-family').classList.toggle('active', isFamily);
+  document.getElementById('page-title').textContent = isSpells ? 'Spellbook Tracker' : (isWarrior ? 'Warrior Skills Tracker' : (isCrafting ? 'Crafting Tracker' : (isTeaching ? 'Teaching a Spell' : 'Family')));
   document.getElementById('page-subtitle').textContent = isSpells
     ? "Track what you know, what you're missing, and where you stand as Savant or Oracle"
     : (isWarrior ? 'Track passed learning rolls toward each warrior skill, discipline by discipline'
                  : (isCrafting ? 'Track which recipes you know across Jewelry, Blacksmithing, and Alchemy'
-                                : 'A checklist for running a spell-teaching session for up to 10 students'));
+                                : (isTeaching ? 'A checklist for running a spell-teaching session for up to 10 students'
+                                              : 'Restricted — Pregnancy and Children tracking')));
   if(isWarrior) renderWarrior();
   if(isCrafting) renderCrafting();
   if(isTeaching) renderTeachingPanel();
@@ -9918,6 +10065,7 @@ async function signUp(){
     await checkSpellEditorStatus();
     await checkPregnancyViewerStatus();
     await checkTeacherStatus();
+    await checkSasadminStatus();
     await loadFromCloud();
   } else {
     setCloudStatus('Signed up! If email confirmation is enabled, please confirm your email and then log in.', false);
@@ -9939,6 +10087,7 @@ async function signIn(){
   await checkSpellEditorStatus();
   await checkPregnancyViewerStatus();
   await checkTeacherStatus();
+  await checkSasadminStatus();
   await loadFromCloud();
 }
 
@@ -9955,6 +10104,9 @@ async function signOut(){
   children = [];
   childrenShownForUserId = null;
   updateChildrenPanelVisibility();
+  isSasadmin = false;
+  partnerNote = { targetUserId: null, message: '' };
+  renderPartnerNoteUI();
   updateAuthUI();
   updateTagGroupsButtonVisibility();
   setCloudStatus('Logged out.', false);
@@ -9967,6 +10119,7 @@ async function initAuth(){
   await checkSpellEditorStatus();
   await checkPregnancyViewerStatus();
   await checkTeacherStatus();
+  await checkSasadminStatus();
   if(currentUser) await loadFromCloud();
 }
 
@@ -12078,6 +12231,7 @@ window.addEventListener('beforeunload', function(e){
   if(savedView === 'warrior') switchView('warrior');
   if(savedView === 'crafting') switchView('crafting');
   if(savedView === 'teaching') switchView('teaching');
+  if(savedView === 'family') switchView('family');
   requestAnimationFrame(alignEditLockWithAuthBar);
   // Catches a Reset Time that passes while the tab is simply left open,
   // instead of only refilling stats on the next load/switch. Browsers
