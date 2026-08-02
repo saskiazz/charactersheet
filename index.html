@@ -5709,19 +5709,36 @@ window.onChildOtherParentSelectChange = function(id, val){
 // profile currently being looked at — "with {other parent}" when viewing
 // the carrier's page, or "carried by {carrier's name}" when viewing the
 // other parent's page.
+// globalOtherSheetsData deliberately excludes the current logged-in user
+// (it's "everyone ELSE's characters"), so a plain lookup there fails
+// whenever the person doing the looking is themselves one of the two
+// parents on this child — exactly the common case when a couple checks
+// each other's Family tabs via the character switcher. Resolve "my own"
+// case separately: myStoredState holds your own data while you're
+// currently browsing someone else's sheet (state itself gets swapped to
+// theirs), and `state` itself is your own data the rest of the time.
+function resolveCharacterName(userId){
+  if(!userId) return null;
+  if(currentUser && userId === currentUser.id){
+    const myState = isViewingOther ? myStoredState : state;
+    const myName = myState && myState.charInfo && myState.charInfo.name ? myState.charInfo.name.trim() : '';
+    return myName || null;
+  }
+  const found = (globalOtherSheetsData || []).find(r => r.user_id === userId);
+  return found && found.data && found.data.charInfo && found.data.charInfo.name ? found.data.charInfo.name.trim() : null;
+}
+
 function describeOtherParent(c, isCarrierHere){
   if(isCarrierHere){
     if(c.other_parent_user_id){
-      const found = (globalOtherSheetsData || []).find(r => r.user_id === c.other_parent_user_id);
-      const name = found && found.data && found.data.charInfo && found.data.charInfo.name ? found.data.charInfo.name.trim() : null;
+      const name = resolveCharacterName(c.other_parent_user_id);
       return name ? `with ${escapeHtml(name)}` : '';
     }
     if(c.other_parent_name && c.other_parent_name.trim()) return `with ${escapeHtml(c.other_parent_name.trim())}`;
     return '';
   }
   // Viewing the other parent's page — name the carrier instead.
-  const found = (globalOtherSheetsData || []).find(r => r.user_id === c.user_id);
-  const name = found && found.data && found.data.charInfo && found.data.charInfo.name ? found.data.charInfo.name.trim() : null;
+  const name = resolveCharacterName(c.user_id);
   return name ? `carried by ${escapeHtml(name)}` : '';
 }
 
