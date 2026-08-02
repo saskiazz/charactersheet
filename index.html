@@ -1535,6 +1535,8 @@
   .child-parent-dot.parent-a{background:var(--gold);}
   .child-parent-dot.parent-b{background:var(--neutral-accent);}
   .children-link-note{font-size:13px;color:var(--parchment-dim);margin-top:10px;}
+  .child-other-parent-edit-wrap{margin-top:8px;}
+  .child-other-parent-edit-wrap .children-link-note{margin-top:0;margin-bottom:4px;}
   .child-other-parent-edit{
     display:flex;
     gap:8px;
@@ -5661,12 +5663,16 @@ function renderChildrenList(){
     const dis = editable ? '' : 'disabled';
     const isCarrierHere = c.user_id === childrenShownForUserId;
     const dotClass = isCarrierHere ? 'parent-a' : 'parent-b';
+    const otherLabel = describeOtherParent(c, isCarrierHere);
     const otherParentHtml = editable
-      ? `<div class="child-other-parent-edit">
-          <select id="child-other-parent-select-${c.id}" onchange="onChildOtherParentSelectChange('${c.id}', this.value)"></select>
-          <input type="text" placeholder="...or custom name" value="${escapeHtml(c.other_parent_name || '')}" onchange="onChildFieldChange('${c.id}','other_parent_name', this.value)">
+      ? `<div class="child-other-parent-edit-wrap">
+          <div class="children-link-note">${otherLabel || 'No other parent set yet'}</div>
+          <div class="child-other-parent-edit">
+            <select id="child-other-parent-select-${c.id}" onchange="onChildOtherParentSelectChange('${c.id}', this.value)"></select>
+            <input type="text" placeholder="...or custom name" value="${escapeHtml(c.other_parent_name || '')}" onchange="onChildFieldChange('${c.id}','other_parent_name', this.value)">
+          </div>
         </div>`
-      : (describeOtherParent(c, isCarrierHere) ? `<div class="children-link-note">${describeOtherParent(c, isCarrierHere)}</div>` : '');
+      : (otherLabel ? `<div class="children-link-note">${otherLabel}</div>` : '');
     return `<div class="child-row">
       <div class="child-row-main">
         <span class="child-parent-dot ${dotClass}" title="${isCarrierHere ? 'Carried by this profile' : 'This profile is the other parent'}"></span>
@@ -5724,7 +5730,7 @@ window.onChildFieldChange = async function(id, field, value){
   const child = children.find(c => c.id === id);
   if(!child || child.user_id !== currentUser.id) return; // only the carrier can edit their own child's record
   child[field] = value;
-  if(field === 'birthday') renderChildrenList(); // refresh the age badge immediately
+  if(field === 'birthday' || field === 'other_parent_user_id' || field === 'other_parent_name') renderChildrenList(); // refresh the age badge / other-parent label immediately
   const note = document.getElementById('children-panel-note');
   try{
     const { error } = await supabaseClient.from('children').update({ [field]: value }).eq('id', id);
