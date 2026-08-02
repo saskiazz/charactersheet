@@ -1523,6 +1523,37 @@
     white-space:nowrap;
     flex-shrink:0;
   }
+  .child-parent-dot{
+    display:inline-block;
+    width:13px;
+    height:13px;
+    border-radius:50%;
+    flex-shrink:0;
+    cursor:help;
+    border:1px solid rgba(0,0,0,0.25);
+  }
+  .child-parent-dot.parent-a{background:var(--gold);}
+  .child-parent-dot.parent-b{background:var(--neutral-accent);}
+  .children-link-note{font-size:13px;color:var(--parchment-dim);margin-top:10px;}
+  .child-other-parent-edit{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:8px;
+  }
+  .child-other-parent-edit select,
+  .child-other-parent-edit input[type=text]{
+    flex:1 1 160px;
+    background:var(--panel);
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    padding:6px 8px;
+    border-radius:6px;
+    font-family:'Crimson Pro',serif;
+    font-size:14px;
+  }
+  .children-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13.5px;color:var(--parchment-dim);margin-bottom:14px;}
+  .children-legend span{display:inline-flex;align-items:center;gap:6px;}
   .child-description{
     width:100%;
     box-sizing:border-box;
@@ -3152,6 +3183,16 @@
           <input type="time" id="preg-conception-time" step="1" onchange="onPregnancyFieldChange()">
         </div>
       </div>
+      <div class="pregnancy-panel-row" id="preg-other-parent-wrap" style="display:none;">
+        <div class="pregnancy-field">
+          <label for="preg-other-parent-select">Other Parent <span class="modal-hint" style="text-transform:none;letter-spacing:0;">(if they have a sheet here)</span></label>
+          <select id="preg-other-parent-select" onchange="onPregnancyFieldChange()"></select>
+        </div>
+        <div class="pregnancy-field">
+          <label for="preg-other-parent-name">Or Custom Name <span class="modal-hint" style="text-transform:none;letter-spacing:0;">(no account — used only if nobody's picked above)</span></label>
+          <input type="text" id="preg-other-parent-name" placeholder="Name..." onchange="onPregnancyFieldChange()">
+        </div>
+      </div>
       <div class="pregnancy-due-display" id="preg-due-display" style="display:none;">
         <div class="pregnancy-due-label">Due (conception + exactly 9 days)</div>
         <div class="pregnancy-due-date" id="preg-due-date-text">—</div>
@@ -3164,6 +3205,10 @@
       <div class="pregnancy-panel-title">👶 Children (Restricted)</div>
       <div class="pregnancy-panel-sub">Only visible to people specifically granted this access. Age counts every real-world day as 1 year.</div>
       <div class="children-count-badge" id="children-count-badge">0 children</div>
+      <div class="children-legend" id="children-legend">
+        <span><span class="child-parent-dot parent-a"></span> Carried by this profile</span>
+        <span><span class="child-parent-dot parent-b"></span> This profile is the other parent</span>
+      </div>
 
       <div id="children-list"></div>
 
@@ -3184,6 +3229,14 @@
             <option value="female">Female</option>
             <option value="other">Other</option>
           </select>
+        </div>
+        <div class="pregnancy-field">
+          <label for="child-new-other-parent-select">Other Parent <span class="modal-hint" style="text-transform:none;letter-spacing:0;">(if they have a sheet)</span></label>
+          <select id="child-new-other-parent-select"></select>
+        </div>
+        <div class="pregnancy-field">
+          <label for="child-new-other-parent-name">Or Custom Name</label>
+          <input type="text" id="child-new-other-parent-name" placeholder="Name...">
         </div>
         <div class="pregnancy-field" style="flex:1 1 220px;">
           <label for="child-new-description">Description <span class="modal-hint" style="text-transform:none;letter-spacing:0;">(optional)</span></label>
@@ -4151,7 +4204,7 @@ let oracleSchools = new Set();
    list gets no rows back at all when they query pregnancy_data, so hiding
    the panel client-side is a UX nicety, not the actual security boundary. */
 let isPregnancyViewer = false;
-let pregnancyData = { is_pregnant: false, baby_count: 1, conception_at: '' };
+let pregnancyData = { is_pregnant: false, baby_count: 1, conception_at: '', other_parent_user_id: null, other_parent_name: '' };
 let pregnancyShownForUserId = null; // whose row is currently loaded into the panel
 let pregnancyCountdownTimer = null; // setInterval handle for the live due-date countdown
 const GESTATION_MS = 9 * 24 * 60 * 60 * 1000; // exactly 9 days
@@ -4377,6 +4430,7 @@ async function checkPregnancyViewerStatus(){
   updatePregnancyPanelVisibility();
   updateChildrenPanelVisibility();
   if(isPregnancyViewer){
+    if(!globalOtherSheetsData || !globalOtherSheetsData.length) await fetchOtherCharacters();
     const targetId = isViewingOther && pregnancyShownForUserId ? pregnancyShownForUserId : currentUser.id;
     await loadPregnancyData(targetId);
     await loadChildren(targetId);
@@ -5346,13 +5400,13 @@ async function loadPregnancyData(userId){
   try{
     const { data, error } = await supabaseClient
       .from('pregnancy_data')
-      .select('is_pregnant, baby_count, conception_at')
+      .select('is_pregnant, baby_count, conception_at, other_parent_user_id, other_parent_name')
       .eq('user_id', userId)
       .maybeSingle();
     if(error){ if(note) note.textContent = 'Could not load: ' + error.message; return; }
     pregnancyData = data
-      ? { is_pregnant: !!data.is_pregnant, baby_count: data.baby_count || 1, conception_at: data.conception_at || '' }
-      : { is_pregnant: false, baby_count: 1, conception_at: '' };
+      ? { is_pregnant: !!data.is_pregnant, baby_count: data.baby_count || 1, conception_at: data.conception_at || '', other_parent_user_id: data.other_parent_user_id || null, other_parent_name: data.other_parent_name || '' }
+      : { is_pregnant: false, baby_count: 1, conception_at: '', other_parent_user_id: null, other_parent_name: '' };
     populatePregnancyFields();
     if(note) note.textContent = '';
   }catch(e){
@@ -5395,19 +5449,34 @@ function populatePregnancyFields(){
   const count = document.getElementById('preg-baby-count');
   const dateEl = document.getElementById('preg-conception-date');
   const timeEl = document.getElementById('preg-conception-time');
-  if(!cb || !count || !dateEl || !timeEl) return;
+  const otherSel = document.getElementById('preg-other-parent-select');
+  const otherNameEl = document.getElementById('preg-other-parent-name');
+  if(!cb || !count || !dateEl || !timeEl || !otherSel || !otherNameEl) return;
   cb.checked = pregnancyData.is_pregnant;
   count.value = pregnancyData.baby_count;
   const { date, time } = isoToDateAndTimeValues(pregnancyData.conception_at);
   dateEl.value = date;
   timeEl.value = time;
-  [cb, count, dateEl, timeEl].forEach(el => el.disabled = !editable);
+  renderOtherParentSelectOptions(otherSel, pregnancyData.other_parent_user_id);
+  otherNameEl.value = pregnancyData.other_parent_name || '';
+  [cb, count, dateEl, timeEl, otherSel, otherNameEl].forEach(el => el.disabled = !editable);
   document.getElementById('preg-babies-wrap').style.display = pregnancyData.is_pregnant ? '' : 'none';
   document.getElementById('preg-conception-wrap').style.display = pregnancyData.is_pregnant ? '' : 'none';
   document.getElementById('preg-conception-time-wrap').style.display = pregnancyData.is_pregnant ? '' : 'none';
+  document.getElementById('preg-other-parent-wrap').style.display = pregnancyData.is_pregnant ? '' : 'none';
   const note = document.getElementById('pregnancy-panel-note');
   if(note) note.textContent = editable ? '' : (isViewingOther ? 'Viewing another character — read only.' : 'Editing is locked — click 🔓 to unlock.');
   refreshDueDateDisplay();
+}
+
+// Shared by the Pregnancy panel's "Other Parent" select — same character
+// list used for linking students/children elsewhere.
+function renderOtherParentSelectOptions(sel, selectedId){
+  const charOptions = (globalOtherSheetsData || []).map(r => ({
+    id: r.user_id,
+    name: (r.data && r.data.charInfo && r.data.charInfo.name) ? r.data.charInfo.name.trim() : 'Unnamed Character',
+  })).sort((a, b) => a.name.localeCompare(b.name));
+  sel.innerHTML = `<option value="">— Not Linked —</option>` + charOptions.map(c => `<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('');
 }
 
 /* Recomputes the due date (conception + exactly 9 days) and (re)starts the
@@ -5470,10 +5539,13 @@ async function onPregnancyFieldChange(){
       document.getElementById('preg-conception-date').value,
       document.getElementById('preg-conception-time').value
     ),
+    other_parent_user_id: document.getElementById('preg-other-parent-select').value || null,
+    other_parent_name: document.getElementById('preg-other-parent-name').value.trim(),
   };
   document.getElementById('preg-babies-wrap').style.display = pregnancyData.is_pregnant ? '' : 'none';
   document.getElementById('preg-conception-wrap').style.display = pregnancyData.is_pregnant ? '' : 'none';
   document.getElementById('preg-conception-time-wrap').style.display = pregnancyData.is_pregnant ? '' : 'none';
+  document.getElementById('preg-other-parent-wrap').style.display = pregnancyData.is_pregnant ? '' : 'none';
   refreshDueDateDisplay();
   await savePregnancyData();
 }
@@ -5490,6 +5562,8 @@ async function savePregnancyData(){
         is_pregnant: pregnancyData.is_pregnant,
         baby_count: pregnancyData.baby_count,
         conception_at: pregnancyData.conception_at,
+        other_parent_user_id: pregnancyData.other_parent_user_id,
+        other_parent_name: pregnancyData.other_parent_name || '',
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
     if(error){ if(note) note.textContent = 'Error: ' + error.message; return false; }
@@ -5545,8 +5619,8 @@ async function loadChildren(userId){
   try{
     const { data, error } = await supabaseClient
       .from('children')
-      .select('id, name, birthday, gender, description')
-      .eq('user_id', userId)
+      .select('id, user_id, name, birthday, gender, description, other_parent_user_id, other_parent_name')
+      .or(`user_id.eq.${userId},other_parent_user_id.eq.${userId}`)
       .order('birthday', { ascending: true });
     if(error){ if(note) note.textContent = 'Could not load: ' + error.message; return; }
     children = data || [];
@@ -5571,15 +5645,31 @@ function renderChildrenList(){
   const listEl = document.getElementById('children-list');
   const countEl = document.getElementById('children-count-badge');
   const addRow = document.getElementById('children-add-row');
+  const legend = document.getElementById('children-legend');
   if(!listEl) return;
-  const editable = childrenFieldsEditable();
+  const canEditAtAll = childrenFieldsEditable(); // own sheet, unlocked, not viewing someone else
   if(countEl) countEl.textContent = `${children.length} child${children.length === 1 ? '' : 'ren'}`;
-  if(addRow) addRow.style.display = editable ? '' : 'none';
-  const dis = editable ? '' : 'disabled';
+  if(addRow) addRow.style.display = canEditAtAll ? '' : 'none';
+  if(canEditAtAll){
+    const addSel = document.getElementById('child-new-other-parent-select');
+    if(addSel) renderOtherParentSelectOptions(addSel, '');
+  }
+  if(legend) legend.style.display = children.some(c => c.user_id !== childrenShownForUserId || c.other_parent_user_id === childrenShownForUserId) ? '' : 'none';
   listEl.innerHTML = children.length ? children.map(c => {
     const age = computeChildAgeYears(c.birthday);
+    const editable = canEditAtAll && c.user_id === currentUser.id; // only the carrier can edit/delete their own child's row
+    const dis = editable ? '' : 'disabled';
+    const isCarrierHere = c.user_id === childrenShownForUserId;
+    const dotClass = isCarrierHere ? 'parent-a' : 'parent-b';
+    const otherParentHtml = editable
+      ? `<div class="child-other-parent-edit">
+          <select id="child-other-parent-select-${c.id}" onchange="onChildOtherParentSelectChange('${c.id}', this.value)"></select>
+          <input type="text" placeholder="...or custom name" value="${escapeHtml(c.other_parent_name || '')}" onchange="onChildFieldChange('${c.id}','other_parent_name', this.value)">
+        </div>`
+      : (describeOtherParent(c, isCarrierHere) ? `<div class="children-link-note">${describeOtherParent(c, isCarrierHere)}</div>` : '');
     return `<div class="child-row">
       <div class="child-row-main">
+        <span class="child-parent-dot ${dotClass}" title="${isCarrierHere ? 'Carried by this profile' : 'This profile is the other parent'}"></span>
         <input type="text" value="${escapeHtml(c.name)}" placeholder="Name" ${dis} onchange="onChildFieldChange('${c.id}','name',this.value)">
         <input type="date" value="${c.birthday || ''}" ${dis} onchange="onChildFieldChange('${c.id}','birthday',this.value)">
         <select ${dis} onchange="onChildFieldChange('${c.id}','gender',this.value)">
@@ -5591,15 +5681,48 @@ function renderChildrenList(){
         <span class="child-age-badge">${age} yr${age === 1 ? '' : 's'} old</span>
         ${editable ? `<button type="button" class="teaching-remove-student-btn" title="Remove this child" onclick="deleteChild('${c.id}')">✕</button>` : ''}
       </div>
+      ${otherParentHtml}
       <textarea class="child-description" placeholder="Description (optional)" ${dis} onchange="onChildFieldChange('${c.id}','description',this.value)">${escapeHtml(c.description || '')}</textarea>
     </div>`;
   }).join('') : `<p class="rollbuff-list-empty">No children added yet.</p>`;
+  // Populate each editable row's other-parent select after the HTML is in
+  // the DOM (its <option> list depends on the character directory).
+  children.forEach(c => {
+    if(canEditAtAll && c.user_id === currentUser.id){
+      const sel = document.getElementById('child-other-parent-select-' + c.id);
+      if(sel) renderOtherParentSelectOptions(sel, c.other_parent_user_id);
+    }
+  });
+}
+
+window.onChildOtherParentSelectChange = function(id, val){
+  onChildFieldChange(id, 'other_parent_user_id', val || null);
+};
+
+// Small caption under a child's row naming whichever parent ISN'T the
+// profile currently being looked at — "with {other parent}" when viewing
+// the carrier's page, or "carried by {carrier's name}" when viewing the
+// other parent's page.
+function describeOtherParent(c, isCarrierHere){
+  if(isCarrierHere){
+    if(c.other_parent_user_id){
+      const found = (globalOtherSheetsData || []).find(r => r.user_id === c.other_parent_user_id);
+      const name = found && found.data && found.data.charInfo && found.data.charInfo.name ? found.data.charInfo.name.trim() : null;
+      return name ? `with ${escapeHtml(name)}` : '';
+    }
+    if(c.other_parent_name && c.other_parent_name.trim()) return `with ${escapeHtml(c.other_parent_name.trim())}`;
+    return '';
+  }
+  // Viewing the other parent's page — name the carrier instead.
+  const found = (globalOtherSheetsData || []).find(r => r.user_id === c.user_id);
+  const name = found && found.data && found.data.charInfo && found.data.charInfo.name ? found.data.charInfo.name.trim() : null;
+  return name ? `carried by ${escapeHtml(name)}` : '';
 }
 
 window.onChildFieldChange = async function(id, field, value){
   if(!childrenFieldsEditable()) return;
   const child = children.find(c => c.id === id);
-  if(!child) return;
+  if(!child || child.user_id !== currentUser.id) return; // only the carrier can edit their own child's record
   child[field] = value;
   if(field === 'birthday') renderChildrenList(); // refresh the age badge immediately
   const note = document.getElementById('children-panel-note');
@@ -5622,6 +5745,8 @@ window.addChild = async function(){
   const bdayEl = document.getElementById('child-new-birthday');
   const genderEl = document.getElementById('child-new-gender');
   const descEl = document.getElementById('child-new-description');
+  const otherSelEl = document.getElementById('child-new-other-parent-select');
+  const otherNameEl = document.getElementById('child-new-other-parent-name');
   const note = document.getElementById('children-panel-note');
   const name = nameEl.value.trim();
   if(!name){ if(note) note.textContent = 'Enter a name first.'; return; }
@@ -5632,6 +5757,8 @@ window.addChild = async function(){
       birthday: bdayEl.value || todayLocalDateString(),
       gender: genderEl.value || '',
       description: descEl.value || '',
+      other_parent_user_id: otherSelEl.value || null,
+      other_parent_name: otherNameEl.value.trim(),
     }).select().single();
     if(error) throw error;
     children.push(data);
@@ -5640,6 +5767,8 @@ window.addChild = async function(){
     nameEl.value = '';
     descEl.value = '';
     genderEl.value = '';
+    otherSelEl.value = '';
+    otherNameEl.value = '';
     bdayEl.value = todayLocalDateString(); // reset back to today for the next one
     if(note){
       note.textContent = 'Added ✓';
@@ -5653,6 +5782,8 @@ window.addChild = async function(){
 
 window.deleteChild = async function(id){
   if(!childrenFieldsEditable()) return;
+  const child = children.find(c => c.id === id);
+  if(!child || child.user_id !== currentUser.id) return; // only the carrier can delete their own child's record
   if(!confirm('Remove this child permanently? This cannot be undone.')) return;
   try{
     const { error } = await supabaseClient.from('children').delete().eq('id', id);
@@ -5704,6 +5835,8 @@ async function checkAndApplyPregnancyDueBirth(){
   const note = document.getElementById('pregnancy-panel-note');
   const babyCount = Math.max(1, pregnancyData.baby_count || 1);
   const birthday = todayLocalDateString(due);
+  const otherParentUserId = pregnancyData.other_parent_user_id || null;
+  const otherParentName = pregnancyData.other_parent_name || '';
 
   try{
     // Save the reset straight to the cloud first, WITHOUT touching the
@@ -5718,6 +5851,8 @@ async function checkAndApplyPregnancyDueBirth(){
         is_pregnant: false,
         baby_count: 1,
         conception_at: null,
+        other_parent_user_id: null,
+        other_parent_name: '',
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
     if(resetError){
@@ -5731,6 +5866,8 @@ async function checkAndApplyPregnancyDueBirth(){
       birthday,
       gender: '',
       description: '',
+      other_parent_user_id: otherParentUserId,
+      other_parent_name: otherParentName,
     }));
     const { data, error } = await supabaseClient.from('children').insert(rows).select();
     if(error) throw error;
@@ -5741,7 +5878,7 @@ async function checkAndApplyPregnancyDueBirth(){
 
     // Only now, once everything has actually succeeded, apply the result
     // locally and update the UI — a single clean transition.
-    pregnancyData = { is_pregnant: false, baby_count: 1, conception_at: '' };
+    pregnancyData = { is_pregnant: false, baby_count: 1, conception_at: '', other_parent_user_id: null, other_parent_name: '' };
     populatePregnancyFields();
     renderChildrenList();
     if(note) note.textContent = `🎉 ${babyCount} ${babyCount === 1 ? 'baby' : 'babies'} born! Added to Children below — fill in the name(s) whenever you're ready.`;
@@ -5750,7 +5887,7 @@ async function checkAndApplyPregnancyDueBirth(){
     // The pregnancy reset above did succeed and is already saved, even
     // though creating the children failed — reflect that so the UI
     // matches the cloud instead of still showing "pregnant".
-    pregnancyData = { is_pregnant: false, baby_count: 1, conception_at: '' };
+    pregnancyData = { is_pregnant: false, baby_count: 1, conception_at: '', other_parent_user_id: null, other_parent_name: '' };
     populatePregnancyFields();
     if(note) note.textContent = "Pregnancy was reset, but couldn't automatically add the child/children — please add them manually below: " + (e.message || e);
   }finally{
@@ -10098,7 +10235,7 @@ async function signOut(){
   isPregnancyViewer = false;
   isTeacher = false;
   updateTeacherNavVisibility();
-  pregnancyData = { is_pregnant: false, baby_count: 1, conception_at: '' };
+  pregnancyData = { is_pregnant: false, baby_count: 1, conception_at: '', other_parent_user_id: null, other_parent_name: '' };
   pregnancyShownForUserId = null;
   updatePregnancyPanelVisibility();
   children = [];
