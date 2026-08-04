@@ -2055,6 +2055,35 @@
     z-index:3;
   }
   .rank-node-connector:active{cursor:grabbing;}
+  .rank-tree-root-label{
+    position:absolute;
+    z-index:2;
+    font-family:'Cinzel',Garamond,serif;
+    font-size:12.5px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--gold);
+    white-space:nowrap;
+    cursor:default;
+  }
+  .rank-tree-root-label.editable{cursor:pointer;}
+  .rank-tree-root-label.editable:hover{color:var(--light-accent);text-decoration:underline;}
+  .rank-node-detach{
+    position:absolute;
+    bottom:-9px;
+    right:-9px;
+    width:18px;
+    height:18px;
+    line-height:16px;
+    text-align:center;
+    background:var(--panel);
+    border:1px solid var(--hairline);
+    border-radius:50%;
+    font-size:10px;
+    cursor:pointer;
+    z-index:3;
+  }
+  .rank-node-detach:hover{border-color:var(--gold);color:var(--light-accent);}
   .rank-tree-unplaced-tray{
     margin-top:16px;
     padding-top:14px;
@@ -8874,16 +8903,27 @@ const DEFAULT_RANK_TREE_NODES = [
 ];
 let RANK_TREE_NODES = DEFAULT_RANK_TREE_NODES.slice();
 let RANK_TREE_POSITIONS = {}; // { [rankName]: {x, y} } — filled in with computed defaults for anything not explicitly placed yet
+// A root rank (no parent) is already its own completely separate
+// structure, disconnected from everything else — exactly like Soldier
+// Ranks vs Leadership. This just lets you attach a custom name to any
+// root, so a newly-detached one (see the ✂ "Start New Section" control
+// on each rank) reads as its own labeled section instead of an unnamed
+// floating box. { [rootRankName]: "Custom Label" }
+let RANK_TREE_ROOT_LABELS = {
+  'Initiate': '⚔ Soldier Ranks',
+  'The Triumvirate': '👑 Leadership',
+};
 let rankTreeEditMode = false;
 
 function canManageRankTree(){ return isSpellEditor; } // same global-editor role reused throughout — no separate role for this
 
 async function loadRankTreeStructure(){
   try{
-    const { data, error } = await supabaseClient.from('rank_tree_structure').select('nodes, positions').eq('id', 1).maybeSingle();
+    const { data, error } = await supabaseClient.from('rank_tree_structure').select('nodes, positions, root_labels').eq('id', 1).maybeSingle();
     if(!error && data){
       if(Array.isArray(data.nodes) && data.nodes.length) RANK_TREE_NODES = data.nodes;
       if(data.positions && typeof data.positions === 'object' && !Array.isArray(data.positions)) RANK_TREE_POSITIONS = data.positions;
+      if(data.root_labels && typeof data.root_labels === 'object' && !Array.isArray(data.root_labels)) RANK_TREE_ROOT_LABELS = data.root_labels;
     }
   }catch(e){ console.error('Could not load the custom rank tree layout from cloud (using the built-in default):', e); }
 }
@@ -8891,7 +8931,7 @@ async function loadRankTreeStructure(){
 async function saveRankTreeStructure(){
   if(!canManageRankTree()) return;
   try{
-    const { error } = await supabaseClient.from('rank_tree_structure').update({ nodes: RANK_TREE_NODES, positions: RANK_TREE_POSITIONS }).eq('id', 1);
+    const { error } = await supabaseClient.from('rank_tree_structure').update({ nodes: RANK_TREE_NODES, positions: RANK_TREE_POSITIONS, root_labels: RANK_TREE_ROOT_LABELS }).eq('id', 1);
     if(error) throw error;
   }catch(e){
     alert('Could not save the rank diagram layout: ' + (e.message || e));
@@ -8988,6 +9028,7 @@ function renderRankTreeNodeAbs(name){
   const mousedownAttr = rankTreeEditMode ? `onmousedown="onRankNodeMouseDown(event,'${escapeHtml(name)}')"` : '';
   const editExtras = rankTreeEditMode
     ? `<button type="button" class="rank-node-remove" title="Unplace this rank entirely (back to the tray)" onmousedown="event.stopPropagation();" onclick="event.stopPropagation(); removeRankPlacement('${escapeHtml(name)}')">✕</button>
+       <button type="button" class="rank-node-detach" title="Detach this rank into its own separate, newly-named section" onmousedown="event.stopPropagation();" onclick="event.stopPropagation(); detachRankToNewSection('${escapeHtml(name)}')">✂</button>
        <div class="rank-node-connector" draggable="true" title="Drag onto another rank to connect it (hold Ctrl to add without replacing)" onmousedown="event.stopPropagation();" ondragstart="onRankConnectDragStart(event,'${escapeHtml(name)}')">🔗</div>`
     : '';
   return `<div class="rank-node ${cls}${rankTreeEditMode ? ' edit-mode' : ''}" data-rank-key="${escapeHtml(rankKey)}" data-rank-name="${escapeHtml(name)}"
@@ -8997,11 +9038,50 @@ function renderRankTreeNodeAbs(name){
   </div>`;
 }
 
+// A small floating tag above a root rank's box, naming that whole
+// separate structure — click to rename it (editors only). Positioned
+// purely from the root node's own current position, so it moves
+// naturally along with it and needs no bounding-box math at all.
+function renderRankRootLabelHtml(rootName){
+  const pos = RANK_TREE_POSITIONS[rootName] || { x: 20, y: 20 };
+  const text = RANK_TREE_ROOT_LABELS[rootName] || '';
+  if(!text && !rankTreeEditMode) return ''; // nothing to show, and no editor affordance needed either
+  const editable = rankTreeEditMode && canManageRankTree();
+  const clickAttr = editable ? `onclick="renameRankSection('${escapeHtml(rootName)}')"` : '';
+  const shown = text || (editable ? '+ Name this section' : '');
+  return `<div class="rank-tree-root-label${editable ? ' editable' : ''}" style="left:${pos.x}px;top:${pos.y - 22}px;" ${clickAttr} title="${editable ? 'Click to rename this section' : ''}">${escapeHtml(shown)}</div>`;
+}
+
+window.renameRankSection = function(rootName){
+  if(!canManageRankTree()) return;
+  const current = RANK_TREE_ROOT_LABELS[rootName] || '';
+  const next = prompt(`Name for this section (starting at "${rootName}"):`, current);
+  if(next === null) return; // cancelled
+  if(next.trim()) RANK_TREE_ROOT_LABELS[rootName] = next.trim();
+  else delete RANK_TREE_ROOT_LABELS[rootName];
+  renderRankTree();
+  saveRankTreeStructure();
+};
+
+// Cuts a rank loose from whatever it's currently connected to, turning
+// it into a brand-new root — its own separate structure, exactly like
+// Soldier Ranks vs Leadership are already separate from each other.
+// Immediately prompts for a name for the new section.
+window.detachRankToNewSection = function(name){
+  if(!rankTreeEditMode || !canManageRankTree()) return;
+  RANK_TREE_NODES = RANK_TREE_NODES.filter(n => n.name !== name);
+  RANK_TREE_NODES.push({ name, parent: null });
+  const label = prompt(`"${name}" is now its own separate section. Name it:`, name);
+  if(label && label.trim()) RANK_TREE_ROOT_LABELS[name] = label.trim();
+  renderRankTree();
+  saveRankTreeStructure();
+};
+
 function renderRankTree(){
   const scrollEl = document.getElementById('rank-tree-scroll');
   if(!scrollEl) return;
   ensureRankPositionsFilled();
-  const { unplaced, extraEdges } = buildRankTreeFromNodes();
+  const { unplaced, extraEdges, roots } = buildRankTreeFromNodes();
 
   const placedNames = Array.from(new Set(RANK_TREE_NODES.map(n => n.name)));
   let canvasW = 900, canvasH = 500;
@@ -9011,6 +9091,7 @@ function renderRankTree(){
     canvasH = Math.max(canvasH, pos.y + 160);
   });
 
+  const labelsHtml = roots.map(renderRankRootLabelHtml).join('');
   const nodesHtml = placedNames.map(renderRankTreeNodeAbs).join('');
   // The outer "zoom wrap" is what actually defines the scrollable area —
   // its size tracks the current zoom level. The canvas itself always
@@ -9021,6 +9102,7 @@ function renderRankTree(){
   scrollEl.innerHTML = `<div class="rank-tree-zoom-wrap" id="rank-tree-zoom-wrap">
     <div class="rank-tree-canvas" id="rank-tree-canvas" data-base-width="${canvasW}" data-base-height="${canvasH}" style="width:${canvasW}px;height:${canvasH}px;">
       <svg id="rank-tree-svg-overlay" width="${canvasW}" height="${canvasH}"></svg>
+      ${labelsHtml}
       ${nodesHtml}
     </div>
   </div>`;
@@ -9215,6 +9297,7 @@ window.removeRankPlacement = function(name){
   if(!rankTreeEditMode || !canManageRankTree()) return;
   RANK_TREE_NODES = RANK_TREE_NODES.filter(n => n.name !== name);
   delete RANK_TREE_POSITIONS[name];
+  delete RANK_TREE_ROOT_LABELS[name];
   renderRankTree();
   saveRankTreeStructure();
 };
@@ -9241,9 +9324,10 @@ window.toggleRankTreeEditMode = function(){
 
 window.resetRankTreeToDefault = async function(){
   if(!canManageRankTree()) return;
-  if(!confirm('Reset the rank diagram back to the default connections and positions? This affects everyone, not just you.')) return;
+  if(!confirm('Reset the rank diagram back to the default connections, positions, and section names? This affects everyone, not just you.')) return;
   RANK_TREE_NODES = DEFAULT_RANK_TREE_NODES.slice();
   RANK_TREE_POSITIONS = {};
+  RANK_TREE_ROOT_LABELS = { 'Initiate': '⚔ Soldier Ranks', 'The Triumvirate': '👑 Leadership' };
   renderRankTree();
   await saveRankTreeStructure();
 };
