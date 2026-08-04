@@ -1943,6 +1943,146 @@
   .class-log-detail{font-size:15px;color:var(--parchment-dim);margin-bottom:2px;}
   .class-log-label{color:var(--parchment);font-weight:600;}
 
+  /* ---------- RANK PROGRESSION DIAGRAM ---------- */
+  .rank-progression-box{max-width:min(1500px, 97vw);}
+  .rank-progression-layout{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;}
+  .rank-tree-scroll{
+    flex:1 1 600px;
+    overflow:auto;
+    max-height:74vh;
+    padding:24px 30px;
+    background:rgba(0,0,0,0.12);
+    border:1px solid var(--hairline);
+    border-radius:var(--radius-md);
+    cursor:grab;
+  }
+  .rank-tree-scroll.panning{cursor:grabbing;}
+  .rank-detail-panel{
+    flex:0 0 300px;
+    max-height:74vh;
+    overflow-y:auto;
+    background:rgba(0,0,0,0.14);
+    border:1px solid var(--hairline);
+    border-radius:var(--radius-md);
+    padding:16px;
+  }
+  /* Free-form draggable canvas — every rank box is absolutely positioned
+     (RANK_TREE_POSITIONS), with connections drawn as an SVG overlay
+     rather than relying on nested-list flow, so an editor can spread
+     things out however keeps the lines clearest instead of being stuck
+     with an auto-layout's decisions. */
+  .rank-tree-zoom-wrap{position:relative;}
+  .rank-tree-canvas{position:relative;}
+  #rank-tree-svg-overlay{position:absolute;top:0;left:0;pointer-events:none;z-index:1;overflow:visible;}
+  .rank-node{
+    position:absolute;
+    z-index:2;
+    display:inline-block;
+    background:linear-gradient(180deg,var(--panel-2),var(--panel));
+    border:1px solid var(--hairline);
+    border-radius:8px;
+    padding:8px 14px;
+    cursor:pointer;
+    font-size:14px;
+    color:var(--parchment);
+    white-space:nowrap;
+    transition:border-color .15s, background .15s, color .15s;
+  }
+  .rank-node:hover{border-color:var(--gold);color:var(--light-accent);}
+  .rank-node.main-chain{border-color:rgba(201,160,84,0.5);}
+  .rank-node.officer{border-color:rgba(127,179,168,0.5);}
+  .rank-node.active{border-color:var(--gold);background:rgba(201,160,84,0.2);color:var(--light-accent);font-weight:700;}
+  .rank-detail-title{font-family:'Cinzel',Garamond,serif;font-size:19px;color:var(--light-accent);margin-bottom:8px;}
+  .rank-detail-stats{font-size:14px;color:var(--parchment-dim);margin-bottom:4px;}
+  .rank-detail-desc{font-size:15px;line-height:1.6;color:var(--parchment);margin:12px 0;white-space:pre-wrap;}
+  .rank-detail-players-label{font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:var(--gold);margin:14px 0 6px;border-top:1px solid var(--hairline);padding-top:12px;}
+  .rank-detail-player{font-size:15px;color:var(--parchment);padding:3px 0;}
+  .rank-tree-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+  .rank-tree-zoom-controls{display:flex;align-items:center;gap:6px;margin-left:auto;}
+  .rank-tree-zoom-btn{
+    background:transparent;
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    width:26px;
+    height:26px;
+    border-radius:6px;
+    font-size:15px;
+    line-height:1;
+    cursor:pointer;
+  }
+  .rank-tree-zoom-btn:hover{border-color:var(--gold);color:var(--light-accent);}
+  .rank-tree-zoom-label{font-size:13px;color:var(--parchment-dim);min-width:42px;text-align:center;}
+  .rank-tree-edit-hint{
+    background:rgba(201,160,84,0.1);
+    border:1px solid var(--gold);
+    border-radius:var(--radius-sm);
+    padding:9px 14px;
+    margin-bottom:12px;
+    font-size:14px;
+    color:var(--parchment-dim);
+  }
+  .rank-node.edit-mode{cursor:grab;position:absolute;padding:8px 28px 8px 14px;}
+  .rank-node.edit-mode:active{cursor:grabbing;}
+  .rank-node-remove{
+    position:absolute;
+    top:2px;
+    right:2px;
+    background:transparent;
+    border:none;
+    color:var(--parchment-dim);
+    font-size:12px;
+    line-height:1;
+    width:18px;
+    height:18px;
+    border-radius:4px;
+    cursor:pointer;
+  }
+  .rank-node-remove:hover{background:rgba(200,90,90,0.25);color:var(--danger);}
+  .rank-node-connector{
+    position:absolute;
+    bottom:-9px;
+    left:50%;
+    transform:translateX(-50%);
+    width:20px;
+    height:20px;
+    line-height:18px;
+    text-align:center;
+    background:var(--panel);
+    border:1px solid var(--gold);
+    border-radius:50%;
+    font-size:11px;
+    cursor:grab;
+    z-index:3;
+  }
+  .rank-node-connector:active{cursor:grabbing;}
+  .rank-tree-unplaced-tray{
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px dashed var(--hairline);
+  }
+  .rank-tree-unplaced-label{font-size:13px;color:var(--parchment-dim);margin-bottom:8px;}
+  .rank-tree-unplaced-nodes{display:flex;gap:10px;flex-wrap:wrap;}
+  .rank-tree-unplaced-nodes .rank-node{position:relative;left:auto;top:auto;}
+  .rank-tree-crosslinks{
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px dashed var(--hairline);
+  }
+  .rank-tree-crosslinks-label{font-size:13px;color:var(--parchment-dim);margin-bottom:8px;}
+  .rank-tree-crosslink-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    font-size:14.5px;
+    color:var(--parchment);
+    padding:6px 10px;
+    border:1px solid var(--hairline);
+    border-radius:6px;
+    margin-bottom:6px;
+    background:rgba(0,0,0,0.1);
+  }
+
   .class-view-section{margin-bottom:20px;}
   .class-view-section-label{font-size:14px;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;}
   .class-view-spell{
@@ -2669,6 +2809,7 @@
               </select>
               <div class="charsheet-admin-links">
                 <button type="button" class="mini-admin-link always-enabled" id="rank-view-link" onclick="openRankViewModal()">ℹ View Rank Details</button>
+                <button type="button" class="mini-admin-link always-enabled" onclick="openRankProgressionModal()">📊 Rank Progression</button>
                 <button type="button" class="mini-admin-link" id="rank-admin-link" style="display:none;" onclick="openRanksModal()">⚙ Manage Ranks</button>
               </div>
             </div>
@@ -3900,6 +4041,39 @@
   </div>
 </div>
 
+<div id="rank-progression-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeRankProgressionModal()">
+  <div class="modal-box rank-progression-box">
+    <button class="modal-close" onclick="closeRankProgressionModal()">✕</button>
+    <h2>📊 Rank Progression</h2>
+    <p class="modal-subtitle">The path everyone starts on runs up to Dark Watcher — the highest rank you can reach without being chosen by (or becoming) an officer. From there it branches into each officer track and their subordinates. Click any rank to see its description, stats, and who currently holds it.</p>
+    <div class="rank-tree-toolbar">
+      <button type="button" class="mini-admin-link always-enabled" id="rank-tree-edit-toggle" style="display:none;" onclick="toggleRankTreeEditMode()">🔀 Edit Connections</button>
+      <button type="button" class="mini-admin-link always-enabled" id="rank-tree-reset-btn" style="display:none;" onclick="resetRankTreeToDefault()">↺ Reset to Default</button>
+      <span class="rank-tree-zoom-controls">
+        <button type="button" class="rank-tree-zoom-btn" onclick="zoomRankTreeOut()" title="Zoom out">－</button>
+        <span class="rank-tree-zoom-label" id="rank-tree-zoom-label">100%</span>
+        <button type="button" class="rank-tree-zoom-btn" onclick="zoomRankTreeIn()" title="Zoom in">＋</button>
+        <button type="button" class="mini-admin-link always-enabled" onclick="fitRankTreeToView()" title="Fit the whole diagram in view">⤢ Fit to View</button>
+      </span>
+    </div>
+    <p class="rank-tree-edit-hint" id="rank-tree-edit-hint" style="display:none;">🔀 Drag a rank's <strong>box</strong> to move it anywhere. Drag the small <strong>🔗</strong> handle onto another rank to connect them (default: replaces its existing connection). Hold <strong>Ctrl</strong> (or ⌘) while dropping the 🔗 to <strong>add</strong> an extra connection instead, without removing the others — for ranks that serve more than one officer. Click a rank's ✕ to unplace it entirely; click a connection's ✕ in the list below to remove just that link. Changes save automatically and apply for everyone.</p>
+    <div class="rank-progression-layout">
+      <div class="rank-tree-scroll" id="rank-tree-scroll"></div>
+      <div class="rank-detail-panel" id="rank-detail-panel">
+        <p class="rollbuff-list-empty">Click a rank in the diagram to see its details here.</p>
+      </div>
+    </div>
+    <div class="rank-tree-unplaced-tray" id="rank-tree-unplaced-tray" style="display:none;">
+      <div class="rank-tree-unplaced-label">Not placed in the diagram yet — drag one onto a rank above to add it:</div>
+      <div class="rank-tree-unplaced-nodes" id="rank-tree-unplaced-nodes"></div>
+    </div>
+    <div class="rank-tree-crosslinks" id="rank-tree-crosslinks" style="display:none;">
+      <div class="rank-tree-crosslinks-label">🔗 Shared Connections <span class="modal-hint" style="text-transform:none;letter-spacing:0;">(the dashed gold lines above — ranks reporting to more than one officer)</span></div>
+      <div id="rank-tree-crosslinks-list"></div>
+    </div>
+  </div>
+</div>
+
 <div id="ability-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeAbilityModal()">
   <div class="modal-box">
     <button class="modal-close" onclick="closeAbilityModal()">✕</button>
@@ -4327,7 +4501,7 @@ async function checkSpellEditorStatus(){
   isWsEditor = false;
   isCraftEditor = false;
   oracleSchools = new Set();
-  if(!currentUser){ updateTagGroupsButtonVisibility(); updateSchoolAdminButtonVisibility(); updateDisciplineAdminButtonVisibility(); updateRaceAdminLinksVisibility(); updateRankAdminLinksVisibility(); updateCharsheetLayoutAdminLinkVisibility(); updateClassSettingsAdminLinkVisibility(); return; }
+  if(!currentUser){ updateTagGroupsButtonVisibility(); updateSchoolAdminButtonVisibility(); updateDisciplineAdminButtonVisibility(); updateRaceAdminLinksVisibility(); updateRankAdminLinksVisibility(); updateCharsheetLayoutAdminLinkVisibility(); updateClassSettingsAdminLinkVisibility(); updateRankTreeAdminControlsVisibility(); return; }
   try{
     const { data, error } = await supabaseClient
       .from('spell_editors')
@@ -4366,6 +4540,7 @@ async function checkSpellEditorStatus(){
   updateRankAdminLinksVisibility();
   updateCharsheetLayoutAdminLinkVisibility();
   updateClassSettingsAdminLinkVisibility();
+  updateRankTreeAdminControlsVisibility();
   render();
   if(currentView === 'warrior') renderWarrior();
   if(currentView === 'crafting') renderCrafting();
@@ -8634,6 +8809,604 @@ function getRankDisplayName(rankValue){
   return r ? r.name : rankValue;
 }
 
+/* ---------- RANK PROGRESSION DIAGRAM ----------
+   A visual org chart of the rank system, laid out as a free-form,
+   fully draggable canvas rather than an auto-flowing tree — so an editor
+   can spread things out however makes the connector lines clearest,
+   instead of being stuck with whatever a tree-layout algorithm decides.
+
+   Matches ranks by NAME (not by key/id) — the exact key format a rank
+   ends up with depends on how/when it was created, so matching by the
+   human-readable name (which is what's actually shown in the Rank field)
+   is far more reliable than guessing a slug format.
+
+   Two independent things are editable by global editors (see "🔀 Edit
+   Connections"):
+     1. POSITION — drag a rank's box anywhere. Stored as {x,y} per rank
+        name in RANK_TREE_POSITIONS.
+     2. CONNECTIONS — drag from the small 🔗 handle on a box onto another
+        box to connect them. Default = move (replaces this rank's
+        existing connection); hold Ctrl/Cmd while dropping = add an
+        additional connection without removing the others, for ranks
+        (like Chamberlain) that report to more than one officer. Every
+        connection is drawn as a real line between the two boxes'
+        current positions — since positions are free-form, a rank with
+        multiple parents just gets multiple lines pointing at its one box.
+
+   Both are stored in the same rank_tree_structure table (nodes + 
+   positions columns) — empty/missing means "use the built-in default"
+   (DEFAULT_RANK_TREE_NODES + an auto-computed default layout). Any rank
+   that exists in "Manage Ranks" but isn't connected anywhere shows up in
+   a small tray to be dragged in. */
+const RANK_TREE_MAIN_CHAIN_NAMES = new Set(['Initiate', 'Acolyte', 'Centurion', 'Sentinel', 'Dark Warden', 'Dark Watcher']);
+const DEFAULT_RANK_TREE_NODES = [
+  // Soldier ranks — their own separate chain, not connected to the
+  // leadership tree at all (Dark Watcher has no children here).
+  { name: 'Initiate', parent: null },
+  { name: 'Acolyte', parent: 'Initiate' },
+  { name: 'Centurion', parent: 'Acolyte' },
+  { name: 'Sentinel', parent: 'Centurion' },
+  { name: 'Dark Warden', parent: 'Sentinel' },
+  { name: 'Dark Watcher', parent: 'Dark Warden' },
+
+  // Leadership hierarchy — its own separate tree, The Triumvirate at the
+  // very top with authority flowing downward to everyone below them.
+  { name: 'The Triumvirate', parent: null },
+  { name: 'Praetorian', parent: 'The Triumvirate' },
+  { name: 'Praetorian Prefect', parent: 'Praetorian' },
+  { name: 'Lictor', parent: 'The Triumvirate' },
+  { name: 'Prince/Princess', parent: 'The Triumvirate' },
+  { name: 'Margrave', parent: 'Prince/Princess' },
+  { name: 'Marshall', parent: 'Prince/Princess' },
+  { name: 'Keeper of Knowledge', parent: 'The Triumvirate' },
+  { name: 'Custodian', parent: 'Keeper of Knowledge' },
+  { name: 'Chamberlain', parent: 'Keeper of Knowledge' },
+  { name: 'Chamberlain', parent: 'High Priest/Priestess' },
+  { name: 'Chamberlain', parent: 'Legate' },
+  { name: 'Chamberlain', parent: 'Quarter Master' },
+  { name: 'Legate', parent: 'The Triumvirate' },
+  { name: 'Quarter Master', parent: 'The Triumvirate' },
+  { name: 'High Priest/Priestess', parent: 'The Triumvirate' },
+  { name: 'Priest/Priestess', parent: 'High Priest/Priestess' },
+  { name: 'Baron/Baroness', parent: 'The Triumvirate' },
+  { name: 'Dark Knight', parent: 'Baron/Baroness' },
+  { name: 'Knight Captain', parent: 'The Triumvirate' },
+];
+let RANK_TREE_NODES = DEFAULT_RANK_TREE_NODES.slice();
+let RANK_TREE_POSITIONS = {}; // { [rankName]: {x, y} } — filled in with computed defaults for anything not explicitly placed yet
+let rankTreeEditMode = false;
+
+function canManageRankTree(){ return isSpellEditor; } // same global-editor role reused throughout — no separate role for this
+
+async function loadRankTreeStructure(){
+  try{
+    const { data, error } = await supabaseClient.from('rank_tree_structure').select('nodes, positions').eq('id', 1).maybeSingle();
+    if(!error && data){
+      if(Array.isArray(data.nodes) && data.nodes.length) RANK_TREE_NODES = data.nodes;
+      if(data.positions && typeof data.positions === 'object' && !Array.isArray(data.positions)) RANK_TREE_POSITIONS = data.positions;
+    }
+  }catch(e){ console.error('Could not load the custom rank tree layout from cloud (using the built-in default):', e); }
+}
+
+async function saveRankTreeStructure(){
+  if(!canManageRankTree()) return;
+  try{
+    const { error } = await supabaseClient.from('rank_tree_structure').update({ nodes: RANK_TREE_NODES, positions: RANK_TREE_POSITIONS }).eq('id', 1);
+    if(error) throw error;
+  }catch(e){
+    alert('Could not save the rank diagram layout: ' + (e.message || e));
+  }
+}
+
+function findRankByName(name){
+  const norm = (name || '').trim().toLowerCase();
+  return RANKS.find(r => (r.name || '').trim().toLowerCase() === norm);
+}
+function findRankNodeEl(name){
+  const nodes = document.querySelectorAll('#rank-tree-canvas .rank-node');
+  for(const el of nodes){
+    if(el.dataset.rankName === name) return el;
+  }
+  return null;
+}
+
+function buildRankTreeFromNodes(){
+  const byParent = {};
+  const seenPrimary = new Set();
+  const extraEdges = []; // additional parents beyond the first — still just extra lines now that everything is freely positioned, but kept separate for the "Shared Connections" cleanup list
+  RANK_TREE_NODES.forEach(n => {
+    if(!seenPrimary.has(n.name)){
+      seenPrimary.add(n.name);
+      const p = n.parent || '__root__';
+      if(!byParent[p]) byParent[p] = [];
+      byParent[p].push(n.name);
+    } else if(n.parent){
+      extraEdges.push({ name: n.name, parent: n.parent });
+    }
+  });
+  const placedNames = new Set(RANK_TREE_NODES.map(n => (n.name || '').trim().toLowerCase()));
+  const unplaced = RANKS.filter(r => !placedNames.has((r.name || '').trim().toLowerCase())).map(r => r.name);
+  return { byParent, roots: byParent['__root__'] || [], unplaced, extraEdges };
+}
+
+// Is `candidateName` somewhere below `ancestorName` in the current
+// connection graph? Used to block connecting a rank onto its own
+// descendant (would create a loop).
+function isRankDescendantOf(candidateName, ancestorName, byParent){
+  const stack = (byParent[ancestorName] || []).slice();
+  while(stack.length){
+    const n = stack.pop();
+    if(n === candidateName) return true;
+    if(byParent[n]) stack.push(...byParent[n]);
+  }
+  return false;
+}
+
+// A simple recursive tree layout (children placed left-to-right, each
+// parent centered above its own children) — only used to fill in a
+// starting position for any rank that's never been manually dragged
+// anywhere. Once an editor drags something, its stored position always
+// wins over this.
+function computeDefaultRankPositions(){
+  const { byParent, roots } = buildRankTreeFromNodes();
+  const positions = {};
+  const NODE_W = 190, GAP_X = 24, LEVEL_H = 130;
+  let nextCol = 0;
+
+  function place(name, level){
+    const children = (byParent[name] || []).filter(c => c !== name);
+    if(!children.length){
+      const x = nextCol * (NODE_W + GAP_X);
+      nextCol++;
+      positions[name] = { x, y: level * LEVEL_H };
+      return x + NODE_W / 2;
+    }
+    const centers = children.map(c => place(c, level + 1));
+    const centerX = (Math.min(...centers) + Math.max(...centers)) / 2 - NODE_W / 2;
+    positions[name] = { x: Math.max(0, centerX), y: level * LEVEL_H };
+    return centerX + NODE_W / 2;
+  }
+
+  roots.forEach(rootName => { place(rootName, 0); nextCol += 1; }); // extra gap between separate root trees
+  return positions;
+}
+
+function ensureRankPositionsFilled(){
+  const defaults = computeDefaultRankPositions();
+  Object.keys(defaults).forEach(name => {
+    if(!RANK_TREE_POSITIONS[name]) RANK_TREE_POSITIONS[name] = defaults[name];
+  });
+}
+
+function renderRankTreeNodeAbs(name){
+  const rank = findRankByName(name);
+  const label = rank ? rank.name : name;
+  const rankKey = rank ? rank.key : '';
+  const cls = RANK_TREE_MAIN_CHAIN_NAMES.has(name) ? 'main-chain' : 'officer';
+  const pos = RANK_TREE_POSITIONS[name] || { x: 20, y: 20 };
+  const clickAttr = rankTreeEditMode ? '' : `onclick="showRankDetail('${escapeHtml(rankKey)}')"`;
+  const mousedownAttr = rankTreeEditMode ? `onmousedown="onRankNodeMouseDown(event,'${escapeHtml(name)}')"` : '';
+  const editExtras = rankTreeEditMode
+    ? `<button type="button" class="rank-node-remove" title="Unplace this rank entirely (back to the tray)" onmousedown="event.stopPropagation();" onclick="event.stopPropagation(); removeRankPlacement('${escapeHtml(name)}')">✕</button>
+       <div class="rank-node-connector" draggable="true" title="Drag onto another rank to connect it (hold Ctrl to add without replacing)" onmousedown="event.stopPropagation();" ondragstart="onRankConnectDragStart(event,'${escapeHtml(name)}')">🔗</div>`
+    : '';
+  return `<div class="rank-node ${cls}${rankTreeEditMode ? ' edit-mode' : ''}" data-rank-key="${escapeHtml(rankKey)}" data-rank-name="${escapeHtml(name)}"
+    style="left:${pos.x}px;top:${pos.y}px;" ${mousedownAttr}
+    ondragover="onRankNodeDragOver(event)" ondrop="onRankNodeDrop(event,'${escapeHtml(name)}')" ${clickAttr}>
+    ${escapeHtml(label)}${editExtras}
+  </div>`;
+}
+
+function renderRankTree(){
+  const scrollEl = document.getElementById('rank-tree-scroll');
+  if(!scrollEl) return;
+  ensureRankPositionsFilled();
+  const { unplaced, extraEdges } = buildRankTreeFromNodes();
+
+  const placedNames = Array.from(new Set(RANK_TREE_NODES.map(n => n.name)));
+  let canvasW = 900, canvasH = 500;
+  placedNames.forEach(name => {
+    const pos = RANK_TREE_POSITIONS[name] || { x: 0, y: 0 };
+    canvasW = Math.max(canvasW, pos.x + 260);
+    canvasH = Math.max(canvasH, pos.y + 160);
+  });
+
+  const nodesHtml = placedNames.map(renderRankTreeNodeAbs).join('');
+  // The outer "zoom wrap" is what actually defines the scrollable area —
+  // its size tracks the current zoom level. The canvas itself always
+  // stays at its natural (unscaled) size and gets visually resized via
+  // CSS transform, which keeps every internal coordinate (node left/top,
+  // SVG line math) simple and completely zoom-independent — see
+  // applyRankTreeZoom().
+  scrollEl.innerHTML = `<div class="rank-tree-zoom-wrap" id="rank-tree-zoom-wrap">
+    <div class="rank-tree-canvas" id="rank-tree-canvas" data-base-width="${canvasW}" data-base-height="${canvasH}" style="width:${canvasW}px;height:${canvasH}px;">
+      <svg id="rank-tree-svg-overlay" width="${canvasW}" height="${canvasH}"></svg>
+      ${nodesHtml}
+    </div>
+  </div>`;
+
+  const trayWrap = document.getElementById('rank-tree-unplaced-tray');
+  const trayNodes = document.getElementById('rank-tree-unplaced-nodes');
+  if(trayWrap && trayNodes){
+    const showTray = rankTreeEditMode && unplaced.length > 0;
+    trayWrap.style.display = showTray ? '' : 'none';
+    if(showTray){
+      // Tray items have no existing connection — dragging one always ADDs
+      // a new connection (see onRankNodeDrop's handling).
+      trayNodes.innerHTML = unplaced.map(name => `<div class="rank-node officer edit-mode" draggable="true" ondragstart="onRankConnectDragStart(event,'${escapeHtml(name)}')" data-rank-name="${escapeHtml(name)}">${escapeHtml(name)}</div>`).join('');
+    }
+  }
+
+  renderRankCrossLinksList(extraEdges);
+  // Wait a frame so the just-inserted HTML has actually been laid out —
+  // offsetWidth/offsetHeight right after innerHTML can return stale/
+  // zeroed values otherwise. Re-renders (after any edit) keep whatever
+  // zoom the user currently has rather than resetting it — only the
+  // modal's initial open fits-to-view (see openRankProgressionModal()).
+  requestAnimationFrame(() => {
+    applyRankTreeZoom(rankTreeZoom);
+    drawAllRankTreeLines();
+  });
+}
+
+/* ---------- ZOOM ----------
+   Applied as a CSS transform on the canvas itself (crisp, GPU-accelerated,
+   and keeps every internal coordinate — node positions, SVG line math —
+   completely unaffected by zoom level). The wrapper around it is resized
+   to baseSize*zoom so the scroll container's scrollable area actually
+   matches what's visually shown, instead of leaving stale empty scroll
+   space when zoomed out. */
+let rankTreeZoom = 1;
+
+function applyRankTreeZoom(zoom){
+  rankTreeZoom = Math.max(0.15, Math.min(3, zoom));
+  const canvas = document.getElementById('rank-tree-canvas');
+  const wrap = document.getElementById('rank-tree-zoom-wrap');
+  if(!canvas || !wrap) return;
+  const baseW = parseFloat(canvas.dataset.baseWidth) || canvas.offsetWidth;
+  const baseH = parseFloat(canvas.dataset.baseHeight) || canvas.offsetHeight;
+  canvas.style.transform = `scale(${rankTreeZoom})`;
+  canvas.style.transformOrigin = '0 0';
+  wrap.style.width = (baseW * rankTreeZoom) + 'px';
+  wrap.style.height = (baseH * rankTreeZoom) + 'px';
+  const label = document.getElementById('rank-tree-zoom-label');
+  if(label) label.textContent = Math.round(rankTreeZoom * 100) + '%';
+}
+
+function computeRankTreeFitZoom(){
+  const container = document.getElementById('rank-tree-scroll');
+  const canvas = document.getElementById('rank-tree-canvas');
+  if(!container || !canvas) return 1;
+  const baseW = parseFloat(canvas.dataset.baseWidth) || canvas.offsetWidth;
+  const baseH = parseFloat(canvas.dataset.baseHeight) || canvas.offsetHeight;
+  if(!baseW || !baseH) return 1;
+  const availW = container.clientWidth - 12;
+  const availH = container.clientHeight - 12;
+  return Math.max(0.15, Math.min(availW / baseW, availH / baseH));
+}
+
+window.fitRankTreeToView = function(){
+  applyRankTreeZoom(computeRankTreeFitZoom());
+};
+window.zoomRankTreeIn = function(){ applyRankTreeZoom(rankTreeZoom * 1.2); };
+window.zoomRankTreeOut = function(){ applyRankTreeZoom(rankTreeZoom / 1.2); };
+
+// Draws every connection (not just "extra" ones) as a real line between
+// the two boxes' current positions — this is what makes multiple parents
+// visually reconverge onto one shared rank once you've spread things out.
+// Deliberately uses the stored RANK_TREE_POSITIONS + each node's own
+// offsetWidth/offsetHeight rather than getBoundingClientRect() — those
+// stay in the canvas's own unscaled coordinate space regardless of the
+// current zoom level (offsetWidth/Height are unaffected by an ancestor's
+// CSS transform), so the lines need zero zoom-conversion math at all.
+function drawAllRankTreeLines(){
+  const svg = document.getElementById('rank-tree-svg-overlay');
+  if(!svg) return;
+  let html = `<defs><marker id="rank-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L6,4 L0,8 Z" style="fill:var(--gold);"/></marker></defs>`;
+  const drawn = new Set();
+  RANK_TREE_NODES.forEach(n => {
+    if(!n.parent) return;
+    const edgeKey = n.name + '→' + n.parent;
+    if(drawn.has(edgeKey)) return; // avoid drawing an exact duplicate twice
+    drawn.add(edgeKey);
+    const parentEl = findRankNodeEl(n.parent);
+    const childEl = findRankNodeEl(n.name);
+    if(!parentEl || !childEl) return;
+    const pPos = RANK_TREE_POSITIONS[n.parent] || { x: 0, y: 0 };
+    const cPos = RANK_TREE_POSITIONS[n.name] || { x: 0, y: 0 };
+    const x1 = pPos.x + parentEl.offsetWidth / 2;
+    const y1 = pPos.y + parentEl.offsetHeight / 2;
+    const x2 = cPos.x + childEl.offsetWidth / 2;
+    const y2 = cPos.y + childEl.offsetHeight / 2;
+    const midY = (y1 + y2) / 2;
+    html += `<path d="M${x1},${y1} C${x1},${midY} ${x2},${midY} ${x2},${y2}" style="fill:none;stroke:var(--gold);stroke-width:1.5;" marker-end="url(#rank-arrow)" />`;
+  });
+  svg.innerHTML = html;
+}
+
+function renderRankCrossLinksList(extraEdges){
+  const wrap = document.getElementById('rank-tree-crosslinks');
+  const list = document.getElementById('rank-tree-crosslinks-list');
+  if(!wrap || !list) return;
+  const show = rankTreeEditMode && extraEdges.length > 0;
+  wrap.style.display = show ? '' : 'none';
+  if(!show) return;
+  list.innerHTML = extraEdges.map(edge => `
+    <div class="rank-tree-crosslink-row">
+      <span>${escapeHtml(edge.name)} also reports to <strong>${escapeHtml(edge.parent)}</strong></span>
+      <button type="button" class="rank-node-remove" style="position:static;" title="Remove just this connection" onclick="removeRankNodeEdge('${escapeHtml(edge.name)}','${escapeHtml(edge.parent)}')">✕</button>
+    </div>`).join('');
+}
+
+/* ---------- POSITION DRAGGING (move a box anywhere) ---------- */
+let rankNodeDragState = null;
+window.onRankNodeMouseDown = function(e, name){
+  if(!rankTreeEditMode || !canManageRankTree()) return;
+  e.preventDefault();
+  const pos = RANK_TREE_POSITIONS[name] || { x: 0, y: 0 };
+  rankNodeDragState = { name, startX: e.clientX, startY: e.clientY, origX: pos.x, origY: pos.y, moved: false };
+  document.addEventListener('mousemove', onRankNodeMouseMove);
+  document.addEventListener('mouseup', onRankNodeMouseUp);
+};
+function onRankNodeMouseMove(e){
+  if(!rankNodeDragState) return;
+  const dx = (e.clientX - rankNodeDragState.startX) / rankTreeZoom;
+  const dy = (e.clientY - rankNodeDragState.startY) / rankTreeZoom;
+  if(Math.abs(dx) > 2 || Math.abs(dy) > 2) rankNodeDragState.moved = true;
+  const newX = Math.max(0, rankNodeDragState.origX + dx);
+  const newY = Math.max(0, rankNodeDragState.origY + dy);
+  RANK_TREE_POSITIONS[rankNodeDragState.name] = { x: newX, y: newY };
+  const el = findRankNodeEl(rankNodeDragState.name);
+  if(el){ el.style.left = newX + 'px'; el.style.top = newY + 'px'; }
+  drawAllRankTreeLines(); // live redraw while dragging so lines follow immediately
+}
+function onRankNodeMouseUp(){
+  document.removeEventListener('mousemove', onRankNodeMouseMove);
+  document.removeEventListener('mouseup', onRankNodeMouseUp);
+  if(rankNodeDragState && rankNodeDragState.moved) saveRankTreeStructure();
+  rankNodeDragState = null;
+}
+
+/* ---------- CONNECTION DRAGGING (the small 🔗 handle) ---------- */
+let rankTreeConnectDragSrc = null; // rank name being connected from
+
+window.onRankConnectDragStart = function(e, name){
+  e.stopPropagation();
+  rankTreeConnectDragSrc = name;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', name);
+};
+window.onRankNodeDragOver = function(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+};
+// Default drop = MOVE (this rank's existing connection(s) are replaced by
+// the new one). Hold Ctrl/Cmd while dropping = ADD an additional
+// connection instead, leaving the original(s) in place — this is how a
+// rank ends up reporting to more than one officer, for ranks like
+// Chamberlain that serve several different officers at once. Since
+// layout is free-form, every connection just draws as its own line
+// between wherever the two boxes currently sit.
+window.onRankNodeDrop = function(e, targetName){
+  e.preventDefault();
+  e.stopPropagation();
+  if(!rankTreeEditMode || !canManageRankTree()) return;
+  if(!rankTreeConnectDragSrc || rankTreeConnectDragSrc === targetName) return;
+  const { byParent } = buildRankTreeFromNodes();
+  if(isRankDescendantOf(targetName, rankTreeConnectDragSrc, byParent)){
+    alert("Can't connect a rank onto its own descendant — that would create a loop.");
+    rankTreeConnectDragSrc = null;
+    return;
+  }
+  const addAdditional = e.ctrlKey || e.metaKey;
+  if(!addAdditional){
+    RANK_TREE_NODES = RANK_TREE_NODES.filter(n => n.name !== rankTreeConnectDragSrc);
+  }
+  const alreadyExists = RANK_TREE_NODES.some(n => n.name === rankTreeConnectDragSrc && n.parent === targetName);
+  if(!alreadyExists){
+    RANK_TREE_NODES.push({ name: rankTreeConnectDragSrc, parent: targetName });
+  }
+  rankTreeConnectDragSrc = null;
+  renderRankTree();
+  saveRankTreeStructure();
+};
+
+window.removeRankPlacement = function(name){
+  if(!rankTreeEditMode || !canManageRankTree()) return;
+  RANK_TREE_NODES = RANK_TREE_NODES.filter(n => n.name !== name);
+  delete RANK_TREE_POSITIONS[name];
+  renderRankTree();
+  saveRankTreeStructure();
+};
+
+window.removeRankNodeEdge = function(name, parent){
+  if(!rankTreeEditMode || !canManageRankTree()) return;
+  RANK_TREE_NODES = RANK_TREE_NODES.filter(n => !(n.name === name && n.parent === parent));
+  renderRankTree();
+  saveRankTreeStructure();
+};
+
+window.toggleRankTreeEditMode = function(){
+  if(!canManageRankTree()) return;
+  rankTreeEditMode = !rankTreeEditMode;
+  const btn = document.getElementById('rank-tree-edit-toggle');
+  if(btn){
+    btn.classList.toggle('active', rankTreeEditMode);
+    btn.textContent = rankTreeEditMode ? '✓ Done Editing' : '🔀 Edit Connections';
+  }
+  const hint = document.getElementById('rank-tree-edit-hint');
+  if(hint) hint.style.display = rankTreeEditMode ? '' : 'none';
+  renderRankTree();
+};
+
+window.resetRankTreeToDefault = async function(){
+  if(!canManageRankTree()) return;
+  if(!confirm('Reset the rank diagram back to the default connections and positions? This affects everyone, not just you.')) return;
+  RANK_TREE_NODES = DEFAULT_RANK_TREE_NODES.slice();
+  RANK_TREE_POSITIONS = {};
+  renderRankTree();
+  await saveRankTreeStructure();
+};
+
+function updateRankTreeAdminControlsVisibility(){
+  const editBtn = document.getElementById('rank-tree-edit-toggle');
+  const resetBtn = document.getElementById('rank-tree-reset-btn');
+  const canManage = canManageRankTree();
+  if(editBtn) editBtn.style.display = canManage ? '' : 'none';
+  if(resetBtn) resetBtn.style.display = canManage ? '' : 'none';
+  if(!canManage && rankTreeEditMode){
+    rankTreeEditMode = false;
+    const hint = document.getElementById('rank-tree-edit-hint');
+    if(hint) hint.style.display = 'none';
+  }
+}
+
+// Fetches every character sheet and filters to whoever currently has this
+// rank set — a fresh full query rather than reusing globalOtherSheetsData,
+// since that list deliberately excludes the current logged-in user (which
+// would otherwise make you invisible in your own rank's roster).
+async function fetchCharactersByRank(rankKey){
+  if(!currentUser) return [];
+  try{
+    const { data, error } = await supabaseClient.from('characters').select('user_id, data');
+    if(error) throw error;
+    return (data || [])
+      .map(row => ({
+        user_id: row.user_id,
+        name: (row.data && row.data.charInfo && row.data.charInfo.name) ? row.data.charInfo.name.trim() : 'Unnamed Character',
+        rank: row.data && row.data.charInfo ? row.data.charInfo.rank : '',
+      }))
+      .filter(r => r.rank === rankKey)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }catch(e){
+    console.error('Could not fetch characters by rank:', e);
+    return [];
+  }
+}
+
+window.showRankDetail = async function(rankKey){
+  if(rankTreeEditMode) return; // clicks are for dragging while in edit mode, not opening details
+  document.querySelectorAll('.rank-node.active').forEach(el => el.classList.remove('active'));
+  const nodeEl = document.querySelector(`.rank-node[data-rank-key="${rankKey}"]`);
+  if(nodeEl) nodeEl.classList.add('active');
+
+  const rank = RANKS.find(r => r.key === rankKey);
+  const panel = document.getElementById('rank-detail-panel');
+  if(!panel) return;
+  if(!rank){
+    panel.innerHTML = `<p class="rollbuff-list-empty">This rank hasn't been set up in "Manage Ranks" yet.</p>`;
+    return;
+  }
+  const resetText = (rank.resetHours === null || rank.resetHours === undefined || rank.resetHours === '')
+    ? 'Reset time not set yet'
+    : `Resets every ${rank.resetHours}h`;
+  panel.innerHTML = `
+    <div class="rank-detail-title">${escapeHtml(rank.name)}</div>
+    <div class="rank-detail-stats">Body ${rank.bodyBase} · Mind ${rank.mindBase} · Spirit ${rank.spiritBase}</div>
+    <div class="rank-detail-stats">+${rank.combatModifier || 0} Combat Modifier · ${resetText}</div>
+    <div class="rank-detail-desc">${rank.description ? escapeHtml(rank.description).replace(/\n/g, '<br>') : '<span class="racial-abilities-empty">No description yet.</span>'}</div>
+    <div class="rank-detail-players-label">Players at this rank</div>
+    <div id="rank-detail-players"><p class="rollbuff-list-empty">Loading…</p></div>`;
+
+  const players = await fetchCharactersByRank(rankKey);
+  const playersEl = document.getElementById('rank-detail-players');
+  if(!playersEl) return;
+  if(!currentUser){
+    playersEl.innerHTML = `<p class="rollbuff-list-empty">Log in to see who currently holds this rank.</p>`;
+  } else if(!players.length){
+    playersEl.innerHTML = `<p class="rollbuff-list-empty">Nobody is currently at this rank.</p>`;
+  } else {
+    playersEl.innerHTML = players.map(p => `<div class="rank-detail-player">${escapeHtml(p.name)}</div>`).join('');
+  }
+};
+
+/* ---------- PAN (click-drag empty space) ---------- */
+let rankTreePanState = null;
+function onRankTreeScrollMouseDown(e){
+  // Only pan when the click is on empty canvas space — not on a rank box
+  // or any of its edit controls, which already have their own drag
+  // behavior (reposition / connect).
+  if(e.target.closest('.rank-node') || e.target.closest('.rank-node-connector') || e.target.closest('.rank-node-remove')) return;
+  const container = document.getElementById('rank-tree-scroll');
+  if(!container) return;
+  e.preventDefault();
+  rankTreePanState = { startX: e.clientX, startY: e.clientY, startScrollLeft: container.scrollLeft, startScrollTop: container.scrollTop };
+  container.classList.add('panning');
+  document.addEventListener('mousemove', onRankTreePanMove);
+  document.addEventListener('mouseup', onRankTreePanUp);
+}
+function onRankTreePanMove(e){
+  if(!rankTreePanState) return;
+  const container = document.getElementById('rank-tree-scroll');
+  if(!container) return;
+  container.scrollLeft = rankTreePanState.startScrollLeft - (e.clientX - rankTreePanState.startX);
+  container.scrollTop = rankTreePanState.startScrollTop - (e.clientY - rankTreePanState.startY);
+}
+function onRankTreePanUp(){
+  rankTreePanState = null;
+  const container = document.getElementById('rank-tree-scroll');
+  if(container) container.classList.remove('panning');
+  document.removeEventListener('mousemove', onRankTreePanMove);
+  document.removeEventListener('mouseup', onRankTreePanUp);
+}
+
+/* ---------- MOUSEWHEEL ZOOM (centered on the cursor) ---------- */
+function onRankTreeWheel(e){
+  const container = document.getElementById('rank-tree-scroll');
+  if(!container) return;
+  e.preventDefault();
+  const rect = container.getBoundingClientRect();
+  const cursorX = e.clientX - rect.left;
+  const cursorY = e.clientY - rect.top;
+  // The canvas-space point currently sitting under the cursor, at the
+  // OLD zoom level — recomputed after zooming so that exact point stays
+  // under the cursor instead of the view jumping around while scrolling.
+  const canvasX = (container.scrollLeft + cursorX) / rankTreeZoom;
+  const canvasY = (container.scrollTop + cursorY) / rankTreeZoom;
+  const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+  applyRankTreeZoom(rankTreeZoom * factor);
+  container.scrollLeft = canvasX * rankTreeZoom - cursorX;
+  container.scrollTop = canvasY * rankTreeZoom - cursorY;
+}
+
+window.openRankProgressionModal = async function(){
+  await loadRankTreeStructure(); // pick up any changes an editor made elsewhere since this was last opened
+  rankTreeEditMode = false;
+  updateRankTreeAdminControlsVisibility();
+  const hint = document.getElementById('rank-tree-edit-hint');
+  if(hint) hint.style.display = 'none';
+  const editBtn = document.getElementById('rank-tree-edit-toggle');
+  if(editBtn) editBtn.textContent = '🔀 Edit Connections';
+  const panel = document.getElementById('rank-detail-panel');
+  if(panel) panel.innerHTML = `<p class="rollbuff-list-empty">Click a rank in the diagram to see its details here.</p>`;
+  // Modal must actually be visible before rendering — fit-to-view needs
+  // to measure the real container size, which is 0 while display:none.
+  document.getElementById('rank-progression-modal-backdrop').classList.add('open');
+  renderRankTree();
+  requestAnimationFrame(() => requestAnimationFrame(fitRankTreeToView)); // double rAF: wait for the render's own layout pass too
+  window.addEventListener('resize', onRankTreeWindowResize);
+  const scrollEl = document.getElementById('rank-tree-scroll');
+  if(scrollEl){
+    scrollEl.addEventListener('mousedown', onRankTreeScrollMouseDown);
+    scrollEl.addEventListener('wheel', onRankTreeWheel, { passive: false });
+  }
+};
+window.closeRankProgressionModal = function(){
+  document.getElementById('rank-progression-modal-backdrop').classList.remove('open');
+  window.removeEventListener('resize', onRankTreeWindowResize);
+  const scrollEl = document.getElementById('rank-tree-scroll');
+  if(scrollEl){
+    scrollEl.removeEventListener('mousedown', onRankTreeScrollMouseDown);
+    scrollEl.removeEventListener('wheel', onRankTreeWheel);
+  }
+  onRankTreePanUp(); // in case a pan was mid-drag when the modal closed
+};
+let rankTreeResizeTimer = null;
+function onRankTreeWindowResize(){
+  clearTimeout(rankTreeResizeTimer);
+  rankTreeResizeTimer = setTimeout(drawAllRankTreeLines, 150);
+}
+
 function renderRankSelectOptions(){
   const sel = document.getElementById('ci-rank');
   if(!sel) return;
@@ -9767,7 +10540,7 @@ window.updateWeaponItemNumberField = function(id, field, value){
 
 
 document.addEventListener('keydown', (e) => {
-  if(e.key === 'Escape'){ closeSpellModal(); closeRollBuffModal(); closeWsModal(); closeDisciplinesModal(); closeAddWsModal(); closeDiceModal(); closeCraftModal(); closeAddCraftModal(); closeAbilitiesModal(); closeRacesModal(); closeAbilityModal(); closeInventoryModal(); closeWeaponsModal(); closeItemViewModal(); closeRanksModal(); closeRankViewModal(); closeCharsheetLayoutModal(); closeClassSettingsModal(); closeClassViewModal(); }
+  if(e.key === 'Escape'){ closeSpellModal(); closeRollBuffModal(); closeWsModal(); closeDisciplinesModal(); closeAddWsModal(); closeDiceModal(); closeCraftModal(); closeAddCraftModal(); closeAbilitiesModal(); closeRacesModal(); closeAbilityModal(); closeInventoryModal(); closeWeaponsModal(); closeItemViewModal(); closeRanksModal(); closeRankViewModal(); closeCharsheetLayoutModal(); closeClassSettingsModal(); closeClassViewModal(); closeRankProgressionModal(); }
 });
 
 document.getElementById('modal-desc').addEventListener('input', function(){ syncGrowWrap(this); });
