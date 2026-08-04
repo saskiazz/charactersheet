@@ -2809,7 +2809,7 @@
               </select>
               <div class="charsheet-admin-links">
                 <button type="button" class="mini-admin-link always-enabled" id="rank-view-link" onclick="openRankViewModal()">ℹ View Rank Details</button>
-                <button type="button" class="mini-admin-link always-enabled" onclick="openRankProgressionModal()">📊 Rank Progression</button>
+                <button type="button" class="mini-admin-link always-enabled" onclick="openRankProgressionModal()">📊 Chain of Command</button>
                 <button type="button" class="mini-admin-link" id="rank-admin-link" style="display:none;" onclick="openRanksModal()">⚙ Manage Ranks</button>
               </div>
             </div>
@@ -4044,7 +4044,7 @@
 <div id="rank-progression-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeRankProgressionModal()">
   <div class="modal-box rank-progression-box">
     <button class="modal-close" onclick="closeRankProgressionModal()">✕</button>
-    <h2>📊 Rank Progression</h2>
+    <h2>📊 Chain of Command</h2>
     <p class="modal-subtitle">The path everyone starts on runs up to Dark Watcher — the highest rank you can reach without being chosen by (or becoming) an officer. From there it branches into each officer track and their subordinates. Click any rank to see its description, stats, and who currently holds it.</p>
     <div class="rank-tree-toolbar">
       <button type="button" class="mini-admin-link always-enabled" id="rank-tree-edit-toggle" style="display:none;" onclick="toggleRankTreeEditMode()">🔀 Edit Connections</button>
@@ -12488,7 +12488,7 @@ function applyFilters(){
 }
 
 function toggleReadOnly(readOnly) {
-  const inputs = document.querySelectorAll('.charsheet input, .charsheet textarea, .charsheet button, .alignment-box input, #grid input, #grid button, #ws-grid input, #ws-grid button, #craft-grid input, #craft-grid button');
+  const inputs = document.querySelectorAll('.charsheet input, .charsheet select, .charsheet textarea, .charsheet button, .alignment-box input, #grid input, #grid button, #ws-grid input, #ws-grid button, #craft-grid input, #craft-grid button');
   const cloudSaveBtn = document.getElementById('cloud-save');
   const resetBtn = document.getElementById('reset-all');
   const wsResetBtn = document.getElementById('ws-reset-all');
