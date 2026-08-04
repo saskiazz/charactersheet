@@ -5818,6 +5818,15 @@ function computeChildAgeYears(birthday){
   return Math.max(0, days);
 }
 
+// The real day-count keeps climbing forever in the background (that's
+// what computeChildAgeYears returns) — but past 18 there's no in-RP
+// reason to keep displaying it, and it would otherwise run up into the
+// hundreds within a year or two of real time. This only caps what's
+// shown; the underlying birthday/day-count math is untouched.
+function displayChildAgeYears(birthday){
+  return Math.min(18, computeChildAgeYears(birthday));
+}
+
 async function loadChildren(userId){
   if(!isPregnancyViewer || !userId) return;
   childrenShownForUserId = userId;
@@ -5862,7 +5871,7 @@ function renderChildrenList(){
   }
   if(legend) legend.style.display = children.some(c => c.user_id !== childrenShownForUserId || c.other_parent_user_id === childrenShownForUserId) ? '' : 'none';
   listEl.innerHTML = children.length ? children.map(c => {
-    const age = computeChildAgeYears(c.birthday);
+    const age = displayChildAgeYears(c.birthday);
     const editable = canEditAtAll && c.user_id === currentUser.id; // only the carrier can edit/delete their own child's row
     const dis = editable ? '' : 'disabled';
     const isCarrierHere = c.user_id === childrenShownForUserId;
