@@ -1943,6 +1943,65 @@
   .class-log-detail{font-size:15px;color:var(--parchment-dim);margin-bottom:2px;}
   .class-log-label{color:var(--parchment);font-weight:600;}
 
+  .admin-users-table-wrap{overflow-x:auto;max-height:70vh;overflow-y:auto;}
+  .admin-users-table{width:100%;border-collapse:collapse;min-width:900px;}
+  .admin-users-table th{
+    position:sticky;top:0;
+    background:var(--panel-2);
+    text-align:left;
+    font-size:12.5px;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    color:var(--gold);
+    padding:8px 10px;
+    border-bottom:1px solid var(--hairline);
+    white-space:nowrap;
+  }
+  .admin-users-table th.admin-sortable{cursor:pointer;user-select:none;}
+  .admin-users-table th.admin-sortable:hover{color:var(--light-accent);}
+  .admin-users-table td{
+    padding:8px 10px;
+    border-bottom:1px solid var(--hairline);
+    font-size:14.5px;
+    color:var(--parchment);
+    vertical-align:top;
+  }
+  .admin-timestamp-cell{white-space:nowrap;color:var(--parchment-dim);font-size:13.5px;}
+  .admin-role-cell{text-align:center;}
+  .admin-oracle-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:5px;}
+  .admin-oracle-tag{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    background:rgba(201,160,84,0.14);
+    border:1px solid var(--gold);
+    color:var(--light-accent);
+    font-size:12.5px;
+    padding:2px 7px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .admin-oracle-tag button{
+    background:transparent;
+    border:none;
+    color:var(--parchment-dim);
+    cursor:pointer;
+    font-size:11px;
+    padding:0;
+  }
+  .admin-oracle-tag button:hover{color:var(--danger);}
+  .admin-oracle-none{color:var(--parchment-dim);font-size:13px;font-style:italic;}
+  .admin-oracle-select{
+    width:100%;
+    background:var(--panel);
+    border:1px solid var(--hairline);
+    color:var(--parchment);
+    padding:4px 6px;
+    border-radius:6px;
+    font-family:'Crimson Pro',serif;
+    font-size:13px;
+  }
+
   /* ---------- RANK PROGRESSION DIAGRAM ---------- */
   .rank-progression-box{max-width:min(1500px, 97vw);}
   .rank-progression-layout{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;}
@@ -2755,6 +2814,7 @@
       <button id="cloud-save">Save to Cloud Now</button>
       <span id="cloud-dirty-badge" class="cloud-dirty-badge" style="display:none;">⚠ Unsaved changes</span>
       <button id="cloud-reload">Reload from Cloud</button>
+      <button id="admin-users-btn" style="display:none;" onclick="openAdminUsersModal()">🛠️ Admin</button>
       <button id="auth-signout">Logout</button>
       <span id="cloud-status-2"></span>
     </div>
@@ -4103,6 +4163,29 @@
   </div>
 </div>
 
+<div id="admin-users-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeAdminUsersModal()">
+  <div class="modal-box" style="max-width:min(1300px, 97vw);">
+    <button class="modal-close" onclick="closeAdminUsersModal()">✕</button>
+    <h2>🛠️ Admin — Users &amp; Roles</h2>
+    <p class="modal-subtitle">Every user with a character sheet. "Last logged in" is self-reported at sign-in — Supabase's real login records aren't reachable from the browser without a dangerous admin key, so this is the safe equivalent. Click a column header to sort.</p>
+    <div class="admin-users-table-wrap">
+      <table class="admin-users-table">
+        <thead>
+          <tr>
+            <th class="admin-sortable" data-sort="name" data-label="Name" onclick="setAdminSort('name')">Name</th>
+            <th class="admin-sortable" data-sort="updatedAt" data-label="Last Sheet Update" onclick="setAdminSort('updatedAt')">Last Sheet Update</th>
+            <th class="admin-sortable" data-sort="lastLoginAt" data-label="Last Login" onclick="setAdminSort('lastLoginAt')">Last Login</th>
+            <th>Editor</th>
+            <th>Teacher</th>
+            <th>Oracle Schools</th>
+          </tr>
+        </thead>
+        <tbody id="admin-users-rows"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <div id="ability-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeAbilityModal()">
   <div class="modal-box">
     <button class="modal-close" onclick="closeAbilityModal()">✕</button>
@@ -4530,7 +4613,7 @@ async function checkSpellEditorStatus(){
   isWsEditor = false;
   isCraftEditor = false;
   oracleSchools = new Set();
-  if(!currentUser){ updateTagGroupsButtonVisibility(); updateSchoolAdminButtonVisibility(); updateDisciplineAdminButtonVisibility(); updateRaceAdminLinksVisibility(); updateRankAdminLinksVisibility(); updateCharsheetLayoutAdminLinkVisibility(); updateClassSettingsAdminLinkVisibility(); updateRankTreeAdminControlsVisibility(); return; }
+  if(!currentUser){ updateTagGroupsButtonVisibility(); updateSchoolAdminButtonVisibility(); updateDisciplineAdminButtonVisibility(); updateRaceAdminLinksVisibility(); updateRankAdminLinksVisibility(); updateCharsheetLayoutAdminLinkVisibility(); updateClassSettingsAdminLinkVisibility(); updateRankTreeAdminControlsVisibility(); updateAdminUsersButtonVisibility(); return; }
   try{
     const { data, error } = await supabaseClient
       .from('spell_editors')
@@ -4570,6 +4653,7 @@ async function checkSpellEditorStatus(){
   updateCharsheetLayoutAdminLinkVisibility();
   updateClassSettingsAdminLinkVisibility();
   updateRankTreeAdminControlsVisibility();
+  updateAdminUsersButtonVisibility();
   render();
   if(currentView === 'warrior') renderWarrior();
   if(currentView === 'crafting') renderCrafting();
@@ -9354,6 +9438,194 @@ function updateRankTreeAdminControlsVisibility(){
   }
 }
 
+function updateAdminUsersButtonVisibility(){
+  const btn = document.getElementById('admin-users-btn');
+  if(btn) btn.style.display = isSpellEditor ? '' : 'none';
+}
+
+/* ---------- ADMIN: USER MANAGEMENT ----------
+   Editor-only panel listing every known user (anyone with a character
+   sheet), when they last saved it, when they last logged in, and every
+   role that exists in this app, with a checkbox to grant/revoke each.
+   "Last logged in" comes from user_login_log — a table each user writes
+   their OWN timestamp to on sign-in (see recordUserLogin()) — rather
+   than Supabase's real auth.users.last_sign_in_at, which is only
+   reachable via the Admin API using the service_role key. That key must
+   never be used client-side (it bypasses RLS for the entire database),
+   so self-reported login timestamps are the safe equivalent. */
+let adminUsersData = [];
+
+async function loadAdminUsersData(){
+  const [charsRes, loginRes, editorsRes, teachersRes, oracleRes] = await Promise.all([
+    supabaseClient.from('characters').select('user_id, data, updated_at'),
+    supabaseClient.from('user_login_log').select('user_id, last_login_at'),
+    supabaseClient.from('spell_editors').select('user_id'),
+    supabaseClient.from('teachers').select('user_id'),
+    supabaseClient.from('school_oracle_editors').select('user_id, school_key'),
+  ]);
+  const editorIds = new Set((editorsRes.data || []).map(r => r.user_id));
+  const teacherIds = new Set((teachersRes.data || []).map(r => r.user_id));
+  const loginMap = {};
+  (loginRes.data || []).forEach(r => { loginMap[r.user_id] = r.last_login_at; });
+  const oracleMap = {};
+  (oracleRes.data || []).forEach(r => {
+    if(!oracleMap[r.user_id]) oracleMap[r.user_id] = [];
+    oracleMap[r.user_id].push(r.school_key);
+  });
+
+  adminUsersData = (charsRes.data || []).map(row => ({
+    userId: row.user_id,
+    name: (row.data && row.data.charInfo && row.data.charInfo.name) ? row.data.charInfo.name.trim() : 'Unnamed Character',
+    updatedAt: row.updated_at,
+    lastLoginAt: loginMap[row.user_id] || null,
+    isEditor: editorIds.has(row.user_id),
+    isTeacher: teacherIds.has(row.user_id),
+    oracleSchools: oracleMap[row.user_id] || [],
+  }));
+  sortAdminUsersData();
+}
+
+function formatAdminTimestamp(iso){
+  if(!iso) return 'Never';
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return 'Never';
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) + ' · ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+
+function schoolNameByKey(key){
+  const sch = SCHOOLS.find(s => s.key === key);
+  return sch ? sch.name : key;
+}
+
+/* ---------- SORTING ----------
+   Click a column header to sort by it; click again to flip direction.
+   Dates sort with "Never"/null always last regardless of direction —
+   flipping to descending should surface the most-recently-active
+   people, not push everyone who's never logged in to the top. */
+let adminSortField = 'name'; // 'name' | 'updatedAt' | 'lastLoginAt'
+let adminSortDir = 'asc'; // 'asc' | 'desc'
+
+window.setAdminSort = function(field){
+  if(adminSortField === field){
+    adminSortDir = adminSortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    adminSortField = field;
+    adminSortDir = field === 'name' ? 'asc' : 'desc'; // dates default to newest-first, name defaults to A-Z
+  }
+  sortAdminUsersData();
+  renderAdminUsersTable();
+};
+
+function sortAdminUsersData(){
+  const dir = adminSortDir === 'asc' ? 1 : -1;
+  adminUsersData.sort((a, b) => {
+    if(adminSortField === 'name'){
+      return a.name.localeCompare(b.name) * dir;
+    }
+    const av = a[adminSortField], bv = b[adminSortField];
+    if(!av && !bv) return 0;
+    if(!av) return 1;  // "Never" always sinks to the bottom, either direction
+    if(!bv) return -1;
+    return (new Date(av) - new Date(bv)) * dir;
+  });
+}
+
+function adminSortArrow(field){
+  if(adminSortField !== field) return '';
+  return adminSortDir === 'asc' ? ' ▲' : ' ▼';
+}
+
+function renderAdminUsersTable(){
+  const tbody = document.getElementById('admin-users-rows');
+  if(!tbody) return;
+  document.querySelectorAll('.admin-users-table th[data-sort]').forEach(th => {
+    th.textContent = th.dataset.label + adminSortArrow(th.dataset.sort);
+  });
+  if(!adminUsersData.length){
+    tbody.innerHTML = `<tr><td colspan="6"><p class="rollbuff-list-empty">No character sheets found yet.</p></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = adminUsersData.map(u => `
+    <tr>
+      <td>${escapeHtml(u.name)}</td>
+      <td class="admin-timestamp-cell">${formatAdminTimestamp(u.updatedAt)}</td>
+      <td class="admin-timestamp-cell">${formatAdminTimestamp(u.lastLoginAt)}</td>
+      <td class="admin-role-cell"><input type="checkbox" ${u.isEditor ? 'checked' : ''} onchange="toggleAdminRole('${u.userId}','spell_editors',this.checked)"></td>
+      <td class="admin-role-cell"><input type="checkbox" ${u.isTeacher ? 'checked' : ''} onchange="toggleAdminRole('${u.userId}','teachers',this.checked)"></td>
+      <td>
+        <div class="admin-oracle-tags">
+          ${u.oracleSchools.length ? u.oracleSchools.map(sk => `<span class="admin-oracle-tag">${escapeHtml(schoolNameByKey(sk))}<button type="button" onclick="removeAdminOracle('${u.userId}','${sk}')">✕</button></span>`).join('') : '<span class="admin-oracle-none">—</span>'}
+        </div>
+        <select class="admin-oracle-select" onchange="addAdminOracle('${u.userId}', this.value); this.value='';">
+          <option value="">+ Add oracle school…</option>
+          ${SCHOOLS.filter(s => !u.oracleSchools.includes(s.key)).map(s => `<option value="${s.key}">${escapeHtml(s.name)}</option>`).join('')}
+        </select>
+      </td>
+    </tr>`).join('');
+}
+
+window.toggleAdminRole = async function(userId, table, checked){
+  if(!isSpellEditor) return;
+  const u = adminUsersData.find(x => x.userId === userId);
+  try{
+    if(checked){
+      const { error } = await supabaseClient.from(table).insert({ user_id: userId });
+      if(error) throw error;
+    } else {
+      const { error } = await supabaseClient.from(table).delete().eq('user_id', userId);
+      if(error) throw error;
+    }
+    if(u){
+      if(table === 'spell_editors') u.isEditor = checked;
+      if(table === 'teachers') u.isTeacher = checked;
+    }
+  }catch(e){
+    alert('Could not update that role: ' + (e.message || e));
+    renderAdminUsersTable(); // revert the checkbox visually back to the last-known-good state
+  }
+};
+
+window.addAdminOracle = async function(userId, schoolKey){
+  if(!schoolKey || !isSpellEditor) return;
+  try{
+    const { error } = await supabaseClient.from('school_oracle_editors').insert({ user_id: userId, school_key: schoolKey });
+    if(error) throw error;
+    const u = adminUsersData.find(x => x.userId === userId);
+    if(u && !u.oracleSchools.includes(schoolKey)) u.oracleSchools.push(schoolKey);
+    renderAdminUsersTable();
+  }catch(e){
+    alert('Could not add oracle access: ' + (e.message || e));
+  }
+};
+window.removeAdminOracle = async function(userId, schoolKey){
+  if(!isSpellEditor) return;
+  try{
+    const { error } = await supabaseClient.from('school_oracle_editors').delete().eq('user_id', userId).eq('school_key', schoolKey);
+    if(error) throw error;
+    const u = adminUsersData.find(x => x.userId === userId);
+    if(u) u.oracleSchools = u.oracleSchools.filter(k => k !== schoolKey);
+    renderAdminUsersTable();
+  }catch(e){
+    alert('Could not remove oracle access: ' + (e.message || e));
+  }
+};
+
+window.openAdminUsersModal = async function(){
+  if(!isSpellEditor) return;
+  const tbody = document.getElementById('admin-users-rows');
+  if(tbody) tbody.innerHTML = `<tr><td colspan="6"><p class="rollbuff-list-empty">Loading…</p></td></tr>`;
+  document.getElementById('admin-users-modal-backdrop').classList.add('open');
+  try{
+    await loadAdminUsersData();
+    renderAdminUsersTable();
+  }catch(e){
+    if(tbody) tbody.innerHTML = `<tr><td colspan="6"><p class="rollbuff-list-empty">Could not load user data: ${escapeHtml(e.message || String(e))}</p></td></tr>`;
+  }
+};
+window.closeAdminUsersModal = function(){
+  document.getElementById('admin-users-modal-backdrop').classList.remove('open');
+};
+
 // Fetches every character sheet and filters to whoever currently has this
 // rank set — a fresh full query rather than reusing globalOtherSheetsData,
 // since that list deliberately excludes the current logged-in user (which
@@ -10633,7 +10905,7 @@ window.updateWeaponItemNumberField = function(id, field, value){
 
 
 document.addEventListener('keydown', (e) => {
-  if(e.key === 'Escape'){ closeSpellModal(); closeRollBuffModal(); closeWsModal(); closeDisciplinesModal(); closeAddWsModal(); closeDiceModal(); closeCraftModal(); closeAddCraftModal(); closeAbilitiesModal(); closeRacesModal(); closeAbilityModal(); closeInventoryModal(); closeWeaponsModal(); closeItemViewModal(); closeRanksModal(); closeRankViewModal(); closeCharsheetLayoutModal(); closeClassSettingsModal(); closeClassViewModal(); closeRankProgressionModal(); }
+  if(e.key === 'Escape'){ closeSpellModal(); closeRollBuffModal(); closeWsModal(); closeDisciplinesModal(); closeAddWsModal(); closeDiceModal(); closeCraftModal(); closeAddCraftModal(); closeAbilitiesModal(); closeRacesModal(); closeAbilityModal(); closeInventoryModal(); closeWeaponsModal(); closeItemViewModal(); closeRanksModal(); closeRankViewModal(); closeCharsheetLayoutModal(); closeClassSettingsModal(); closeClassViewModal(); closeRankProgressionModal(); closeAdminUsersModal(); }
 });
 
 document.getElementById('modal-desc').addEventListener('input', function(){ syncGrowWrap(this); });
@@ -11093,9 +11365,19 @@ async function signUp(){
     await checkTeacherStatus();
     await checkSasadminStatus();
     await loadFromCloud();
+    recordUserLogin();
   } else {
     setCloudStatus('Signed up! If email confirmation is enabled, please confirm your email and then log in.', false);
   }
+}
+
+// Each user writes their OWN last-login timestamp — see
+// admin_user_management_setup.sql for why (no service_role key needed).
+async function recordUserLogin(){
+  if(!currentUser) return;
+  try{
+    await supabaseClient.from('user_login_log').upsert({ user_id: currentUser.id, last_login_at: new Date().toISOString() }, { onConflict: 'user_id' });
+  }catch(e){ console.error('Could not record login timestamp:', e); }
 }
 
 async function signIn(){
@@ -11115,6 +11397,7 @@ async function signIn(){
   await checkTeacherStatus();
   await checkSasadminStatus();
   await loadFromCloud();
+  recordUserLogin();
 }
 
 async function signOut(){
@@ -11133,6 +11416,9 @@ async function signOut(){
   isSasadmin = false;
   partnerNote = { targetUserId: null, message: '' };
   renderPartnerNoteUI();
+  adminUsersData = [];
+  updateAdminUsersButtonVisibility();
+  closeAdminUsersModal();
   updateAuthUI();
   updateTagGroupsButtonVisibility();
   setCloudStatus('Logged out.', false);
@@ -11146,7 +11432,10 @@ async function initAuth(){
   await checkPregnancyViewerStatus();
   await checkTeacherStatus();
   await checkSasadminStatus();
-  if(currentUser) await loadFromCloud();
+  if(currentUser){
+    await loadFromCloud();
+    recordUserLogin();
+  }
 }
 
 function load(){
