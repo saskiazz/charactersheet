@@ -1944,7 +1944,7 @@
   .class-log-label{color:var(--parchment);font-weight:600;}
 
   .admin-users-table-wrap{overflow-x:auto;max-height:70vh;overflow-y:auto;}
-  .admin-users-table{width:100%;border-collapse:collapse;min-width:900px;}
+  .admin-users-table{width:100%;border-collapse:collapse;min-width:1150px;}
   .admin-users-table th{
     position:sticky;top:0;
     background:var(--panel-2);
@@ -4177,6 +4177,8 @@
             <th class="admin-sortable" data-sort="lastLoginAt" data-label="Last Login" onclick="setAdminSort('lastLoginAt')">Last Login</th>
             <th>Editor</th>
             <th>Teacher</th>
+            <th>Crafting Editor</th>
+            <th>Warrior Skill Editor</th>
             <th>Oracle Schools</th>
           </tr>
         </thead>
@@ -9456,15 +9458,19 @@ function updateAdminUsersButtonVisibility(){
 let adminUsersData = [];
 
 async function loadAdminUsersData(){
-  const [charsRes, loginRes, editorsRes, teachersRes, oracleRes] = await Promise.all([
+  const [charsRes, loginRes, editorsRes, teachersRes, craftRes, wsRes, oracleRes] = await Promise.all([
     supabaseClient.from('characters').select('user_id, data, updated_at'),
     supabaseClient.from('user_login_log').select('user_id, last_login_at'),
     supabaseClient.from('spell_editors').select('user_id'),
     supabaseClient.from('teachers').select('user_id'),
+    supabaseClient.from('crafting_editors').select('user_id'),
+    supabaseClient.from('warrior_skill_editors').select('user_id'),
     supabaseClient.from('school_oracle_editors').select('user_id, school_key'),
   ]);
   const editorIds = new Set((editorsRes.data || []).map(r => r.user_id));
   const teacherIds = new Set((teachersRes.data || []).map(r => r.user_id));
+  const craftIds = new Set((craftRes.data || []).map(r => r.user_id));
+  const wsIds = new Set((wsRes.data || []).map(r => r.user_id));
   const loginMap = {};
   (loginRes.data || []).forEach(r => { loginMap[r.user_id] = r.last_login_at; });
   const oracleMap = {};
@@ -9480,6 +9486,8 @@ async function loadAdminUsersData(){
     lastLoginAt: loginMap[row.user_id] || null,
     isEditor: editorIds.has(row.user_id),
     isTeacher: teacherIds.has(row.user_id),
+    isCraftEditor: craftIds.has(row.user_id),
+    isWsEditor: wsIds.has(row.user_id),
     oracleSchools: oracleMap[row.user_id] || [],
   }));
   sortAdminUsersData();
@@ -9542,7 +9550,7 @@ function renderAdminUsersTable(){
     th.textContent = th.dataset.label + adminSortArrow(th.dataset.sort);
   });
   if(!adminUsersData.length){
-    tbody.innerHTML = `<tr><td colspan="6"><p class="rollbuff-list-empty">No character sheets found yet.</p></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8"><p class="rollbuff-list-empty">No character sheets found yet.</p></td></tr>`;
     return;
   }
   tbody.innerHTML = adminUsersData.map(u => `
@@ -9552,6 +9560,8 @@ function renderAdminUsersTable(){
       <td class="admin-timestamp-cell">${formatAdminTimestamp(u.lastLoginAt)}</td>
       <td class="admin-role-cell"><input type="checkbox" ${u.isEditor ? 'checked' : ''} onchange="toggleAdminRole('${u.userId}','spell_editors',this.checked)"></td>
       <td class="admin-role-cell"><input type="checkbox" ${u.isTeacher ? 'checked' : ''} onchange="toggleAdminRole('${u.userId}','teachers',this.checked)"></td>
+      <td class="admin-role-cell"><input type="checkbox" ${u.isCraftEditor ? 'checked' : ''} onchange="toggleAdminRole('${u.userId}','crafting_editors',this.checked)"></td>
+      <td class="admin-role-cell"><input type="checkbox" ${u.isWsEditor ? 'checked' : ''} onchange="toggleAdminRole('${u.userId}','warrior_skill_editors',this.checked)"></td>
       <td>
         <div class="admin-oracle-tags">
           ${u.oracleSchools.length ? u.oracleSchools.map(sk => `<span class="admin-oracle-tag">${escapeHtml(schoolNameByKey(sk))}<button type="button" onclick="removeAdminOracle('${u.userId}','${sk}')">✕</button></span>`).join('') : '<span class="admin-oracle-none">—</span>'}
@@ -9578,6 +9588,8 @@ window.toggleAdminRole = async function(userId, table, checked){
     if(u){
       if(table === 'spell_editors') u.isEditor = checked;
       if(table === 'teachers') u.isTeacher = checked;
+      if(table === 'crafting_editors') u.isCraftEditor = checked;
+      if(table === 'warrior_skill_editors') u.isWsEditor = checked;
     }
   }catch(e){
     alert('Could not update that role: ' + (e.message || e));
@@ -9613,13 +9625,13 @@ window.removeAdminOracle = async function(userId, schoolKey){
 window.openAdminUsersModal = async function(){
   if(!isSpellEditor) return;
   const tbody = document.getElementById('admin-users-rows');
-  if(tbody) tbody.innerHTML = `<tr><td colspan="6"><p class="rollbuff-list-empty">Loading…</p></td></tr>`;
+  if(tbody) tbody.innerHTML = `<tr><td colspan="8"><p class="rollbuff-list-empty">Loading…</p></td></tr>`;
   document.getElementById('admin-users-modal-backdrop').classList.add('open');
   try{
     await loadAdminUsersData();
     renderAdminUsersTable();
   }catch(e){
-    if(tbody) tbody.innerHTML = `<tr><td colspan="6"><p class="rollbuff-list-empty">Could not load user data: ${escapeHtml(e.message || String(e))}</p></td></tr>`;
+    if(tbody) tbody.innerHTML = `<tr><td colspan="8"><p class="rollbuff-list-empty">Could not load user data: ${escapeHtml(e.message || String(e))}</p></td></tr>`;
   }
 };
 window.closeAdminUsersModal = function(){
