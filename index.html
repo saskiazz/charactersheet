@@ -1958,6 +1958,30 @@
     white-space:nowrap;
   }
   .admin-delete-account-btn:hover{background:var(--danger);color:#1a0d0b;}
+  .admin-pending-badge{
+    display:inline-block;
+    background:var(--danger);
+    color:#1a0d0b;
+    font-size:11.5px;
+    font-weight:700;
+    padding:1px 7px;
+    border-radius:999px;
+    margin-left:2px;
+    vertical-align:middle;
+  }
+  .admin-dismiss-btn{
+    background:transparent;
+    border:1px solid var(--hairline);
+    color:var(--parchment-dim);
+    font-family:'Crimson Pro',serif;
+    font-size:13px;
+    padding:5px 10px;
+    border-radius:6px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .admin-dismiss-btn:hover{border-color:var(--gold);color:var(--light-accent);}
+  .admin-dismiss-btn.dismissed{border-color:var(--ok);color:var(--ok);}
   .admin-users-table th{
     position:sticky;top:0;
     background:var(--panel-2);
@@ -2866,7 +2890,7 @@
       <button id="cloud-save">Save to Cloud Now</button>
       <span id="cloud-dirty-badge" class="cloud-dirty-badge" style="display:none;">⚠ Unsaved changes</span>
       <button id="cloud-reload">Reload from Cloud</button>
-      <button id="admin-users-btn" style="display:none;" onclick="openAdminUsersModal()">🛠️ Admin</button>
+      <button id="admin-users-btn" style="display:none;" onclick="openAdminUsersModal()">🛠️ Admin <span id="admin-users-badge" class="admin-pending-badge" style="display:none;">0</span></button>
       <button id="auth-signout">Logout</button>
       <span id="cloud-status-2"></span>
     </div>
@@ -4238,6 +4262,7 @@
             <th class="admin-sortable" data-sort="name" data-label="Name" onclick="setAdminSort('name')">Name</th>
             <th class="admin-sortable" data-sort="updatedAt" data-label="Last Sheet Update" onclick="setAdminSort('updatedAt')">Last Sheet Update</th>
             <th class="admin-sortable" data-sort="lastLoginAt" data-label="Last Login" onclick="setAdminSort('lastLoginAt')">Last Login</th>
+            <th>New?</th>
             <th>Approved</th>
             <th>Editor</th>
             <th>Teacher</th>
@@ -9533,6 +9558,36 @@ function updateAdminUsersButtonVisibility(){
   if(btn) btn.style.display = isSpellEditor ? '' : 'none';
 }
 
+// A quick "are there any new signups?" check for the main page, so an
+// editor doesn't have to open the Admin panel just to find out — a
+// lighter-weight version of what loadAdminUsersData() does (only
+// fetches user_id columns from three tables, not everything).
+async function checkPendingSignupsCount(){
+  if(!isSpellEditor){ updatePendingSignupsBadge(0); return; }
+  try{
+    const [loginRes, approvedRes, dismissedRes] = await Promise.all([
+      supabaseClient.from('user_login_log').select('user_id'),
+      supabaseClient.from('approved_users').select('user_id'),
+      supabaseClient.from('dismissed_signups').select('user_id'),
+    ]);
+    const approvedIds = new Set((approvedRes.data || []).map(r => r.user_id));
+    const dismissedIds = new Set((dismissedRes.data || []).map(r => r.user_id));
+    const pendingCount = (loginRes.data || []).filter(r => !approvedIds.has(r.user_id) && !dismissedIds.has(r.user_id)).length;
+    updatePendingSignupsBadge(pendingCount);
+  }catch(e){ console.error('Could not check pending signups:', e); }
+}
+
+function updatePendingSignupsBadge(count){
+  const badge = document.getElementById('admin-users-badge');
+  if(!badge) return;
+  if(count > 0){
+    badge.textContent = count;
+    badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
 /* ---------- ADMIN: USER MANAGEMENT ----------
    Editor-only panel listing every known user (anyone with a character
    sheet), when they last saved it, when they last logged in, and every
@@ -9546,10 +9601,11 @@ function updateAdminUsersButtonVisibility(){
 let adminUsersData = [];
 
 async function loadAdminUsersData(){
-  const [charsRes, loginRes, approvedRes, editorsRes, teachersRes, craftRes, wsRes, oracleRes] = await Promise.all([
+  const [charsRes, loginRes, approvedRes, dismissedRes, editorsRes, teachersRes, craftRes, wsRes, oracleRes] = await Promise.all([
     supabaseClient.from('characters').select('user_id, data, updated_at'),
     supabaseClient.from('user_login_log').select('user_id, email, signup_name, last_login_at'),
     supabaseClient.from('approved_users').select('user_id'),
+    supabaseClient.from('dismissed_signups').select('user_id'),
     supabaseClient.from('spell_editors').select('user_id'),
     supabaseClient.from('teachers').select('user_id'),
     supabaseClient.from('crafting_editors').select('user_id'),
@@ -9561,6 +9617,7 @@ async function loadAdminUsersData(){
   const craftIds = new Set((craftRes.data || []).map(r => r.user_id));
   const wsIds = new Set((wsRes.data || []).map(r => r.user_id));
   const approvedIds = new Set((approvedRes.data || []).map(r => r.user_id));
+  const dismissedIds = new Set((dismissedRes.data || []).map(r => r.user_id));
   const charMap = {};
   (charsRes.data || []).forEach(r => { charMap[r.user_id] = r; });
   const oracleMap = {};
@@ -9600,6 +9657,7 @@ async function loadAdminUsersData(){
   adminUsersData = Array.from(rows.values()).map(u => ({
     ...u,
     isApproved: approvedIds.has(u.userId),
+    isDismissed: dismissedIds.has(u.userId),
     isEditor: editorIds.has(u.userId),
     isTeacher: teacherIds.has(u.userId),
     isCraftEditor: craftIds.has(u.userId),
@@ -9666,14 +9724,22 @@ function renderAdminUsersTable(){
     th.textContent = th.dataset.label + adminSortArrow(th.dataset.sort);
   });
   if(!adminUsersData.length){
-    tbody.innerHTML = `<tr><td colspan="10"><p class="rollbuff-list-empty">No users found yet.</p></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11"><p class="rollbuff-list-empty">No users found yet.</p></td></tr>`;
     return;
   }
-  tbody.innerHTML = adminUsersData.map(u => `
-    <tr${u.isApproved ? '' : ' class="admin-pending-row"'}>
+  tbody.innerHTML = adminUsersData.map(u => {
+    const isPending = !u.isApproved && !u.isDismissed;
+    const dismissBtn = u.isApproved
+      ? '<span class="admin-oracle-none">—</span>'
+      : (u.isDismissed
+        ? `<button type="button" class="admin-dismiss-btn dismissed" onclick="toggleDismissSignup('${u.userId}',false)" title="Show this account as new again">↺ Un-dismiss</button>`
+        : `<button type="button" class="admin-dismiss-btn" onclick="toggleDismissSignup('${u.userId}',true)" title="Stop highlighting this account as new, without approving or deleting it">👁️ Dismiss</button>`);
+    return `
+    <tr${isPending ? ' class="admin-pending-row"' : ''}>
       <td>${escapeHtml(u.name)}</td>
       <td class="admin-timestamp-cell">${formatAdminTimestamp(u.updatedAt)}</td>
       <td class="admin-timestamp-cell">${formatAdminTimestamp(u.lastLoginAt)}</td>
+      <td class="admin-role-cell">${dismissBtn}</td>
       <td class="admin-role-cell"><input type="checkbox" ${u.isApproved ? 'checked' : ''} onchange="toggleAdminRole('${u.userId}','approved_users',this.checked)"></td>
       <td class="admin-role-cell"><input type="checkbox" ${u.isEditor ? 'checked' : ''} onchange="toggleAdminRole('${u.userId}','spell_editors',this.checked)"></td>
       <td class="admin-role-cell"><input type="checkbox" ${u.isTeacher ? 'checked' : ''} onchange="toggleAdminRole('${u.userId}','teachers',this.checked)"></td>
@@ -9689,8 +9755,28 @@ function renderAdminUsersTable(){
         </select>
       </td>
       <td><button type="button" class="admin-delete-account-btn" onclick="deleteAdminUserAccount('${u.userId}','${escapeHtml(u.name).replace(/'/g, "\\'")}')" title="Permanently delete this account">🗑️ Delete</button></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
+
+window.toggleDismissSignup = async function(userId, dismiss){
+  if(!isSpellEditor) return;
+  try{
+    if(dismiss){
+      const { error } = await supabaseClient.from('dismissed_signups').insert({ user_id: userId });
+      if(error) throw error;
+    } else {
+      const { error } = await supabaseClient.from('dismissed_signups').delete().eq('user_id', userId);
+      if(error) throw error;
+    }
+    const u = adminUsersData.find(x => x.userId === userId);
+    if(u) u.isDismissed = dismiss;
+    renderAdminUsersTable();
+    checkPendingSignupsCount();
+  }catch(e){
+    alert('Could not update dismiss status: ' + (e.message || e));
+  }
+};
 
 window.deleteAdminUserAccount = async function(userId, name){
   if(!isSpellEditor) return;
@@ -9705,6 +9791,7 @@ window.deleteAdminUserAccount = async function(userId, name){
     if(error) throw error;
     adminUsersData = adminUsersData.filter(u => u.userId !== userId);
     renderAdminUsersTable();
+    checkPendingSignupsCount();
   }catch(e){
     alert('Could not delete this account: ' + (e.message || e));
   }
@@ -9729,6 +9816,7 @@ window.toggleAdminRole = async function(userId, table, checked){
       if(table === 'warrior_skill_editors') u.isWsEditor = checked;
     }
     renderAdminUsersTable(); // re-render so the pending-row highlight updates too, not just mutate state silently
+    if(table === 'approved_users') checkPendingSignupsCount();
   }catch(e){
     alert('Could not update that role: ' + (e.message || e));
     renderAdminUsersTable(); // revert the checkbox visually back to the last-known-good state
@@ -9763,13 +9851,13 @@ window.removeAdminOracle = async function(userId, schoolKey){
 window.openAdminUsersModal = async function(){
   if(!isSpellEditor) return;
   const tbody = document.getElementById('admin-users-rows');
-  if(tbody) tbody.innerHTML = `<tr><td colspan="10"><p class="rollbuff-list-empty">Loading…</p></td></tr>`;
+  if(tbody) tbody.innerHTML = `<tr><td colspan="11"><p class="rollbuff-list-empty">Loading…</p></td></tr>`;
   document.getElementById('admin-users-modal-backdrop').classList.add('open');
   try{
     await loadAdminUsersData();
     renderAdminUsersTable();
   }catch(e){
-    if(tbody) tbody.innerHTML = `<tr><td colspan="10"><p class="rollbuff-list-empty">Could not load user data: ${escapeHtml(e.message || String(e))}</p></td></tr>`;
+    if(tbody) tbody.innerHTML = `<tr><td colspan="11"><p class="rollbuff-list-empty">Could not load user data: ${escapeHtml(e.message || String(e))}</p></td></tr>`;
   }
 };
 window.closeAdminUsersModal = function(){
@@ -11541,6 +11629,7 @@ async function signUp(){
     updateAuthUI();
     if(!isApproved) return; // nothing else to load yet — RLS would block it anyway
     await checkSpellEditorStatus();
+    checkPendingSignupsCount();
     await checkPregnancyViewerStatus();
     await checkTeacherStatus();
     await checkSasadminStatus();
@@ -11585,6 +11674,7 @@ async function signIn(){
   updateAuthUI();
   if(!isApproved) return; // nothing else to load yet — RLS would block it anyway
   await checkSpellEditorStatus();
+  checkPendingSignupsCount();
   await checkPregnancyViewerStatus();
   await checkTeacherStatus();
   await checkSasadminStatus();
@@ -11627,6 +11717,7 @@ async function initAuth(){
   if(!currentUser) return; // logged out — gate screen already showing, nothing to load
   if(!isApproved) return; // nothing else to load yet — RLS would block it anyway
   await checkSpellEditorStatus();
+  checkPendingSignupsCount();
   await checkPregnancyViewerStatus();
   await checkTeacherStatus();
   await checkSasadminStatus();
