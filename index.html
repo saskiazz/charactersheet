@@ -11464,13 +11464,21 @@ function getRaceDisplayName(raceValue){
   return r ? r.name : raceValue;
 }
 
+let fetchingOtherCharacters = false; // guards against overlapping calls double-appending — see the comment inside fetchOtherCharacters()
 async function fetchOtherCharacters() {
+  // If a call is already in flight, don't start a second one — both
+  // would clear the containers up front, then each append their own
+  // full copy of every result once their own query resolves, since
+  // neither one's "clear" happens after the OTHER has already appended
+  // anything. That's exactly what caused every entry to show up twice.
+  if(fetchingOtherCharacters) return;
+  fetchingOtherCharacters = true;
   const selectEl = document.getElementById('other-char-select');
   const listContainer = document.getElementById('directory-list-container');
-  
+
   selectEl.innerHTML = '<option value="">-- Select a Character --</option>';
   listContainer.innerHTML = '';
-  
+
   try {
     const { data, error } = await supabaseClient
       .from('characters')
@@ -11515,6 +11523,8 @@ async function fetchOtherCharacters() {
     }
   } catch (e) {
     console.error("Network connection error handling sheet lookup:", e);
+  } finally {
+    fetchingOtherCharacters = false;
   }
 }
 
