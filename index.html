@@ -1944,8 +1944,20 @@
   .class-log-label{color:var(--parchment);font-weight:600;}
 
   .admin-users-table-wrap{overflow-x:auto;max-height:70vh;overflow-y:auto;}
-  .admin-users-table{width:100%;border-collapse:collapse;min-width:1280px;}
+  .admin-users-table{width:100%;border-collapse:collapse;min-width:1400px;}
   .admin-pending-row td{background:rgba(201,160,84,0.1);}
+  .admin-delete-account-btn{
+    background:transparent;
+    border:1px solid var(--danger);
+    color:var(--danger);
+    font-family:'Crimson Pro',serif;
+    font-size:13px;
+    padding:5px 10px;
+    border-radius:6px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .admin-delete-account-btn:hover{background:var(--danger);color:#1a0d0b;}
   .admin-users-table th{
     position:sticky;top:0;
     background:var(--panel-2);
@@ -2838,6 +2850,8 @@
 <div class="wrap">
   <div class="cloud-box gate-mode" id="auth-box">
     <div class="cloud-row" id="auth-form-row">
+      <label for="auth-signup-name">Your Name <span class="modal-hint" style="text-transform:none;letter-spacing:0;">(only needed to sign up — so we know who you are)</span></label>
+      <input type="text" id="auth-signup-name" placeholder="How should we recognize you?">
       <label for="auth-email">Email</label>
       <input type="text" id="auth-email" placeholder="you@example.com">
       <label for="auth-password">Password</label>
@@ -4213,7 +4227,7 @@
 </div>
 
 <div id="admin-users-modal-backdrop" class="modal-backdrop" onclick="if(event.target===this) closeAdminUsersModal()">
-  <div class="modal-box" style="max-width:min(1300px, 97vw);">
+  <div class="modal-box" style="max-width:min(1420px, 97vw);">
     <button class="modal-close" onclick="closeAdminUsersModal()">✕</button>
     <h2>🛠️ Admin — Users &amp; Roles</h2>
     <p class="modal-subtitle">Every user who has ever signed in, including brand-new signups still waiting on approval (highlighted). "Last logged in" is self-reported at sign-in — Supabase's real login records aren't reachable from the browser without a dangerous admin key, so this is the safe equivalent. Click a column header to sort.</p>
@@ -4230,6 +4244,7 @@
             <th>Crafting Editor</th>
             <th>Warrior Skill Editor</th>
             <th>Oracle Schools</th>
+            <th>Delete</th>
           </tr>
         </thead>
         <tbody id="admin-users-rows"></tbody>
@@ -9533,7 +9548,7 @@ let adminUsersData = [];
 async function loadAdminUsersData(){
   const [charsRes, loginRes, approvedRes, editorsRes, teachersRes, craftRes, wsRes, oracleRes] = await Promise.all([
     supabaseClient.from('characters').select('user_id, data, updated_at'),
-    supabaseClient.from('user_login_log').select('user_id, email, last_login_at'),
+    supabaseClient.from('user_login_log').select('user_id, email, signup_name, last_login_at'),
     supabaseClient.from('approved_users').select('user_id'),
     supabaseClient.from('spell_editors').select('user_id'),
     supabaseClient.from('teachers').select('user_id'),
@@ -9559,13 +9574,15 @@ async function loadAdminUsersData(){
   // (see recordUserLogin()), which is the only way a pending signup with
   // no character sheet yet is discoverable here at all. Any old account
   // that somehow only has a characters row (predating this tracking) is
-  // added too, so nobody who used to show up here disappears.
+  // added too, so nobody who used to show up here disappears. Name
+  // priority: character name (if they've made one) > the name they typed
+  // at signup > their email > a bare fallback.
   const rows = new Map();
   (loginRes.data || []).forEach(r => {
     const char = charMap[r.user_id];
     rows.set(r.user_id, {
       userId: r.user_id,
-      name: (char && char.data && char.data.charInfo && char.data.charInfo.name) ? char.data.charInfo.name.trim() : r.email || 'Pending — no character yet',
+      name: (char && char.data && char.data.charInfo && char.data.charInfo.name) ? char.data.charInfo.name.trim() : (r.signup_name || r.email || 'Pending — unidentified'),
       updatedAt: char ? char.updated_at : null,
       lastLoginAt: r.last_login_at,
     });
@@ -9649,7 +9666,7 @@ function renderAdminUsersTable(){
     th.textContent = th.dataset.label + adminSortArrow(th.dataset.sort);
   });
   if(!adminUsersData.length){
-    tbody.innerHTML = `<tr><td colspan="9"><p class="rollbuff-list-empty">No users found yet.</p></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10"><p class="rollbuff-list-empty">No users found yet.</p></td></tr>`;
     return;
   }
   tbody.innerHTML = adminUsersData.map(u => `
@@ -9671,8 +9688,27 @@ function renderAdminUsersTable(){
           ${SCHOOLS.filter(s => !u.oracleSchools.includes(s.key)).map(s => `<option value="${s.key}">${escapeHtml(s.name)}</option>`).join('')}
         </select>
       </td>
+      <td><button type="button" class="admin-delete-account-btn" onclick="deleteAdminUserAccount('${u.userId}','${escapeHtml(u.name).replace(/'/g, "\\'")}')" title="Permanently delete this account">🗑️ Delete</button></td>
     </tr>`).join('');
 }
+
+window.deleteAdminUserAccount = async function(userId, name){
+  if(!isSpellEditor) return;
+  if(currentUser && userId === currentUser.id){
+    alert("You can't delete your own account this way.");
+    return;
+  }
+  const confirmText = prompt(`This PERMANENTLY deletes ${name}'s entire account — their login, character sheet, and everything tied to it. This cannot be undone.\n\nType DELETE to confirm:`);
+  if(confirmText !== 'DELETE') return;
+  try{
+    const { error } = await supabaseClient.rpc('admin_delete_user_account', { p_target_user_id: userId });
+    if(error) throw error;
+    adminUsersData = adminUsersData.filter(u => u.userId !== userId);
+    renderAdminUsersTable();
+  }catch(e){
+    alert('Could not delete this account: ' + (e.message || e));
+  }
+};
 
 window.toggleAdminRole = async function(userId, table, checked){
   if(!isSpellEditor) return;
@@ -9727,13 +9763,13 @@ window.removeAdminOracle = async function(userId, schoolKey){
 window.openAdminUsersModal = async function(){
   if(!isSpellEditor) return;
   const tbody = document.getElementById('admin-users-rows');
-  if(tbody) tbody.innerHTML = `<tr><td colspan="9"><p class="rollbuff-list-empty">Loading…</p></td></tr>`;
+  if(tbody) tbody.innerHTML = `<tr><td colspan="10"><p class="rollbuff-list-empty">Loading…</p></td></tr>`;
   document.getElementById('admin-users-modal-backdrop').classList.add('open');
   try{
     await loadAdminUsersData();
     renderAdminUsersTable();
   }catch(e){
-    if(tbody) tbody.innerHTML = `<tr><td colspan="9"><p class="rollbuff-list-empty">Could not load user data: ${escapeHtml(e.message || String(e))}</p></td></tr>`;
+    if(tbody) tbody.innerHTML = `<tr><td colspan="10"><p class="rollbuff-list-empty">Could not load user data: ${escapeHtml(e.message || String(e))}</p></td></tr>`;
   }
 };
 window.closeAdminUsersModal = function(){
@@ -11484,8 +11520,13 @@ function returnToOwnSheet() {
 }
 
 async function signUp(){
+  const signupName = document.getElementById('auth-signup-name').value.trim();
   const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
+  if(!signupName){
+    setCloudStatus('Please enter your name so we know who you are.', true);
+    return;
+  }
   if(!email || password.length < 6){
     setCloudStatus('Please enter an email and a password (min. 6 characters).', true);
     return;
@@ -11496,7 +11537,7 @@ async function signUp(){
   if(data.session){
     currentUser = data.user;
     await checkApprovalStatus();
-    recordUserLogin(); // record even if unapproved — otherwise editors have no way to find them to approve
+    recordUserLogin(signupName); // record even if unapproved — otherwise editors have no way to find them to approve
     updateAuthUI();
     if(!isApproved) return; // nothing else to load yet — RLS would block it anyway
     await checkSpellEditorStatus();
@@ -11515,10 +11556,16 @@ async function signUp(){
 // signup has no character sheet yet (creating one requires being
 // approved first), so this is the ONLY way an editor can identify a
 // pending account to approve it — characters.data has nothing for them.
-async function recordUserLogin(){
+// signupName is only ever passed on the actual signUp() call — omitting
+// it on every later login leaves the stored name untouched (Supabase's
+// upsert only updates the columns actually present in the payload), so
+// it's set once and never overwritten.
+async function recordUserLogin(signupName){
   if(!currentUser) return;
   try{
-    await supabaseClient.from('user_login_log').upsert({ user_id: currentUser.id, last_login_at: new Date().toISOString(), email: currentUser.email }, { onConflict: 'user_id' });
+    const payload = { user_id: currentUser.id, last_login_at: new Date().toISOString(), email: currentUser.email };
+    if(signupName) payload.signup_name = signupName;
+    await supabaseClient.from('user_login_log').upsert(payload, { onConflict: 'user_id' });
   }catch(e){ console.error('Could not record login timestamp:', e); }
 }
 
