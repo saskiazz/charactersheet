@@ -1944,7 +1944,8 @@
   .class-log-label{color:var(--parchment);font-weight:600;}
 
   .admin-users-table-wrap{overflow-x:auto;max-height:70vh;overflow-y:auto;}
-  .admin-users-table{width:100%;border-collapse:collapse;min-width:1150px;}
+  .admin-users-table{width:100%;border-collapse:collapse;min-width:1280px;}
+  .admin-pending-row td{background:rgba(201,160,84,0.1);}
   .admin-users-table th{
     position:sticky;top:0;
     background:var(--panel-2);
@@ -2505,6 +2506,43 @@
     border-left:none;
     border-right:none;
   }
+  /* Before login, the auth box becomes the whole page — a proper gate
+     screen instead of a thin bar, since nothing else is shown yet. */
+  #auth-box.gate-mode{
+    position:static;
+    max-width:440px;
+    margin:10vh auto;
+    padding:40px 40px;
+    text-align:center;
+  }
+  #auth-box.gate-mode #auth-form-row{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    align-items:stretch;
+  }
+  #auth-box.gate-mode #auth-form-row label{display:block;text-align:left;font-size:14px;color:var(--gold);margin:6px 0 -8px;}
+  #auth-box.gate-mode #auth-form-row input{width:100%;box-sizing:border-box;padding:11px 12px;font-size:16px;}
+  #auth-box.gate-mode #auth-form-row button{padding:11px;font-size:16px;margin-top:4px;}
+  .approval-pending-screen{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:60vh;
+  }
+  .approval-pending-box{
+    max-width:480px;
+    text-align:center;
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--hairline);
+    border-radius:var(--radius-lg);
+    padding:40px 36px;
+    box-shadow:var(--shadow-soft);
+  }
+  .approval-pending-icon{font-size:48px;margin-bottom:16px;}
+  .approval-pending-box h2{font-family:'Cinzel',Garamond,serif;color:var(--light-accent);margin:0 0 14px;}
+  .approval-pending-box p{color:var(--parchment-dim);line-height:1.6;margin-bottom:24px;}
+  .approval-pending-box button{padding:9px 20px;}
   .cloud-dirty-badge{
     display:inline-flex;
     align-items:center;
@@ -2798,7 +2836,7 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="cloud-box" id="auth-box">
+  <div class="cloud-box gate-mode" id="auth-box">
     <div class="cloud-row" id="auth-form-row">
       <label for="auth-email">Email</label>
       <input type="text" id="auth-email" placeholder="you@example.com">
@@ -2820,6 +2858,16 @@
     </div>
   </div>
 
+  <div class="approval-pending-screen" id="approval-pending-screen" style="display:none;">
+    <div class="approval-pending-box">
+      <div class="approval-pending-icon">⏳</div>
+      <h2>Waiting for Approval</h2>
+      <p>Your account (<strong id="approval-pending-email"></strong>) has been created, but an editor needs to approve you before you can use the site. This is a one-time check — you don't need to do anything else, just check back later.</p>
+      <button id="approval-pending-signout">Log Out</button>
+    </div>
+  </div>
+
+  <div id="site-content-gate" style="display:none;">
   <header>
     <div class="eyebrow" id="site-eyebrow">Fallen Gate</div>
     <h1 id="page-title">Spellbook Tracker</h1>
@@ -3483,6 +3531,7 @@
   </div><!-- /#family-view -->
 
   <footer>Progress saves automatically to your local storage. Cloud saving of your character sheet only happens when you click "Save to Cloud Now" while logged in. Spell descriptions, tags, costs and damage are shared reference data stored centrally in the cloud for everyone using this tracker; only designated editors can change them (click a spell name to view or, if you're an editor, edit it).</footer>
+  </div><!-- /#site-content-gate -->
 
 </div>
 
@@ -4167,7 +4216,7 @@
   <div class="modal-box" style="max-width:min(1300px, 97vw);">
     <button class="modal-close" onclick="closeAdminUsersModal()">✕</button>
     <h2>🛠️ Admin — Users &amp; Roles</h2>
-    <p class="modal-subtitle">Every user with a character sheet. "Last logged in" is self-reported at sign-in — Supabase's real login records aren't reachable from the browser without a dangerous admin key, so this is the safe equivalent. Click a column header to sort.</p>
+    <p class="modal-subtitle">Every user who has ever signed in, including brand-new signups still waiting on approval (highlighted). "Last logged in" is self-reported at sign-in — Supabase's real login records aren't reachable from the browser without a dangerous admin key, so this is the safe equivalent. Click a column header to sort.</p>
     <div class="admin-users-table-wrap">
       <table class="admin-users-table">
         <thead>
@@ -4175,6 +4224,7 @@
             <th class="admin-sortable" data-sort="name" data-label="Name" onclick="setAdminSort('name')">Name</th>
             <th class="admin-sortable" data-sort="updatedAt" data-label="Last Sheet Update" onclick="setAdminSort('updatedAt')">Last Sheet Update</th>
             <th class="admin-sortable" data-sort="lastLoginAt" data-label="Last Login" onclick="setAdminSort('lastLoginAt')">Last Login</th>
+            <th>Approved</th>
             <th>Editor</th>
             <th>Teacher</th>
             <th>Crafting Editor</th>
@@ -4498,6 +4548,29 @@ let pregnancyData = { is_pregnant: false, baby_count: 1, conception_at: '', othe
 let pregnancyShownForUserId = null; // whose row is currently loaded into the panel
 let pregnancyCountdownTimer = null; // setInterval handle for the live due-date countdown
 const GESTATION_MS = 9 * 24 * 60 * 60 * 1000; // exactly 9 days
+
+/* ---------- ACCOUNT APPROVAL GATE ----------
+   A brand-new signup exists as a real auth account immediately (Supabase
+   has no built-in "pending" account state), but is functionally useless
+   until a spell_editor adds them to approved_users — updateAuthUI() hides
+   the whole site behind a "waiting for approval" screen until then, and
+   critically, is_approved() is also baked directly into the RLS policies
+   for every shared table, so an unapproved account can't read the data
+   via the raw API either, not just through the UI. */
+let isApproved = false;
+
+async function checkApprovalStatus(){
+  isApproved = false;
+  if(!currentUser) return;
+  try{
+    const { data, error } = await supabaseClient
+      .from('approved_users')
+      .select('user_id')
+      .eq('user_id', currentUser.id)
+      .maybeSingle();
+    if(!error && data) isApproved = true;
+  }catch(e){ console.error('[approval] status check failed:', e); }
+}
 
 const SPELL_INDEX = {};
 let DEFAULT_LEARNED = {};
@@ -9458,9 +9531,10 @@ function updateAdminUsersButtonVisibility(){
 let adminUsersData = [];
 
 async function loadAdminUsersData(){
-  const [charsRes, loginRes, editorsRes, teachersRes, craftRes, wsRes, oracleRes] = await Promise.all([
+  const [charsRes, loginRes, approvedRes, editorsRes, teachersRes, craftRes, wsRes, oracleRes] = await Promise.all([
     supabaseClient.from('characters').select('user_id, data, updated_at'),
-    supabaseClient.from('user_login_log').select('user_id, last_login_at'),
+    supabaseClient.from('user_login_log').select('user_id, email, last_login_at'),
+    supabaseClient.from('approved_users').select('user_id'),
     supabaseClient.from('spell_editors').select('user_id'),
     supabaseClient.from('teachers').select('user_id'),
     supabaseClient.from('crafting_editors').select('user_id'),
@@ -9471,24 +9545,49 @@ async function loadAdminUsersData(){
   const teacherIds = new Set((teachersRes.data || []).map(r => r.user_id));
   const craftIds = new Set((craftRes.data || []).map(r => r.user_id));
   const wsIds = new Set((wsRes.data || []).map(r => r.user_id));
-  const loginMap = {};
-  (loginRes.data || []).forEach(r => { loginMap[r.user_id] = r.last_login_at; });
+  const approvedIds = new Set((approvedRes.data || []).map(r => r.user_id));
+  const charMap = {};
+  (charsRes.data || []).forEach(r => { charMap[r.user_id] = r; });
   const oracleMap = {};
   (oracleRes.data || []).forEach(r => {
     if(!oracleMap[r.user_id]) oracleMap[r.user_id] = [];
     oracleMap[r.user_id].push(r.school_key);
   });
 
-  adminUsersData = (charsRes.data || []).map(row => ({
-    userId: row.user_id,
-    name: (row.data && row.data.charInfo && row.data.charInfo.name) ? row.data.charInfo.name.trim() : 'Unnamed Character',
-    updatedAt: row.updated_at,
-    lastLoginAt: loginMap[row.user_id] || null,
-    isEditor: editorIds.has(row.user_id),
-    isTeacher: teacherIds.has(row.user_id),
-    isCraftEditor: craftIds.has(row.user_id),
-    isWsEditor: wsIds.has(row.user_id),
-    oracleSchools: oracleMap[row.user_id] || [],
+  // user_login_log is the primary list — everyone who's ever signed in
+  // gets a row there the moment they do, even before being approved
+  // (see recordUserLogin()), which is the only way a pending signup with
+  // no character sheet yet is discoverable here at all. Any old account
+  // that somehow only has a characters row (predating this tracking) is
+  // added too, so nobody who used to show up here disappears.
+  const rows = new Map();
+  (loginRes.data || []).forEach(r => {
+    const char = charMap[r.user_id];
+    rows.set(r.user_id, {
+      userId: r.user_id,
+      name: (char && char.data && char.data.charInfo && char.data.charInfo.name) ? char.data.charInfo.name.trim() : r.email || 'Pending — no character yet',
+      updatedAt: char ? char.updated_at : null,
+      lastLoginAt: r.last_login_at,
+    });
+  });
+  (charsRes.data || []).forEach(row => {
+    if(rows.has(row.user_id)) return;
+    rows.set(row.user_id, {
+      userId: row.user_id,
+      name: (row.data && row.data.charInfo && row.data.charInfo.name) ? row.data.charInfo.name.trim() : 'Unnamed Character',
+      updatedAt: row.updated_at,
+      lastLoginAt: null,
+    });
+  });
+
+  adminUsersData = Array.from(rows.values()).map(u => ({
+    ...u,
+    isApproved: approvedIds.has(u.userId),
+    isEditor: editorIds.has(u.userId),
+    isTeacher: teacherIds.has(u.userId),
+    isCraftEditor: craftIds.has(u.userId),
+    isWsEditor: wsIds.has(u.userId),
+    oracleSchools: oracleMap[u.userId] || [],
   }));
   sortAdminUsersData();
 }
@@ -9550,14 +9649,15 @@ function renderAdminUsersTable(){
     th.textContent = th.dataset.label + adminSortArrow(th.dataset.sort);
   });
   if(!adminUsersData.length){
-    tbody.innerHTML = `<tr><td colspan="8"><p class="rollbuff-list-empty">No character sheets found yet.</p></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9"><p class="rollbuff-list-empty">No users found yet.</p></td></tr>`;
     return;
   }
   tbody.innerHTML = adminUsersData.map(u => `
-    <tr>
+    <tr${u.isApproved ? '' : ' class="admin-pending-row"'}>
       <td>${escapeHtml(u.name)}</td>
       <td class="admin-timestamp-cell">${formatAdminTimestamp(u.updatedAt)}</td>
       <td class="admin-timestamp-cell">${formatAdminTimestamp(u.lastLoginAt)}</td>
+      <td class="admin-role-cell"><input type="checkbox" ${u.isApproved ? 'checked' : ''} onchange="toggleAdminRole('${u.userId}','approved_users',this.checked)"></td>
       <td class="admin-role-cell"><input type="checkbox" ${u.isEditor ? 'checked' : ''} onchange="toggleAdminRole('${u.userId}','spell_editors',this.checked)"></td>
       <td class="admin-role-cell"><input type="checkbox" ${u.isTeacher ? 'checked' : ''} onchange="toggleAdminRole('${u.userId}','teachers',this.checked)"></td>
       <td class="admin-role-cell"><input type="checkbox" ${u.isCraftEditor ? 'checked' : ''} onchange="toggleAdminRole('${u.userId}','crafting_editors',this.checked)"></td>
@@ -9586,11 +9686,13 @@ window.toggleAdminRole = async function(userId, table, checked){
       if(error) throw error;
     }
     if(u){
+      if(table === 'approved_users') u.isApproved = checked;
       if(table === 'spell_editors') u.isEditor = checked;
       if(table === 'teachers') u.isTeacher = checked;
       if(table === 'crafting_editors') u.isCraftEditor = checked;
       if(table === 'warrior_skill_editors') u.isWsEditor = checked;
     }
+    renderAdminUsersTable(); // re-render so the pending-row highlight updates too, not just mutate state silently
   }catch(e){
     alert('Could not update that role: ' + (e.message || e));
     renderAdminUsersTable(); // revert the checkbox visually back to the last-known-good state
@@ -9625,13 +9727,13 @@ window.removeAdminOracle = async function(userId, schoolKey){
 window.openAdminUsersModal = async function(){
   if(!isSpellEditor) return;
   const tbody = document.getElementById('admin-users-rows');
-  if(tbody) tbody.innerHTML = `<tr><td colspan="8"><p class="rollbuff-list-empty">Loading…</p></td></tr>`;
+  if(tbody) tbody.innerHTML = `<tr><td colspan="9"><p class="rollbuff-list-empty">Loading…</p></td></tr>`;
   document.getElementById('admin-users-modal-backdrop').classList.add('open');
   try{
     await loadAdminUsersData();
     renderAdminUsersTable();
   }catch(e){
-    if(tbody) tbody.innerHTML = `<tr><td colspan="8"><p class="rollbuff-list-empty">Could not load user data: ${escapeHtml(e.message || String(e))}</p></td></tr>`;
+    if(tbody) tbody.innerHTML = `<tr><td colspan="9"><p class="rollbuff-list-empty">Could not load user data: ${escapeHtml(e.message || String(e))}</p></td></tr>`;
   }
 };
 window.closeAdminUsersModal = function(){
@@ -11133,20 +11235,42 @@ async function loadFromCloud(){
 }
 
 function updateAuthUI(){
+  const authBox = document.getElementById('auth-box');
   const formRow = document.getElementById('auth-form-row');
   const loggedInRow = document.getElementById('auth-logged-in-row');
   const otherCharsBox = document.getElementById('other-chars-box');
-  
+  const pendingScreen = document.getElementById('approval-pending-screen');
+  const contentGate = document.getElementById('site-content-gate');
+
   if(currentUser){
     formRow.style.display = 'none';
     loggedInRow.style.display = 'flex';
     document.getElementById('auth-user-email').textContent = currentUser.email;
-    otherCharsBox.style.display = 'block';
-    fetchOtherCharacters(); 
+    if(authBox) authBox.classList.remove('gate-mode');
+
+    if(isApproved){
+      if(pendingScreen) pendingScreen.style.display = 'none';
+      if(contentGate) contentGate.style.display = '';
+      otherCharsBox.style.display = 'block';
+      fetchOtherCharacters();
+    } else {
+      // Logged in but not yet approved by an editor — hold everything
+      // else back. This is enforced by RLS too (see is_approved()), not
+      // just this UI hide — an unapproved account genuinely can't read
+      // the shared game data even if they poked the API directly.
+      const emailEl = document.getElementById('approval-pending-email');
+      if(emailEl) emailEl.textContent = currentUser.email;
+      if(pendingScreen) pendingScreen.style.display = '';
+      if(contentGate) contentGate.style.display = 'none';
+      otherCharsBox.style.display = 'none';
+    }
   } else {
     formRow.style.display = 'flex';
     loggedInRow.style.display = 'none';
     otherCharsBox.style.display = 'none';
+    if(authBox) authBox.classList.add('gate-mode');
+    if(document.getElementById('approval-pending-screen')) document.getElementById('approval-pending-screen').style.display = 'none';
+    if(contentGate) contentGate.style.display = 'none';
     isViewingOther = false;
     setCloudDirty(false);
     applyEditLockState();
@@ -11371,24 +11495,30 @@ async function signUp(){
   if(error){ setCloudStatus('Error: ' + error.message, true); return; }
   if(data.session){
     currentUser = data.user;
+    await checkApprovalStatus();
+    recordUserLogin(); // record even if unapproved — otherwise editors have no way to find them to approve
     updateAuthUI();
+    if(!isApproved) return; // nothing else to load yet — RLS would block it anyway
     await checkSpellEditorStatus();
     await checkPregnancyViewerStatus();
     await checkTeacherStatus();
     await checkSasadminStatus();
     await loadFromCloud();
-    recordUserLogin();
   } else {
     setCloudStatus('Signed up! If email confirmation is enabled, please confirm your email and then log in.', false);
   }
 }
 
-// Each user writes their OWN last-login timestamp — see
-// admin_user_management_setup.sql for why (no service_role key needed).
+// Each user writes their OWN last-login timestamp AND email — see
+// admin_user_management_setup.sql for why no service_role key is used.
+// The email specifically matters for the approval workflow: a brand-new
+// signup has no character sheet yet (creating one requires being
+// approved first), so this is the ONLY way an editor can identify a
+// pending account to approve it — characters.data has nothing for them.
 async function recordUserLogin(){
   if(!currentUser) return;
   try{
-    await supabaseClient.from('user_login_log').upsert({ user_id: currentUser.id, last_login_at: new Date().toISOString() }, { onConflict: 'user_id' });
+    await supabaseClient.from('user_login_log').upsert({ user_id: currentUser.id, last_login_at: new Date().toISOString(), email: currentUser.email }, { onConflict: 'user_id' });
   }catch(e){ console.error('Could not record login timestamp:', e); }
 }
 
@@ -11403,18 +11533,21 @@ async function signIn(){
   const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if(error){ setCloudStatus('Error: ' + error.message, true); return; }
   currentUser = data.user;
+  await checkApprovalStatus();
+  recordUserLogin(); // record even if unapproved — otherwise editors have no way to find them to approve
   updateAuthUI();
+  if(!isApproved) return; // nothing else to load yet — RLS would block it anyway
   await checkSpellEditorStatus();
   await checkPregnancyViewerStatus();
   await checkTeacherStatus();
   await checkSasadminStatus();
   await loadFromCloud();
-  recordUserLogin();
 }
 
 async function signOut(){
   await supabaseClient.auth.signOut();
   currentUser = null;
+  isApproved = false;
   isSpellEditor = false;
   isPregnancyViewer = false;
   isTeacher = false;
@@ -11439,15 +11572,17 @@ async function signOut(){
 async function initAuth(){
   const { data: { session } } = await supabaseClient.auth.getSession();
   currentUser = session ? session.user : null;
+  if(currentUser){
+    await checkApprovalStatus();
+    recordUserLogin(); // record even if unapproved — otherwise editors have no way to find them to approve
+  }
   updateAuthUI();
+  if(currentUser && !isApproved) return; // nothing else to load yet — RLS would block it anyway
   await checkSpellEditorStatus();
   await checkPregnancyViewerStatus();
   await checkTeacherStatus();
   await checkSasadminStatus();
-  if(currentUser){
-    await loadFromCloud();
-    recordUserLogin();
-  }
+  if(currentUser) await loadFromCloud();
 }
 
 function load(){
@@ -13511,6 +13646,7 @@ document.getElementById('reset-all').addEventListener('click', async () => {
 document.getElementById('auth-signup').addEventListener('click', signUp);
 document.getElementById('auth-signin').addEventListener('click', signIn);
 document.getElementById('auth-signout').addEventListener('click', signOut);
+document.getElementById('approval-pending-signout').addEventListener('click', signOut);
 document.getElementById('cloud-save').addEventListener('click', () => {
   if(!confirm('This will overwrite your saved cloud data with your current sheet. Continue?')) return;
   saveToCloud(true);
