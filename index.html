@@ -4835,7 +4835,10 @@ async function checkPregnancyViewerStatus(){
   updatePregnancyPanelVisibility();
   updateChildrenPanelVisibility();
   if(isPregnancyViewer){
-    if(!globalOtherSheetsData || !globalOtherSheetsData.length) await fetchOtherCharacters();
+    // fetchOtherCharacters() used to also be triggered here, but that ran
+    // before RANKS/RACES were loaded during login (raw keys instead of
+    // display names). It's now always (re)populated correctly at the end
+    // of loadReferenceDataAndRenderApp() instead.
     const targetId = isViewingOther && pregnancyShownForUserId ? pregnancyShownForUserId : currentUser.id;
     await loadPregnancyData(targetId);
     await loadChildren(targetId);
@@ -4900,7 +4903,11 @@ async function checkSasadminStatus(){
     if(!error && data) isSasadmin = true;
   }catch(e){ console.error('[sasadmin] role check failed:', e); }
   await loadPartnerNote();
-  if(isSasadmin && currentUser && (!globalOtherSheetsData || !globalOtherSheetsData.length)) await fetchOtherCharacters();
+  // fetchOtherCharacters() used to also be triggered from here, but that
+  // ran before RANKS/RACES were loaded during login, showing raw keys
+  // like "dark_watcher" instead of "Dark Watcher" in the directory. It's
+  // now always (re)populated correctly at the end of
+  // loadReferenceDataAndRenderApp(), once those are guaranteed loaded.
   renderPartnerNoteUI();
 }
 
@@ -11376,7 +11383,12 @@ function updateAuthUI(){
       if(pendingScreen) pendingScreen.style.display = 'none';
       if(contentGate) contentGate.style.display = '';
       otherCharsBox.style.display = 'block';
-      fetchOtherCharacters();
+      // fetchOtherCharacters() is NOT called here — it depends on RANKS
+      // and RACES already being loaded (so it can show "Dark Watcher"
+      // instead of the raw "dark_watcher" key), and this function can
+      // fire before that's true. It's called from the end of
+      // loadReferenceDataAndRenderApp() instead, after those are
+      // guaranteed loaded.
     } else {
       // Logged in but not yet approved by an editor — hold everything
       // else back. This is enforced by RLS too (see is_approved()), not
@@ -11792,6 +11804,7 @@ async function loadReferenceDataAndRenderApp(){
     window.addEventListener('focus', () => { checkAndApplyStatRefill(); checkAndApplyArmorRefill(); checkAndApplyPregnancyDueBirth(); });
   }
   await loadFromCloud(); // always refresh the character's own sheet on every successful (re)login, not just the first time
+  await fetchOtherCharacters(); // populate the "view other sheets" directory — must happen after RANKS/RACES load above, or Rank/Race show as raw keys instead of display names
 }
 
 function load(){
