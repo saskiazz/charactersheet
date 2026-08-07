@@ -11503,7 +11503,7 @@ async function signUp(){
     await checkPregnancyViewerStatus();
     await checkTeacherStatus();
     await checkSasadminStatus();
-    await loadFromCloud();
+    await loadReferenceDataAndRenderApp();
   } else {
     setCloudStatus('Signed up! If email confirmation is enabled, please confirm your email and then log in.', false);
   }
@@ -11541,7 +11541,7 @@ async function signIn(){
   await checkPregnancyViewerStatus();
   await checkTeacherStatus();
   await checkSasadminStatus();
-  await loadFromCloud();
+  await loadReferenceDataAndRenderApp();
 }
 
 async function signOut(){
@@ -11577,12 +11577,83 @@ async function initAuth(){
     recordUserLogin(); // record even if unapproved — otherwise editors have no way to find them to approve
   }
   updateAuthUI();
-  if(currentUser && !isApproved) return; // nothing else to load yet — RLS would block it anyway
+  if(!currentUser) return; // logged out — gate screen already showing, nothing to load
+  if(!isApproved) return; // nothing else to load yet — RLS would block it anyway
   await checkSpellEditorStatus();
   await checkPregnancyViewerStatus();
   await checkTeacherStatus();
   await checkSasadminStatus();
-  if(currentUser) await loadFromCloud();
+  await loadReferenceDataAndRenderApp();
+}
+
+/* ---------- REFERENCE DATA + APP RENDER ----------
+   Everything the app needs to actually function — spells, schools,
+   ranks, warrior skills, crafting recipes, races, the character's own
+   sheet, and all the one-time UI setup — used to run unconditionally at
+   page load, BEFORE knowing whether anyone was even logged in. Once RLS
+   started requiring is_approved() on all these tables, that ordering
+   became a real bug: every fresh page load would fire these queries
+   using either no session or a not-yet-recognized one, so they'd come
+   back empty via RLS — even for an approved user — because approval
+   hadn't been confirmed by the app yet at the point these fired.
+   Now this only ever runs after initAuth()/signIn()/signUp() has
+   confirmed isApproved, from all three entry points, and only once per
+   page load (referenceDataLoaded guards repeat calls — e.g. someone
+   logging in after boot() already ran while logged out). */
+let referenceDataLoaded = false;
+async function loadReferenceDataAndRenderApp(){
+  if(!referenceDataLoaded){
+    referenceDataLoaded = true;
+    await loadSchoolsAndSpells(); // fetch Schools of Magic + their spells from the cloud
+    await loadSpellMeta();        // fetch shared spell data (desc/tags/cost/damage) from the cloud
+    await loadTagGroups();        // fetch shared tag-group organization from the cloud
+    await loadDisciplinesAndSkills(); // fetch Disciplines + their warrior skills from the cloud
+    await loadWarriorSkillMeta();     // fetch shared warrior skill data (desc/tags/damage/etc.) from the cloud
+    await loadCraftingRecipes();      // fetch Jewelry/Blacksmithing/Alchemy recipes from the cloud
+    await loadCraftMeta();            // fetch shared recipe data (desc/tags/materials/DC/etc.) from the cloud
+    await loadRacesAndAbilities();    // fetch Races + their racial special abilities from the cloud
+    await loadRanks();                // fetch Ranks (base stats + reset hours + description) from the cloud
+    await loadCharsheetLayoutDefault(); // fetch the editor-set standard character-sheet block arrangement
+    renderTagFilters();
+    renderWsTagFilters();
+    renderCraftTagFilters();
+    renderRaceSelectOptions();   // populate the Race dropdown before load() sets its value
+    renderRankSelectOptions();   // populate the Rank dropdown before load() sets its value
+    load();                      // renders the grid with the loaded spell metadata
+    applyCharsheetBlockOrder();  // restore the user's saved block arrangement before locking/rendering anything else
+    initCharsheetBlockDnD();
+    initCharsheetColumnResize();
+    applyEditLockState();        // apply saved lock preference before anything can be touched
+    applyCharsheetCollapsedState();
+    applyFilterBarCollapsedState();
+    applyWsFilterBarCollapsedState();
+    applyCraftFilterBarCollapsedState();
+    initAutosizeTextareas();
+    const savedView = localStorage.getItem('spellbook_active_view');
+    if(savedView === 'warrior') switchView('warrior');
+    if(savedView === 'crafting') switchView('crafting');
+    if(savedView === 'teaching') switchView('teaching');
+    if(savedView === 'family') switchView('family');
+    requestAnimationFrame(alignEditLockWithAuthBar);
+    // Catches a Reset Time that passes while the tab is simply left open,
+    // instead of only refilling stats on the next load/switch. Browsers
+    // throttle setInterval in background tabs, so also re-check immediately
+    // whenever the tab regains focus/visibility — otherwise a reset that
+    // was due while the tab was backgrounded could sit stale until the
+    // interval eventually fires (or the page is reloaded). Same idea for a
+    // Pregnancy due date passing while the tab is left open. Only ever
+    // started once per page load, even if this whole function runs again
+    // later (e.g. sign-out then sign-in).
+    checkAndApplyStatRefill();
+    checkAndApplyArmorRefill();
+    checkAndApplyPregnancyDueBirth();
+    setInterval(() => { checkAndApplyStatRefill(); checkAndApplyArmorRefill(); checkAndApplyPregnancyDueBirth(); }, 60000);
+    document.addEventListener('visibilitychange', () => {
+      if(document.visibilityState === 'visible'){ checkAndApplyStatRefill(); checkAndApplyArmorRefill(); checkAndApplyPregnancyDueBirth(); }
+    });
+    window.addEventListener('focus', () => { checkAndApplyStatRefill(); checkAndApplyArmorRefill(); checkAndApplyPregnancyDueBirth(); });
+  }
+  await loadFromCloud(); // always refresh the character's own sheet on every successful (re)login, not just the first time
 }
 
 function load(){
@@ -13664,53 +13735,13 @@ window.addEventListener('beforeunload', function(e){
 });
 
 (async function boot(){
-  await loadSchoolsAndSpells(); // fetch Schools of Magic + their spells from the cloud
-  await loadSpellMeta();     // fetch shared spell data (desc/tags/cost/damage) from the cloud
-  await loadTagGroups();     // fetch shared tag-group organization from the cloud
-  await loadDisciplinesAndSkills(); // fetch Disciplines + their warrior skills from the cloud
-  await loadWarriorSkillMeta();     // fetch shared warrior skill data (desc/tags/damage/etc.) from the cloud
-  await loadCraftingRecipes();      // fetch Jewelry/Blacksmithing/Alchemy recipes from the cloud
-  await loadCraftMeta();            // fetch shared recipe data (desc/tags/materials/DC/etc.) from the cloud
-  await loadRacesAndAbilities();    // fetch Races + their racial special abilities from the cloud
-  await loadRanks();                // fetch Ranks (base stats + reset hours + description) from the cloud
-  await loadCharsheetLayoutDefault(); // fetch the editor-set standard character-sheet block arrangement
-  renderTagFilters();
-  renderWsTagFilters();
-  renderCraftTagFilters();
-  renderRaceSelectOptions();        // populate the Race dropdown before load() sets its value
-  renderRankSelectOptions();        // populate the Rank dropdown before load() sets its value
-  load();                    // renders the grid with the loaded spell metadata
-  applyCharsheetBlockOrder();       // restore the user's saved block arrangement before locking/rendering anything else
-  initCharsheetBlockDnD();
-  initCharsheetColumnResize();
-  applyEditLockState();      // apply saved lock preference before anything can be touched
-  applyCharsheetCollapsedState();
-  applyFilterBarCollapsedState();
-  applyWsFilterBarCollapsedState();
-  applyCraftFilterBarCollapsedState();
-  await initAuth();          // also determines isSpellEditor
-  initAutosizeTextareas();
-  const savedView = localStorage.getItem('spellbook_active_view');
-  if(savedView === 'warrior') switchView('warrior');
-  if(savedView === 'crafting') switchView('crafting');
-  if(savedView === 'teaching') switchView('teaching');
-  if(savedView === 'family') switchView('family');
-  requestAnimationFrame(alignEditLockWithAuthBar);
-  // Catches a Reset Time that passes while the tab is simply left open,
-  // instead of only refilling stats on the next load/switch. Browsers
-  // throttle setInterval in background tabs, so also re-check immediately
-  // whenever the tab regains focus/visibility — otherwise a reset that
-  // was due while the tab was backgrounded could sit stale until the
-  // interval eventually fires (or the page is reloaded). Same idea for a
-  // Pregnancy due date passing while the tab is left open.
-  checkAndApplyStatRefill();
-  checkAndApplyArmorRefill();
-  checkAndApplyPregnancyDueBirth();
-  setInterval(() => { checkAndApplyStatRefill(); checkAndApplyArmorRefill(); checkAndApplyPregnancyDueBirth(); }, 60000);
-  document.addEventListener('visibilitychange', () => {
-    if(document.visibilityState === 'visible'){ checkAndApplyStatRefill(); checkAndApplyArmorRefill(); checkAndApplyPregnancyDueBirth(); }
-  });
-  window.addEventListener('focus', () => { checkAndApplyStatRefill(); checkAndApplyArmorRefill(); checkAndApplyPregnancyDueBirth(); });
+  // Deliberately does nothing but call initAuth() now — every reference
+  // data load, render, and one-time UI setup call that used to run here
+  // unconditionally has moved into loadReferenceDataAndRenderApp(),
+  // which initAuth()/signIn()/signUp() only call once approval is
+  // actually confirmed. See the comment on that function for why this
+  // ordering matters (it used to be a real bug, not just tidiness).
+  await initAuth();
 })();
 window.addEventListener('load', () => requestAnimationFrame(alignEditLockWithAuthBar));
 </script>
